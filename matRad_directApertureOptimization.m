@@ -150,6 +150,7 @@ options.numOfScenarios  = dij.numOfScenarios;
 
 % set callback functions.
 funcs.objective         = @(x) matRad_daoObjFunc(x,dij,cst_Over,options,daoVec2ApertureInfo);
+funcs.iterfunc          = @(iter,objective,parameter) matRad_IpoptIterFunc(iter,objective,parameter,options.ipopt.max_iter);
 if pln.VMAT
     if pln.dynamic
         funcs.gradient          = @(x) matRad_daoGradFunc_VMATdynamic(x,dij,cst_Over,options,daoVec2ApertureInfo);
@@ -162,13 +163,11 @@ if pln.VMAT
         funcs.jacobian          = @(x) matRad_daoJacobFunc_VMATstatic(x,dij,cst_Over,options,daoVec2ApertureInfo);
         funcs.jacobianstructure = @( ) matRad_daoGetJacobStruct_VMATstatic(apertureInfo,dij,cst_Over);
     end
-    funcs.iterfunc          = @(iter,objective,parameter) matRad_IpoptIterFunc_VMAT(iter,objective,parameter,options.ipopt.max_iter);
 else
     funcs.gradient          = @(x) matRad_daoGradFunc_IMRT(x,apertureInfo,dij,cst_Over,options,daoVec2ApertureInfo);
     funcs.constraints       = @(x) matRad_daoConstFunc_IMRT(x,apertureInfo,dij,cst_Over,options,daoVec2ApertureInfo);
     funcs.jacobian          = @(x) matRad_daoJacobFunc_IMRT(x,apertureInfo,dij,cst_Over,options,daoVec2ApertureInfo);
     funcs.jacobianstructure = @( ) matRad_daoGetJacobStruct_IMRT(apertureInfo,dij,cst_Over);
-    funcs.iterfunc          = @(iter,objective,parameter) matRad_IpoptIterFunc(iter,objective,parameter,options.ipopt.max_iter);
 end
 
 % Run IPOPT.
@@ -205,9 +204,9 @@ resultGUI.physicalDose = reshape(d{1},dij.dimensions);
 
 if pln.scaleDRx
     %Scale D95 in target to RXDose
-    resultGUI = matRad_calcQualityIndicators(resultGUI,cst,pln);
+    resultGUI.QI = matRad_calcQualityIndicators(cst,pln,resultGUI.physicalDose);
     
-    resultGUI.apertureInfo.scaleFacRx = max((pln.DRx/pln.numOfFractions)./[resultGUI.QI(pln.RxStruct).D95]');
+    resultGUI.apertureInfo.scaleFacRx = max((pln.DRx/pln.numOfFractions)./[resultGUI.QI(pln.RxStruct).D_95]');
     optApertureInfoVec(1:resultGUI.apertureInfo.totalNumOfShapes) = optApertureInfoVec(1:resultGUI.apertureInfo.totalNumOfShapes)*resultGUI.apertureInfo.scaleFacRx;
     
     % update the apertureInfoStruct and calculate bixel weights

@@ -61,18 +61,19 @@ else
                         if ~dij.optBixel(j)
                             continue
                         end
-                        depthInd = depthOffset+(1:uint32(dij.nDepth(j)));
-                        depthOffset = depthOffset+uint32(dij.nDepth(j));
+                        depthInd = depthOffset+(1:uint32(dij.nDepth{i}(j)));
+                        depthOffset = depthOffset+uint32(dij.nDepth{i}(j));
                         
                         for k = depthInd
-                            tailInd = tailOffset+(1:uint32(dij.nTailPerDepth(k)));
-                            tailOffset = tailOffset+uint32(dij.nTailPerDepth(k));
+                            tailInd = tailOffset+(1:uint32(dij.nTailPerDepth{i}(k)));
+                            tailOffset = tailOffset+uint32(dij.nTailPerDepth{i}(k));
                             
-                            voxInd = dij.ixTail(tailInd);
-                            d{i}(voxInd) = d{i}(voxInd) + dij.bixelDoseTail(k).*w(j);
+                            voxInd = dij.ixTail{1}(tailInd);
+                            d{i}(voxInd) = d{i}(voxInd) + dij.bixelDoseTail{i}(k).*w(j);
                         end
                     end
                 end
+                
             else
                 
                 d{i} = dij.physicalDose{i} * w;
@@ -82,15 +83,15 @@ else
                     tailOffset = uint32(0);
                     
                     for j = 1:dij.totalNumOfRays
-                        depthInd = depthOffset+(1:uint32(dij.nDepth(j)));
-                        depthOffset = depthOffset+uint32(dij.nDepth(j));
+                        depthInd = depthOffset+(1:uint32(dij.nDepth{i}(j)));
+                        depthOffset = depthOffset+uint32(dij.nDepth{i}(j));
                         
                         for k = depthInd
-                            tailInd = tailOffset+(1:uint32(dij.nTailPerDepth(k)));
-                            tailOffset = tailOffset+uint32(dij.nTailPerDepth(k));
+                            tailInd = tailOffset+(1:uint32(dij.nTailPerDepth{i}(k)));
+                            tailOffset = tailOffset+uint32(dij.nTailPerDepth{i}(k));
                             
-                            voxInd = dij.ixTail(tailInd);
-                            d{i}(voxInd) = d{i}(voxInd) + dij.bixelDoseTail(k).*w(j);
+                            voxInd = dij.ixTail{i}(tailInd);
+                            d{i}(voxInd) = d{i}(voxInd) + dij.bixelDoseTail{i}(k).*w(j);
                         end
                     end
                 end

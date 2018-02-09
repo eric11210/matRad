@@ -46,14 +46,14 @@ color(:,3) = 0;
 color(:,2) = 0;
 
 % loop over all beams
-%{
+
 wMax = 0;
 for i=1:numOfBeams
     if wMax <= apertureInfo.beam(i).shape(1).weight
         wMax = apertureInfo.beam(i).shape(1).weight;
     end
 end
-%}
+
 
 
 for i=1:numOfBeams
@@ -69,7 +69,7 @@ for i=1:numOfBeams
     
     %get maximum weight
     if numOfShapes;
-        wMax = max([apertureInfo.beam(i).shape(:).weight]);
+        %wMax = max([apertureInfo.beam(i).shape(:).weight]);
     end
     if strcmp(mode,'leafNum')
         
@@ -151,7 +151,7 @@ for i=1:numOfBeams
     frame = getframe;
     im = frame2im(frame);
     [A,map] = rgb2ind(im,256);
-    fname = 'DAO_Apertures_3.gif';
+    fname = 'DAO_Apertures.gif';
     if i == 1
         imwrite(A,map,fname,'gif','LoopCount',Inf,'DelayTime',1);
     else

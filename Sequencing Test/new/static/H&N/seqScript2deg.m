@@ -39,6 +39,7 @@ pln.scaleDRx        = true;
 pln.scaleDij        = true;
 pln.jacobi          = true;
 pln.dynamic         = false;
+pln.memorySaver     = true;
 
 
 pln.numApertures = 7; %max val is pln.maxApertureAngleSpread/pln.minGantryAngleRes
@@ -47,7 +48,7 @@ pln.numLevels = 7;
 pln.minGantryAngleRes = 2; %Bzdusek
 pln.maxApertureAngleSpread = 28; %should be an even multiple of pln.minGantryAngleRes; Bzdusek
 
-pln = matRad_VMATGantryAngles(pln,'new');
+pln = matRad_VMATGantryAngles(pln,cst,ct);
 
 
 pln.gantryRotCst = [0 6]; %degrees per second
@@ -69,18 +70,14 @@ recalc.pln.minGantryAngleRes = 1;
 
 
 % generate steering file
-if ~exist('stf','var')
-    stf = matRad_generateStf(ct,cst,pln);
-end
+stf = matRad_generateStf(ct,cst,pln);
 
 %load Dij
 
-if ~exist('dij','var')
-    %dij = loadDij('H&N_2deg');
-    dij = matRad_calcPhotonDose(ct,stf,pln,cst);
-    dij.weightToMU = 100;
-    dij.scaleFactor = 1;
-end
+
+%dij = loadDij('H&N_2deg');
+dij = matRad_calcPhotonDose(ct,stf,pln,cst);
+
 
 % inverse planning for imrt
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf,0);
@@ -88,14 +85,17 @@ resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf,0);
 %% run DAO 4 times with different sequencing algorithms
 
 % Siochi
-fname = 'Siochi50';
+fname = 'Siochi';
 resultGUI = matRad_siochiLeafSequencing(resultGUI,stf,dij,pln,0);
 
 t0_nDij_nJ = tic;
-resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,resultGUI,pln,stf);
+resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,resultGUI,pln,stf,stf);
 t_nDij_nJ = toc(t0_nDij_nJ);
 savefig(fname)
-save(fname,'resultGUI')
+save(fname,'resultGUI','-v7.3')
+save(sprintf('C:\\Users\\eric\\Carleton University\\OneDrive - Carleton University\\Carleton\\PhD Project\\Presentations\\2018 02 12 Heidelberg\\%s',fname),'resultGUI','-v7.3')
+
+
 
 
 save('timings_2deg','t_*')

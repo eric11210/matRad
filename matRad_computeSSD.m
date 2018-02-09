@@ -44,25 +44,29 @@ densityThreshold = 0.05;
 if strcmp(mode,'first')
     
     for i = 1:size(stf,2)
-        SSD = cell(1,stf(i).numOfRays);
+        SSD = cell(ct.numOfCtScen,stf(i).numOfRays);
         for j = 1:stf(i).numOfRays
             [alpha,~,rho,~,~] = matRad_siddonRayTracer(stf(i).isoCenter, ...
                                  ct.resolution, ...
                                  stf(i).sourcePoint, ...
                                  stf(i).ray(j).targetPoint, ...
-                                 {ct.cube{1}});
-            ixSSD = find(rho{1} > densityThreshold,1,'first');
-
-            
-            if isempty(ixSSD)
-                warning('ray does not hit patient. Trying to fix afterwards...');
-            elseif ixSSD(1) == 1
-                warning('Surface for SSD calculation starts directly in first voxel of CT\n');
+                                 ct.cube);
+                             
+            for k = 1:ct.numOfCtScen
+                ixSSD = find(rho{k} > densityThreshold,1,'first');
+                
+                
+                if isempty(ixSSD)
+                    warning('ray does not hit patient. Trying to fix afterwards...');
+                elseif ixSSD(1) == 1
+                    warning('Surface for SSD calculation starts directly in first voxel of CT\n');
+                end
+                
+                % calculate SSD
+                SSD{k,j} = double(2 * stf(i).SAD * alpha(ixSSD));
+                stf(i).ray(j).SSD = SSD{k,j};
+                %change this to stf(i).ray(j).SSD{k} later
             end
-
-            % calculate SSD
-            SSD{j} = double(2 * stf(i).SAD * alpha(ixSSD));
-            stf(i).ray(j).SSD = SSD{j};            
         end
         
         % try to fix SSD by using SSD of closest neighbouring ray

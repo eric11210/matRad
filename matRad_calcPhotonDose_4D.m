@@ -222,17 +222,14 @@ for i = 1:dij.numOfBeams % loop over all beams
     bixelsPerBeam = 0;
     
     % convert voxel indices to real coordinates using iso center of beam i
-    xCoordsV = cell(dij.numOfScenarios,1);
-    yCoordsV = cell(dij.numOfScenarios,1);
-    zCoordsV = cell(dij.numOfScenarios,1);
     coordsV = cell(dij.numOfScenarios,1);
     rot_coordsV = cell(dij.numOfScenarios,1);
     
     for j = 1:dij.numOfScenarios
-        xCoordsV{j} = xCoordsV_vox{j}(:)*ct.resolution.x-stf(i).isoCenter(1);
-        yCoordsV{j} = yCoordsV_vox{j}(:)*ct.resolution.y-stf(i).isoCenter(2);
-        zCoordsV{j} = zCoordsV_vox{j}(:)*ct.resolution.z-stf(i).isoCenter(3);
-        coordsV{j}  = [xCoordsV{j} yCoordsV{j} zCoordsV{j}];
+        xCoordsV = xCoordsV_vox{j}(:)*ct.resolution.x-stf(i).isoCenter(1);
+        yCoordsV = yCoordsV_vox{j}(:)*ct.resolution.y-stf(i).isoCenter(2);
+        zCoordsV = zCoordsV_vox{j}(:)*ct.resolution.z-stf(i).isoCenter(3);
+        coordsV{j}  = [xCoordsV yCoordsV zCoordsV];
         
         % Set gantry and couch rotation matrices according to IEC 61217
         % Use transpose matrices because we are working with row vectros

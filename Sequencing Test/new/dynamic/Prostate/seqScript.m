@@ -39,6 +39,7 @@ pln.scaleDRx        = true;
 pln.scaleDij        = true;
 pln.jacobi          = true;
 pln.dynamic         = true;
+pln.memorySaver     = false;
 
 
 pln.numApertures = 7; %max val is pln.maxApertureAngleSpread/pln.minGantryAngleRes
@@ -47,7 +48,7 @@ pln.numLevels = 7;
 pln.minGantryAngleRes = 4; %Bzdusek
 pln.maxApertureAngleSpread = 28; %should be an even multiple of pln.minGantryAngleRes; Bzdusek
 
-pln = matRad_VMATGantryAngles(pln,'new');
+pln = matRad_VMATGantryAngles(pln,cst,ct);
 
 
 pln.gantryRotCst = [0 6]; %degrees per second
@@ -69,15 +70,10 @@ recalc.pln.minGantryAngleRes = 1;
 
 
 % generate steering file
-if ~exist('stf','var')
-    stf = matRad_generateStf(ct,cst,pln);
-end
+stf = matRad_generateStf(ct,cst,pln);
 
 %load Dij
-
-if ~exist('dij','var')
-    dij = loadDij('Prostate');
-end
+ dij = matRad_calcPhotonDose(ct,stf,pln,cst);
 
 % inverse planning for imrt
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf,0);
@@ -89,10 +85,10 @@ fname = 'Siochi50';
 resultGUI = matRad_siochiLeafSequencing(resultGUI,stf,dij,pln,0);
 
 t0_nDij_nJ = tic;
-resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,resultGUI,pln);
+resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,resultGUI,pln,stf);
 t_nDij_nJ = toc(t0_nDij_nJ);
 savefig(fname)
-save(fname,'resultGUI')
+save(fname,'resultGUI','-v7.3')
 %{
 % Svensson
 fname = 'Svensson';
