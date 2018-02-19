@@ -40,7 +40,7 @@ d = matRad_backProjection(w,dij,options);
 jacob = sparse([]);
 
 % initialize projection matrices and id containers
-DoseProjection          = sparse([]);
+physicalDoseProjection  = sparse([]);
 mAlphaDoseProjection    = sparse([]);
 mSqrtBetaDoseProjection = sparse([]);
 voxelID                 = [];
@@ -83,7 +83,7 @@ for i = 1:size(cst,1)
                     
                     if isequal(options.bioOpt,'none') && ~isempty(jacobVec) || isequal(options.ID,'protons_const_RBExD')
 
-                       DoseProjection          = [DoseProjection,sparse(cst{i,4}{1},1,jacobVec,dij.numOfVoxels,1)];
+                       physicalDoseProjection = [physicalDoseProjection,sparse(cst{i,4}{1},1,jacobVec,dij.numOfVoxels,1)];
 
                     elseif isequal(options.bioOpt,'LEMIV_effect') && ~isempty(jacobVec)
 
@@ -126,10 +126,10 @@ for i = 1:dij.numOfScenarios
    % enter if statement also for protons using a constant RBE
    if isequal(options.bioOpt,'none') ||  isequal(options.ID,'protons_const_RBExD')
 
-        if ~isempty(DoseProjection)
+        if ~isempty(physicalDoseProjection)
             
             jacobLogical          = (scenID == i);
-            jacob(jacobLogical,:) = DoseProjection(:,jacobLogical)' * dij.physicalDose{i};
+            jacob(jacobLogical,:) = physicalDoseProjection(:,jacobLogical)' * dij.physicalDose{i};
             
         end
 

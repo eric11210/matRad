@@ -36,18 +36,44 @@ end
 
 resultGUI.w = w;
 
-% get bixel - beam correspondence  
-for i = 1:dij.numOfBeams
-    beamInfo(i).suffix = ['_beam', num2str(i)];
-    beamInfo(i).logIx  = (dij.beamNum == i);      
-end
-beamInfo(dij.numOfBeams+1).suffix = '';
-beamInfo(dij.numOfBeams+1).logIx  = true(size(w));
+beamInfo(1).suffix = '';
+beamInfo(1).logIx  = true(size(w));
 
-% compute physical dose for all beams individually and together
-for i = 1:length(beamInfo)
-    resultGUI.(['physicalDose', beamInfo(i).suffix]) = reshape(full(dij.physicalDose{scenNum} * (resultGUI.w .* beamInfo(i).logIx)),dij.dimensions);
+% for particle beams also enable individual beam doses
+if ~strcmp(dij.radiationMode,'photons')
+    for i = 2:dij.numOfBeams+1
+        beamInfo(i).suffix = ['_beam', num2str(i)];
+        beamInfo(i).logIx  = (dij.beamNum == i);
+    end
 end
+
+% compute physical dose for all beams and for each beam individually (for particles)
+for i = 1:length(beamInfo)
+    resultGUI.(['physicalDose', beamInfo(i).suffix]) = dij.scaleFactor * reshape(full(dij.physicalDose{scenNum} * (resultGUI.w .* beamInfo(i).logIx)),dij.dimensions);
+
+    % add dose contributions for dij.memorySaverPhoton
+    if dij.memorySaverPhoton
+
+        depthOffset = uint32(0);
+        tailOffset = uint32(0);
+
+        for j = 1:dij.totalNumOfRays
+            depthInd = depthOffset+(1:uint32(dij.nDepth(j)));
+            depthOffset = depthOffset+uint32(dij.nDepth(j));
+
+            for k = depthInd
+                tailInd = tailOffset+(1:uint32(dij.nTailPerDepth(k)));
+                tailOffset = tailOffset+uint32(dij.nTailPerDepth(k));
+
+                voxInd = dij.ixTail(tailInd);
+                resultGUI.(['physicalDose', beamInfo(i).suffix])(voxInd) = ...
+                    resultGUI.(['physicalDose', beamInfo(i).suffix])(voxInd) + dij.scaleFactor * dij.bixelDoseTail(k) * w(j);
+            end
+        end
+    end
+
+end
+
 
 % consider RBE for protons
 if isfield(dij,'RBE')
