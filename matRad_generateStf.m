@@ -98,7 +98,20 @@ end
 [coordsY_vox, coordsX_vox, coordsZ_vox] = ind2sub(ct.cubeDim,V);
 
 % Define steering file like struct. Prellocating for speed.
-stf = struct;
+% Preallocate with known size of array to avoid errors in VMAT-specific
+% code
+stf = struct('gantryAngle',cell(size(pln.propStf.gantryAngles)));
+
+if pln.propOpt.runVMAT
+    %Initialize master ray positions and target points with NaNs, to be
+    %deleted later.  These arrays are the unions of the corresponding
+    %arrays per gantry angle.  In order to do VMAT, it is easier to have
+    %the same MLC range and dij calculation for every possible beam/gantry
+    %angle.
+    masterRayPosBEV = nan(1,3);
+    masterTargetPointBEV = nan(1,3);
+end
+
 
 % loop over all angles
 for i = 1:length(pln.propStf.gantryAngles)
@@ -178,69 +191,165 @@ for i = 1:length(pln.propStf.gantryAngles)
     for j = 1:stf(i).numOfRays
         stf(i).ray(j).rayPos_bev = rayPos(j,:);
         stf(i).ray(j).targetPoint_bev = [2*stf(i).ray(j).rayPos_bev(1) ...
-                                                               SAD ...
-                                         2*stf(i).ray(j).rayPos_bev(3)];
+            SAD ...
+            2*stf(i).ray(j).rayPos_bev(3)];
     end
     
-    % source position in bev
-    stf(i).sourcePoint_bev = [0 -SAD 0];
-    
-    % get (active) rotation matrix 
-    % transpose matrix because we are working with row vectors
-    rotMat_vectors_T = transpose(matRad_getRotationMatrix(pln.propStf.gantryAngles(i),pln.propStf.couchAngles(i)));
-    
-    
-    stf(i).sourcePoint = stf(i).sourcePoint_bev*rotMat_vectors_T;
-    
-    % Save ray and target position in lps system.
-    for j = 1:stf(i).numOfRays
-        stf(i).ray(j).rayPos      = stf(i).ray(j).rayPos_bev*rotMat_vectors_T;
-        stf(i).ray(j).targetPoint = stf(i).ray(j).targetPoint_bev*rotMat_vectors_T;
-        if strcmp(pln.radiationMode,'photons') 
-            stf(i).ray(j).rayCorners_SCD = (repmat([0, machine.meta.SCD - SAD, 0],4,1)+ (machine.meta.SCD/SAD) * ...
-                                                             [rayPos(j,:) + [+stf(i).bixelWidth/2,0,+stf(i).bixelWidth/2];...
-                                                              rayPos(j,:) + [-stf(i).bixelWidth/2,0,+stf(i).bixelWidth/2];...
-                                                              rayPos(j,:) + [-stf(i).bixelWidth/2,0,-stf(i).bixelWidth/2];...
-                                                              rayPos(j,:) + [+stf(i).bixelWidth/2,0,-stf(i).bixelWidth/2]])*rotMat_vectors_T;
+    if ~pln.propOpt.runVMAT
+        %If it is VMAT, we will do this later
+        
+        % source position in bev
+        stf(i).sourcePoint_bev = [0 -SAD 0];
+        
+        % get (active) rotation matrix
+        % transpose matrix because we are working with row vectors
+        rotMat_vectors_T = transpose(matRad_getRotationMatrix(pln.propStf.gantryAngles(i),pln.propStf.couchAngles(i)));
+        
+        
+        stf(i).sourcePoint = stf(i).sourcePoint_bev*rotMat_vectors_T;
+        
+        % Save ray and target position in lps system.
+        for j = 1:stf(i).numOfRays
+            stf(i).ray(j).rayPos      = stf(i).ray(j).rayPos_bev*rotMat_vectors_T;
+            stf(i).ray(j).targetPoint = stf(i).ray(j).targetPoint_bev*rotMat_vectors_T;
+            if strcmp(pln.radiationMode,'photons')
+                stf(i).ray(j).rayCorners_SCD = (repmat([0, machine.meta.SCD - SAD, 0],4,1)+ (machine.meta.SCD/SAD) * ...
+                    [rayPos(j,:) + [+stf(i).bixelWidth/2,0,+stf(i).bixelWidth/2];...
+                    rayPos(j,:) + [-stf(i).bixelWidth/2,0,+stf(i).bixelWidth/2];...
+                    rayPos(j,:) + [-stf(i).bixelWidth/2,0,-stf(i).bixelWidth/2];...
+                    rayPos(j,:) + [+stf(i).bixelWidth/2,0,-stf(i).bixelWidth/2]])*rotMat_vectors_T;
+            end
         end
-    end
-    
-    % loop over all rays to determine meta information for each ray    
-    stf(i).numOfBixelsPerRay = ones(1,stf(i).numOfRays);
-    
-    for j = stf(i).numOfRays:-1:1
-
-        % ray tracing necessary to determine depth of the target
-        [~,l,rho,~,~] = matRad_siddonRayTracer(stf(i).isoCenter, ...
-                             ct.resolution, ...
-                             stf(i).sourcePoint, ...
-                             stf(i).ray(j).targetPoint, ...
-                             [{ct.cube{1}} {voiTarget}]);
-
-        % find appropriate energies for particles
-       if strcmp(stf(i).radiationMode,'protons') || strcmp(stf(i).radiationMode,'carbon')
-
-           % target hit
-           if sum(rho{2}) > 0 
-
-                % compute radiological depths
-                % http://www.ncbi.nlm.nih.gov/pubmed/4000088, eq 14
-                radDepths = cumsum(l .* rho{1}); 
-
-                % find target entry & exit
-                diff_voi    = diff([rho{2}]);
-                targetEntry = radDepths(diff_voi == 1);
-                targetExit  = radDepths(diff_voi == -1);
-
-                if numel(targetEntry) ~= numel(targetExit)
-                    error('Inconsistency during ray tracing.');
+        
+        % loop over all rays to determine meta information for each ray
+        stf(i).numOfBixelsPerRay = ones(1,stf(i).numOfRays);
+        
+        
+        for j = stf(i).numOfRays:-1:1
+            
+            % ray tracing necessary to determine depth of the target
+            [~,l,rho,~,~] = matRad_siddonRayTracer(stf(i).isoCenter, ...
+                ct.resolution, ...
+                stf(i).sourcePoint, ...
+                stf(i).ray(j).targetPoint, ...
+                [ct.cube {voiTarget}]);
+                
+                % find appropriate energies for particles
+                if strcmp(stf(i).radiationMode,'protons') || strcmp(stf(i).radiationMode,'carbon')
+                    
+                    % target hit
+                    if sum(rho{2}) > 0
+                        
+                        % compute radiological depths
+                        % http://www.ncbi.nlm.nih.gov/pubmed/4000088, eq 14
+                        radDepths = cumsum(l .* rho{1});
+                        
+                        % find target entry & exit
+                        diff_voi    = diff([rho{2}]);
+                        targetEntry = radDepths(diff_voi == 1);
+                        targetExit  = radDepths(diff_voi == -1);
+                        
+                        if numel(targetEntry) ~= numel(targetExit)
+                            error('Inconsistency during ray tracing.');
+                        end
+                        
+                        stf(i).ray(j).energy = [];
+                        
+                        % Save energies in stf struct
+                        for k = 1:numel(targetEntry)
+                            stf(i).ray(j).energy = [stf(i).ray(j).energy availableEnergies(availablePeakPos>=targetEntry(k)&availablePeakPos<=targetExit(k))];
+                            % adjust spot spacing according to pln.bixelWidth when using HIT basedata
+                            %DefaultLongitudialSpotSpacing = pln.bixelWidth;  % in [mm]
+                            DefaultLongitudialSpotSpacing = 3;
+                            if strcmp(pln.machine,'HIT') && length(stf(i).ray(j).energy)>2
+                                Tolerance = 0.5;
+                                hasNext = true;
+                                CntEnergy =2;
+                                while hasNext
+                                    if abs(stf(i).ray(j).energy(CntEnergy)-stf(i).ray(j).energy(CntEnergy-1))<...
+                                            DefaultLongitudialSpotSpacing-Tolerance
+                                        stf(i).ray(j).energy(CntEnergy)=[];
+                                    else
+                                        CntEnergy = CntEnergy+1;
+                                    end
+                                    if CntEnergy == length(stf(i).ray(j).energy)
+                                        hasNext = false;
+                                    end
+                                end
+                            end
+                            
+                        end
+                        
+                        % book keeping & calculate focus index
+                        stf(i).numOfBixelsPerRay(j) = numel([stf(i).ray(j).energy]);
+                        currentMinimumFWHM = matRad_interp1(machine.meta.LUT_bxWidthminFWHM(1,:),...
+                            machine.meta.LUT_bxWidthminFWHM(2,:),...
+                            pln.bixelWidth);
+                        focusIx  =  ones(stf(i).numOfBixelsPerRay(j),1);
+                        [~, vEnergyIx] = min(abs(bsxfun(@minus,[machine.data.energy]',...
+                            repmat(stf(i).ray(j).energy,length([machine.data]),1))));
+                        
+                        % get for each spot the focus index
+                        for k = 1:stf(i).numOfBixelsPerRay(j)
+                            focusIx(k) = find(machine.data(vEnergyIx(k)).initFocus.SisFWHMAtIso > currentMinimumFWHM,1,'first');
+                        end
+                        
+                        stf(i).ray(j).focusIx = focusIx';
+                        
+                    else % target not hit
+                        stf(i).ray(j)               = [];
+                        stf(i).numOfBixelsPerRay(j) = [];
+                    end
+                    
+                elseif strcmp(stf(i).radiationMode,'photons')
+                    
+                    % book keeping for photons
+                    stf(i).ray(j).energy = machine.data.energy;
+                    
+                else
+                    error('Error generating stf struct: invalid radiation modality.');
                 end
-
-                stf(i).ray(j).energy = [];
-
-                % Save energies in stf struct
-                for k = 1:numel(targetEntry)
-                    stf(i).ray(j).energy = [stf(i).ray(j).energy availableEnergies(availablePeakPos>=targetEntry(k)&availablePeakPos<=targetExit(k))];
+        end
+        
+        
+        % store total number of rays for beam-i
+        stf(i).numOfRays = size(stf(i).ray,2);
+        
+        % post processing for particle remove energy slices
+        if strcmp(stf(i).radiationMode,'protons') || strcmp(stf(i).radiationMode,'carbon')
+            
+            % get minimum energy per field
+            minEnergy = min([stf(i).ray.energy]);
+            maxEnergy = max([stf(i).ray.energy]);
+            
+            % get corresponding peak position
+            availableEnergies = [machine.data.energy];
+            minPeakPos  = machine.data(minEnergy == availableEnergies).peakPos;
+            maxPeakPos  = machine.data(maxEnergy == availableEnergies).peakPos;
+            
+            % find set of energyies with adequate spacing
+            
+            if strcmp(machine.meta.machine,'Generic')
+                longitudinalSpotSpacing = 1.5; % enforce all entries to be used
+            else
+                longitudinalSpotSpacing = 3;   % default value for all other treatment machines
+            end
+            
+            tolerance              = longitudinalSpotSpacing/10;
+            availablePeakPos       = [machine.data.peakPos];
+            
+            useEnergyBool = availablePeakPos >= minPeakPos & availablePeakPos <= maxPeakPos;
+            
+            ixCurr = find(useEnergyBool,1,'first');
+            ixRun  = ixCurr + 1;
+            ixEnd  = find(useEnergyBool,1,'last');
+            
+            while ixRun <= ixEnd
+                if abs(availablePeakPos(ixRun)-availablePeakPos(ixCurr)) < ...
+                        longitudinalSpotSpacing - tolerance
+                    useEnergyBool(ixRun) = 0;
+                else
+                    ixCurr = ixRun;
                 end
   
                 % book keeping & calculate focus index
@@ -256,91 +365,157 @@ for i = 1:length(pln.propStf.gantryAngles)
                 for k = 1:stf(i).numOfBixelsPerRay(j)                    
                     focusIx(k) = find(machine.data(vEnergyIx(k)).initFocus.SisFWHMAtIso > currentMinimumFWHM,1,'first');
                 end
-
-                stf(i).ray(j).focusIx = focusIx';
-                 
-            else % target not hit
-                stf(i).ray(j)               = [];
-                stf(i).numOfBixelsPerRay(j) = [];
-           end
-           
-       elseif strcmp(stf(i).radiationMode,'photons')
-           
-         % book keeping for photons
-         stf(i).ray(j).energy = machine.data.energy;
-         
-       else
-          error('Error generating stf struct: invalid radiation modality.');
-       end
-       
-    end
-    
-    % store total number of rays for beam-i
-    stf(i).numOfRays = size(stf(i).ray,2);
-     
-    % post processing for particle remove energy slices
-    if strcmp(stf(i).radiationMode,'protons') || strcmp(stf(i).radiationMode,'carbon')
-        
-        % get minimum energy per field
-        minEnergy = min([stf(i).ray.energy]);
-        maxEnergy = max([stf(i).ray.energy]);
-        
-        % get corresponding peak position
-        availableEnergies = [machine.data.energy];
-        minPeakPos  = machine.data(minEnergy == availableEnergies).peakPos;
-        maxPeakPos  = machine.data(maxEnergy == availableEnergies).peakPos;
-        
-        % find set of energyies with adequate spacing
-        
-        if strcmp(machine.meta.machine,'Generic')
-            longitudinalSpotSpacing = 1.5; % enforce all entries to be used
-        else
-            longitudinalSpotSpacing = 3;   % default value for all other treatment machines
-        end
-        
-        tolerance              = longitudinalSpotSpacing/10;
-        availablePeakPos       = [machine.data.peakPos];
-        
-        useEnergyBool = availablePeakPos >= minPeakPos & availablePeakPos <= maxPeakPos;
-        
-        ixCurr = find(useEnergyBool,1,'first');
-        ixRun  = ixCurr + 1;
-        ixEnd  = find(useEnergyBool,1,'last');
-
-        while ixRun <= ixEnd
-            if abs(availablePeakPos(ixRun)-availablePeakPos(ixCurr)) < ...
-                                    longitudinalSpotSpacing - tolerance
-                useEnergyBool(ixRun) = 0;
-            else
-                ixCurr = ixRun;
-            end
-            ixRun = ixRun + 1;
-        end
-        
-        for j = stf(i).numOfRays:-1:1
-            for k = stf(i).numOfBixelsPerRay(j):-1:1
-                maskEnergy = stf(i).ray(j).energy(k) == availableEnergies;
-                if ~useEnergyBool(maskEnergy)
-                    stf(i).ray(j).energy(k)     = [];
-                    stf(i).ray(j).focusIx(k)    = [];
-                    stf(i).numOfBixelsPerRay(j) = stf(i).numOfBixelsPerRay(j) - 1;
+                if isempty(stf(i).ray(j).energy)
+                    stf(i).ray(j) = [];
+                    stf(i).numOfBixelsPerRay(j) = [];
+                    stf(i).numOfRays = stf(i).numOfRays - 1;
                 end
             end
-            if isempty(stf(i).ray(j).energy)
-                stf(i).ray(j) = [];
-                stf(i).numOfBixelsPerRay(j) = [];
-                stf(i).numOfRays = stf(i).numOfRays - 1;
-            end
+            
         end
         
+        % save total number of bixels
+        stf(i).totalNumOfBixels = sum(stf(i).numOfBixelsPerRay);
+        
+    else
+        %Determine which initialized beam the current beam belongs
+        %to
+        [~,stf(i).beamParentInitIndex] = min(abs(pln.propStf.initGantryAngles-pln.propStf.gantryAngles(i)));
+        stf(i).beamParentGantryAngle = pln.propStf.initGantryAngles(stf(i).beamParentInitIndex);
+        stf(i).beamParentIndex = find(pln.propStf.gantryAngles == stf(i).beamParentGantryAngle);
+        
+        %Indicate if this beam is to be included in optimization/initialization or not
+        %All beams are still considered in dose calc for objective function
+        stf(i).initializeBeam = any(pln.propStf.initGantryAngles==pln.propStf.gantryAngles(i));
+        stf(i).optimizeBeam = any(pln.propStf.optGantryAngles==pln.propStf.gantryAngles(i));
+        
+        %Determine different angle borders
+        %doseAngleBorders are the angular borders over which dose is
+        %deposited
+        
+        if i == 1
+            
+            stf(i).doseAngleBorders = ([pln.propStf.gantryAngles(i) pln.propStf.gantryAngles(i+1)]+pln.propStf.gantryAngles(i))/2;
+        elseif i == length(pln.propStf.gantryAngles)
+            
+            stf(i).doseAngleBorders = ([pln.propStf.gantryAngles(i-1) pln.propStf.gantryAngles(i)]+pln.propStf.gantryAngles(i))/2;
+        else
+            
+            stf(i).doseAngleBorders = ([pln.propStf.gantryAngles(i-1) pln.propStf.gantryAngles(i+1)]+pln.propStf.gantryAngles(i))/2;
+        end
+        
+        stf(i).doseAngleBorderCentreDiff = [stf(i).gantryAngle-stf(i).doseAngleBorders(1) stf(i).doseAngleBorders(2)-stf(i).gantryAngle];
+        stf(i).doseAngleBordersDiff = sum(stf(i).doseAngleBorderCentreDiff);
+        
+        %Assign beam to its Parent, either as child (optimized) or subchild
+        %(interpolated)
+        if stf(i).optimizeBeam
+            if ~isfield(stf(stf(i).beamParentIndex),'beamChildrenGantryAngles') || isempty(stf(stf(i).beamParentIndex).beamChildrenGantryAngles)
+                stf(stf(i).beamParentIndex).numOfBeamChildren = 0;
+                stf(stf(i).beamParentIndex).beamChildrenGantryAngles = nan(1000,1);
+                stf(stf(i).beamParentIndex).beamChildrenIndex = nan(1000,1);
+            end
+            
+            stf(stf(i).beamParentIndex).numOfBeamChildren = stf(stf(i).beamParentIndex).numOfBeamChildren+1;
+            stf(stf(i).beamParentIndex).beamChildrenGantryAngles(stf(stf(i).beamParentIndex).numOfBeamChildren) = pln.propStf.gantryAngles(i);
+            stf(stf(i).beamParentIndex).beamChildrenIndex(stf(stf(i).beamParentIndex).numOfBeamChildren) = i;
+            
+            %Determine different angle borders
+            %optAngleBorders are the angular borders over which an optimized control point
+            %has influence
+            optIndex = find(pln.propStf.optGantryAngles == pln.propStf.gantryAngles(i));
+            
+            if optIndex == 1
+                stf(i).optAngleBorders = ([pln.propStf.optGantryAngles(optIndex) pln.propStf.optGantryAngles(optIndex+1)]+pln.propStf.optGantryAngles(optIndex))/2;
+                
+                lastOptIndex = i;
+                nextOptIndex = find(pln.propStf.gantryAngles == pln.propStf.optGantryAngles(optIndex+1));
+                
+                stf(i).lastOptIndex = i;
+                stf(i).nextOptIndex = find(pln.propStf.gantryAngles == pln.propStf.optGantryAngles(optIndex+1));
+            elseif optIndex == length(pln.propStf.optGantryAngles)
+                stf(i).optAngleBorders = ([pln.propStf.optGantryAngles(optIndex-1) pln.propStf.optGantryAngles(optIndex)]+pln.propStf.optGantryAngles(optIndex))/2;
+                
+                stf(i).lastOptIndex = find(pln.propStf.gantryAngles == pln.propStf.optGantryAngles(optIndex-1));
+                stf(i).nextOptIndex = i;
+            else
+                stf(i).optAngleBorders = ([pln.propStf.optGantryAngles(optIndex-1) pln.propStf.optGantryAngles(optIndex+1)]+pln.propStf.optGantryAngles(optIndex))/2;
+                
+                lastOptIndex = i;
+                nextOptIndex = find(pln.propStf.gantryAngles == pln.propStf.optGantryAngles(optIndex+1));
+                
+                stf(i).lastOptIndex = find(pln.propStf.gantryAngles == pln.propStf.optGantryAngles(optIndex-1));
+                stf(i).nextOptIndex = find(pln.propStf.gantryAngles == pln.propStf.optGantryAngles(optIndex+1));
+            end
+            stf(i).doseAngleOpt = ones(1,2);
+            
+            stf(i).optAngleBorderCentreDiff = [stf(i).gantryAngle-stf(i).optAngleBorders(1) stf(i).optAngleBorders(2)-stf(i).gantryAngle];
+            stf(i).optAngleBordersDiff = sum(stf(i).optAngleBorderCentreDiff);
+            
+            %This is the factor that relates the total time in the
+            %optimized arc sector to the total time in the current dose
+            %sector
+            stf(i).timeFacCurr =  stf(i).doseAngleBordersDiff./stf(i).optAngleBordersDiff;
+            
+            %These are the factors that relate the total time in the
+            %optimized arc sector to the total time in the previous and
+            %next dose sectors
+            
+        else
+            if ~isfield(stf(stf(i).beamParentIndex),'beamSubChildrenGantryAngles') || isempty(stf(stf(i).beamParentIndex).beamSubChildrenGantryAngles)
+                stf(stf(i).beamParentIndex).numOfBeamSubChildren = 0;
+                stf(stf(i).beamParentIndex).beamSubChildrenGantryAngles = nan(1000,1);
+                stf(stf(i).beamParentIndex).beamSubChildrenIndex = nan(1000,1);
+            end
+            
+            stf(stf(i).beamParentIndex).numOfBeamSubChildren = stf(stf(i).beamParentIndex).numOfBeamSubChildren+1;
+            stf(stf(i).beamParentIndex).beamSubChildrenGantryAngles(stf(stf(i).beamParentIndex).numOfBeamSubChildren) = pln.propStf.gantryAngles(i);
+            stf(stf(i).beamParentIndex).beamSubChildrenIndex(stf(stf(i).beamParentIndex).numOfBeamSubChildren) = i;
+            
+            stf(i).fracFromLastOpt = (pln.propStf.gantryAngles(nextOptIndex)-pln.propStf.gantryAngles(i))./(pln.propStf.gantryAngles(nextOptIndex)-pln.propStf.gantryAngles(lastOptIndex));
+            stf(i).lastOptIndex = lastOptIndex;
+            stf(i).nextOptIndex = nextOptIndex;
+        end
+        
+        
+        if stf(i).initializeBeam
+            %Determine different angle borders
+            %initAngleBorders are the angular borders over which an optimized control point
+            %has influence
+            initIndex = find(pln.propStf.initGantryAngles == pln.propStf.gantryAngles(i));
+            
+            if initIndex == 1
+                
+                stf(i).initAngleBorders = [min(pln.propStf.initGantryAngles(initIndex),pln.propStf.gantryAngles(1)) (pln.propStf.initGantryAngles(initIndex+1)+pln.propStf.initGantryAngles(initIndex))/2];
+            elseif initIndex == length(pln.propStf.initGantryAngles)
+                
+                stf(i).initAngleBorders = [(pln.propStf.initGantryAngles(initIndex-1)+pln.propStf.initGantryAngles(initIndex))/2 max(pln.propStf.initGantryAngles(initIndex),pln.propStf.gantryAngles(end))];
+            else
+                
+                stf(i).initAngleBorders = ([pln.propStf.initGantryAngles(initIndex-1) pln.propStf.initGantryAngles(initIndex+1)]+pln.propStf.initGantryAngles(initIndex))/2;
+            end
+            stf(i).initAngleBorderCentreDiff = [stf(i).gantryAngle-stf(i).initAngleBorders(1) stf(i).initAngleBorders(2)-stf(i).gantryAngle];
+            stf(i).initAngleBordersDiff = sum(stf(i).initAngleBorderCentreDiff);
+        end
+        
+        %The following must be taken as the union of stf(:).FIELD and stf(:).FIELD:
+        %ray.rayPos_bev
+        %ray.targetPoint_bev
+        %Then these are rotated to form the non-bev forms;
+        %ray.rayCorners_SCD is also formed
+        numOfRays = stf(i).numOfRays;
+        rayPosBEV = reshape([stf(i).ray(:).rayPos_bev]',3,numOfRays)';
+        targetPointBEV = reshape([stf(i).ray(:).targetPoint_bev]',3,numOfRays)';
+        
+        masterRayPosBEV = union(masterRayPosBEV,rayPosBEV,'rows');
+        masterTargetPointBEV = union(masterTargetPointBEV,targetPointBEV,'rows');
     end
     
-    % save total number of bixels
-    stf(i).totalNumOfBixels = sum(stf(i).numOfBixelsPerRay);
+    
     
     % Show progress
     matRad_progress(i,length(pln.propStf.gantryAngles));
-
+    
     %% visualization
     if visMode > 0
         
@@ -358,8 +533,8 @@ for i = 1:length(pln.propStf.gantryAngles)
             % generate a 3D rectangular grid centered at isocenter in
             % voxel coordinates
             [X,Y,Z] = meshgrid((1:ct.cubeDim(2))-stf(i).isoCenter(1)/ct.resolution.x, ...
-                               (1:ct.cubeDim(1))-stf(i).isoCenter(2)/ct.resolution.y, ...
-                               (1:ct.cubeDim(3))-stf(i).isoCenter(3)/ct.resolution.z);
+                (1:ct.cubeDim(1))-stf(i).isoCenter(2)/ct.resolution.y, ...
+                (1:ct.cubeDim(3))-stf(i).isoCenter(3)/ct.resolution.z);
             
             % computes surface
             patSurfCube      = 0*ct.cube{1};
@@ -480,7 +655,210 @@ for i = 1:length(pln.propStf.gantryAngles)
             end
         end
     end
+    
+end
+
+%% VMAT
+
+if pln.propOpt.runVMAT
+    numSSDErr = 0;
+    
+    %After all steering file information is completed, loop over
+    %initialized gantry angles.  All children and subchildren of these angles should
+    %have ray positions given by the union of their own ray positions and
+    %the ray positions of the parent transformed to their gantry angle.
+    %This is so that: (1) the target is still totally in the FOV of each
+    %angle; and (2) the parent can give segments to the children during
+    %initial segmentation and DAO.
+    
+    fprintf('matRad: Combining parent and child ray vectors in stf (VMAT)... ');
+    
+    
+    for i = 1:length(pln.propStf.gantryAngles)
+        if stf(i).optimizeBeam
+            
+            stf(i).timeFac = zeros(1,2);
+            
+            if i == 1
+                stf(i).timeFac(1) = 0;
+                stf(i).timeFac(2) = stf(i).optAngleBorderCentreDiff(2)/stf(i).optAngleBordersDiff;
+            elseif i == length(pln.propStf.gantryAngles)
+                stf(i).timeFac(1) = stf(i).optAngleBorderCentreDiff(1)/stf(i).optAngleBordersDiff;
+                stf(i).timeFac(2) = 0;
+            else
+                stf(i).timeFac(1) = stf(i).optAngleBorderCentreDiff(1)/stf(i).optAngleBordersDiff;
+                stf(i).timeFac(2) = stf(i).optAngleBorderCentreDiff(2)/stf(i).optAngleBordersDiff;
+            end
+            
+            
+            if stf(i).initializeBeam
+                %remove NaNs from beamChildren and beamSubChildren
+                if isfield(stf(i),'beamChildrenGantryAngles')
+                    stf(i).beamChildrenGantryAngles(isnan(stf(i).beamChildrenGantryAngles)) = [];
+                    stf(i).beamChildrenIndex(isnan(stf(i).beamChildrenIndex)) = [];
+                else
+                    stf(i).numOfBeamChildren = 0;
+                end
+                if isfield(stf(i),'beamSubChildrenGantryAngles')
+                    stf(i).beamSubChildrenGantryAngles(isnan(stf(i).beamSubChildrenGantryAngles)) = [];
+                    stf(i).beamSubChildrenIndex(isnan(stf(i).beamSubChildrenIndex)) = [];
+                else
+                    stf(i).numOfBeamSubChildren = 0;
+                end
+            end
+        else
+            
+            % for time interpolation
+            stf(i).timeFracFromLastOpt = (stf(stf(i).lastOptIndex).optAngleBorders(2)-stf(i).doseAngleBorders(1))./stf(i).doseAngleBordersDiff;
+            stf(i).timeFracFromNextOpt = (stf(i).doseAngleBorders(2)-stf(stf(i).lastOptIndex).optAngleBorders(2))./stf(i).doseAngleBordersDiff;
+            if stf(i).timeFracFromLastOpt > 1
+                stf(i).timeFracFromLastOpt = 1;
+            elseif stf(i).timeFracFromLastOpt < 0
+                stf(i).timeFracFromLastOpt = 0;
+            end
+            if stf(i).timeFracFromNextOpt > 1
+                stf(i).timeFracFromNextOpt = 1;
+            elseif stf(i).timeFracFromNextOpt < 0
+                stf(i).timeFracFromNextOpt = 0;
+            end
+        end
         
-end    
+        currMasterRayPosBEV = masterRayPosBEV;
+        currMasterTargetPointBEV = masterTargetPointBEV;
+        
+        currMasterRayPosBEV(isnan(currMasterRayPosBEV)) = [];
+        currMasterTargetPointBEV(isnan(currMasterTargetPointBEV)) = [];
+        currMasterRayPosBEV = reshape(currMasterRayPosBEV,[],3);
+        currMasterTargetPointBEV = reshape(currMasterTargetPointBEV,[],3);
+        
+        stf(i).numOfRays = size(currMasterRayPosBEV,1);
+        stf(i).numOfBixelsPerRay = ones(1,stf(i).numOfRays);
+        stf(i).totalNumOfBixels = sum(stf(i).numOfBixelsPerRay);
+        
+        
+        % source position in bev
+        stf(i).sourcePoint_bev = [0 -SAD 0];
+        
+        % get (active) rotation matrix
+        % transpose matrix because we are working with row vectors
+        rotMat_vectors_T = transpose(matRad_getRotationMatrix(pln.propStf.gantryAngles(i),pln.propStf.couchAngles(i)));
+        
+        
+        stf(i).sourcePoint = stf(i).sourcePoint_bev*rotMat_vectors_T;
+        
+        % Save ray and target position in lps system.
+        for j = 1:stf(i).numOfRays
+            stf(i).ray(j).rayPos_bev = currMasterRayPosBEV(j,:);
+            stf(i).ray(j).targetPoint_bev = currMasterTargetPointBEV(j,:);
+            
+            stf(i).ray(j).rayPos      = stf(i).ray(j).rayPos_bev*rotMat_vectors_T;
+            stf(i).ray(j).targetPoint = stf(i).ray(j).targetPoint_bev*rotMat_vectors_T;
+            if strcmp(pln.radiationMode,'photons')
+                stf(i).ray(j).rayCorners_SCD = (repmat([0, machine.meta.SCD - SAD, 0],4,1)+ (machine.meta.SCD/SAD) * ...
+                    [currMasterRayPosBEV(j,:) + [+stf(i).bixelWidth/2,0,+stf(i).bixelWidth/2];...
+                    currMasterRayPosBEV(j,:) + [-stf(i).bixelWidth/2,0,+stf(i).bixelWidth/2];...
+                    currMasterRayPosBEV(j,:) + [-stf(i).bixelWidth/2,0,-stf(i).bixelWidth/2];...
+                    currMasterRayPosBEV(j,:) + [+stf(i).bixelWidth/2,0,-stf(i).bixelWidth/2]])*rotMat_vectors_T;
+            end
+        end
+        
+        % loop over all rays to determine meta information for each ray
+        stf(i).numOfBixelsPerRay = ones(1,stf(i).numOfRays);
+        
+        for j = stf(i).numOfRays:-1:1
+            
+            % ray tracing necessary to determine depth of the target
+            [~,l,rho,~,~] = matRad_siddonRayTracer(stf(i).isoCenter, ...
+                ct.resolution, ...
+                stf(i).sourcePoint, ...
+                stf(i).ray(j).targetPoint, ...
+                [ct.cube {voiTarget}]);
+                
+                % find appropriate energies for particles
+                if strcmp(stf(i).radiationMode,'protons') || strcmp(stf(i).radiationMode,'carbon')
+                    
+                    % target hit
+                    if sum(rho{2}) > 0
+                        
+                        % compute radiological depths
+                        % http://www.ncbi.nlm.nih.gov/pubmed/4000088, eq 14
+                        radDepths = cumsum(l .* rho{1});
+                        
+                        % find target entry & exit
+                        diff_voi    = diff([rho{2}]);
+                        targetEntry = radDepths(diff_voi == 1);
+                        targetExit  = radDepths(diff_voi == -1);
+                        
+                        if numel(targetEntry) ~= numel(targetExit)
+                            error('Inconsistency during ray tracing.');
+                        end
+                        
+                        stf(i).ray(j).energy = [];
+                        
+                        % Save energies in stf struct
+                        for k = 1:numel(targetEntry)
+                            stf(i).ray(j).energy = [stf(i).ray(j).energy availableEnergies(availablePeakPos>=targetEntry(k)&availablePeakPos<=targetExit(k))];
+                            % adjust spot spacing according to pln.bixelWidth when using HIT basedata
+                            %DefaultLongitudialSpotSpacing = pln.bixelWidth;  % in [mm]
+                            DefaultLongitudialSpotSpacing = 3;
+                            if strcmp(pln.machine,'HIT') && length(stf(i).ray(j).energy)>2
+                                Tolerance = 0.5;
+                                hasNext = true;
+                                CntEnergy =2;
+                                while hasNext
+                                    if abs(stf(i).ray(j).energy(CntEnergy)-stf(i).ray(j).energy(CntEnergy-1))<...
+                                            DefaultLongitudialSpotSpacing-Tolerance
+                                        stf(i).ray(j).energy(CntEnergy)=[];
+                                    else
+                                        CntEnergy = CntEnergy+1;
+                                    end
+                                    if CntEnergy == length(stf(i).ray(j).energy)
+                                        hasNext = false;
+                                    end
+                                end
+                            end
+                            
+                        end
+                        
+                        % book keeping & calculate focus index
+                        stf(i).numOfBixelsPerRay(j) = numel([stf(i).ray(j).energy]);
+                        currentMinimumFWHM = matRad_interp1(machine.meta.LUT_bxWidthminFWHM(1,:),...
+                            machine.meta.LUT_bxWidthminFWHM(2,:),...
+                            pln.bixelWidth);
+                        focusIx  =  ones(stf(i).numOfBixelsPerRay(j),1);
+                        [~, vEnergyIx] = min(abs(bsxfun(@minus,[machine.data.energy]',...
+                            repmat(stf(i).ray(j).energy,length([machine.data]),1))));
+                        
+                        % get for each spot the focus index
+                        for k = 1:stf(i).numOfBixelsPerRay(j)
+                            focusIx(k) = find(machine.data(vEnergyIx(k)).initFocus.SisFWHMAtIso > currentMinimumFWHM,1,'first');
+                        end
+                        
+                        stf(i).ray(j).focusIx = focusIx';
+                        
+                    else % target not hit
+                        stf(i).ray(j)               = [];
+                        stf(i).numOfBixelsPerRay(j) = [];
+                    end
+                    
+                elseif strcmp(stf(i).radiationMode,'photons')
+                    
+                    % book keeping for photons
+                    stf(i).ray(j).energy = machine.data.energy;
+                    
+                else
+                    error('Error generating stf struct: invalid radiation modality.');
+                end
+        end
+        
+        matRad_progress(i,length(pln.propStf.gantryAngles));
+    end
+    
+    stf(i).totalNumOfBixels = sum(stf(i).numOfBixelsPerRay);
+    stf(i).numOfBixelsPerRay = ones(1,stf(i).numOfRays);
+    
+    fprintf('\n\nNumber of SSD errors: %d out of %d.\n\n',numSSDErr,sum([stf(:).numOfRays]));
+end
 
 end
+
