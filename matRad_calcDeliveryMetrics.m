@@ -143,9 +143,11 @@ if pln.propOpt.runVMAT
     totTime = 0;
     
     for i = 1:size(apertureInfo.beam,2)
+        
+        totTime = totTime+apertureInfo.beam(i).time; %time until next optimized beam
+        
         if apertureInfo.beam(i).numOfShapes %only optimized beams have their time in the data struct
             l = l+1;
-            totTime = totTime+apertureInfo.beam(i).time; %time until next optimized beam
             gantryRot(l) = apertureInfo.beam(i).gantryRot;
             MURate(l) = apertureInfo.beam(i).MURate*60;
             times(l) = apertureInfo.beam(i).time;
