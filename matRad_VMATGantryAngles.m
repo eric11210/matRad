@@ -28,41 +28,51 @@ function pln = matRad_VMATGantryAngles(pln,cst,ct)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %should have already defined fields:
-%   numApertures
-%   numLevels
-%   minGantryAngleRes
-%   maxApertureAngleSpread
+%   maxGantryAngleSpacing
+%   maxDAOGantryAngleSpacing
+%   maxFMOGantryAngleSpacing
 
 
-
-pln.gantryAngleSpacing = pln.minGantryAngleRes; %ideally should be spaced every 2 or 4 degrees; gantry spacing that dij is performed
-
-pln.maxNumApertures = pln.maxApertureAngleSpread/pln.gantryAngleSpacing;
-
-pln.gantryToOptAngleSpacingFactor = floor(pln.maxNumApertures/pln.numApertures);
-pln.optGantryAngleSpacing = pln.gantryAngleSpacing*pln.gantryToOptAngleSpacingFactor;
-pln.initGantryAngleSpacing = pln.numApertures*pln.optGantryAngleSpacing;
-
-pln.gantryAngles    = 0:pln.gantryAngleSpacing:360;
-pln.optGantryAngles = 0:pln.optGantryAngleSpacing:360;
-pln.initGantryAngles = (pln.optGantryAngleSpacing*floor(pln.numApertures/2)):pln.initGantryAngleSpacing:361;
-
-if pln.gantryAngles(end) ~= pln.optGantryAngles(end)
-    %the final beam is not an optimized beam yet, but it should be for
-    %interpolation reasons
-    pln.optGantryAngles(numel(pln.optGantryAngles)+1) = pln.gantryAngles(end);
+if ~isfield(pln.propOpt.VMAToptions,'maxGantryAngleSpacing')
+    error('Please define pln.propOpt.maxGantryAngleSpacing.');
 end
 
-if pln.initGantryAngles(1) == 0 && pln.initGantryAngles(end) ~= 360
-    pln.initGantryAngles(numel(pln.initGantryAngles)+1) = 360;
+if ~isfield(pln.propOpt.VMAToptions,'maxDAOGantryAngleSpacing')
+    error('Please define pln.propOpt.maxDAOGantryAngleSpacing.');
 end
 
-pln.numOfBeams      = numel(pln.gantryAngles);
+if ~isfield(pln.propOpt.VMAToptions,'maxFMOGantryAngleSpacing')
+    error('Please define pln.propOpt.maxFMOGantryAngleSpacing.');
+end
 
-pln.couchAngles     = 0*pln.gantryAngles;
+% ensure that an integer number of DAO gantry angles will fit in 360 degrees,
+% spaced at least as close as maxDAOGantryAngleSpacing
+numDAOGantryAngles = ceil(360/pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing);
+DAOGantryAngleSpacing = 360/numDAOGantryAngles;
+% actual number of gantry angles is numDAOGantryAngles+1;
+
+% ensure that DAOGantryAngleSpacing is an integer multiple of gantryAngleSpacing
+numGantryAngles = ceil(numDAOGantryAngles*DAOGantryAngleSpacing/pln.propOpt.VMAToptions.maxGantryAngleSpacing);
+gantryAngleSpacing = 360/numGantryAngles;
+
+% ensure that FMOGantryAngleSpacing is an odd integer multiple of DAOGantryAngleSpacing
+numApertures = floor(pln.propOpt.VMAToptions.maxFMOGantryAngleSpacing/DAOGantryAngleSpacing);
+if mod(numApertures,2) == 0
+    numApertures = numApertures-1;
+end
+FMOGantryAngleSpacing = numApertures*DAOGantryAngleSpacing;
+firstFMOGantryAngle = DAOGantryAngleSpacing*floor(numApertures/2);
+lastFMOGantryAngle = 360-DAOGantryAngleSpacing*floor(numApertures/2);
 
 
-pln.isoCenter       = ones(pln.numOfBeams,1) * matRad_getIsoCenter(cst,ct,0);
+pln.propStf.gantryAngles    = 0:gantryAngleSpacing:360;
+pln.propStf.DAOGantryAngles = 0:DAOGantryAngleSpacing:360;
+pln.propStf.FMOGantryAngles = firstFMOGantryAngle:FMOGantryAngleSpacing:lastFMOGantryAngle;
+
+
+pln.propStf.numOfBeams      = numel(pln.propStf.gantryAngles);
+pln.propStf.couchAngles     = 0*pln.propStf.gantryAngles;
+pln.propStf.isoCenter       = ones(pln.propStf.numOfBeams,1) * matRad_getIsoCenter(cst,ct,0);
 
 
 

@@ -35,20 +35,8 @@ function g = matRad_gradFuncWrapper(w,dij,cst,options)
 %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% read in global dose and bixel variables
-global matRad_global_x;
-global matRad_global_d;
-
-if ~isequal(w,matRad_global_x)
-    % new bixel weights, update dose
-    % get current dose / effect / RBExDose vector
-    d = matRad_backProjection(w,dij,options);
-    matRad_global_d = d;
-    matRad_global_x = w;
-else
-    % old bixel weights, use global dose
-    d = matRad_global_d;
-end
+% get current dose / effect / RBExDose vector
+d = matRad_backProjection(w,dij,options);
 
 % Initializes delta
 delta      = cell(options.numOfScenarios,1);
@@ -96,64 +84,25 @@ end
 % Calculate gradient
 g = zeros(dij.totalNumOfBixels,1);
 
+if ~isfield(dij,'optBixel')
+    dij.optBixel = true(dij.totalNumOfBixels,1);
+end
+
 for i = 1:options.numOfScenarios
     
     if any(delta{i} ~= 0) % exercise only if contributions from scenario i
         
         if isequal(options.bioOpt,'none')
             
-            if isfield(dij,'optBixel')
-                
-                g(dij.optBixel) = g(dij.optBixel) + (delta{i}' * dij.physicalDose{i}(:,dij.optBixel))';
-                
-                if dij.memorySaver
-                    depthOffset = uint32(0);
-                    tailOffset = uint32(0);
-                    
-                    for j = 1:dij.totalNumOfRays
-                        if ~dij.optBixel(j)
-                            continue
-                        end
-                        depthInd = depthOffset+(1:uint32(dij.nDepth{i}(j)));
-                        depthOffset = depthOffset+uint32(dij.nDepth{i}(j));
-                        
-                        for k = depthInd
-                            tailInd = tailOffset+(1:uint32(dij.nTailPerDepth{i}(k)));
-                            tailOffset = tailOffset+uint32(dij.nTailPerDepth{i}(k));
-                            
-                            voxInd = dij.ixTail{i}(tailInd);
-                            g(j) = g(j)+sum(delta{i}(voxInd)).*dij.bixelDoseTail{i}(k);
-                        end
-                    end
-                end
-                
-            else
-                g = g + (delta{i}' * dij.physicalDose{i})';
-                
-                if dij.memorySaver
-                    depthOffset = uint32(0);
-                    tailOffset = uint32(0);
-                    
-                    for j = 1:dij.totalNumOfRays
-                        depthInd = depthOffset+(1:uint32(dij.nDepth{i}(j)));
-                        depthOffset = depthOffset+uint32(dij.nDepth{i}(j));
-                        
-                        for k = depthInd
-                            tailInd = tailOffset+(1:uint32(dij.nTailPerDepth{i}(k)));
-                            tailOffset = tailOffset+uint32(dij.nTailPerDepth{i}(k));
-                            
-                            voxInd = dij.ixTail{i}(tailInd);
-                            g(j) = g(j)+sum(delta{i}(voxInd)).*dij.bixelDoseTail{i}(k);
-                        end
-                    end
-                end
+            g(dij.optBixel) = g(dij.optBixel) + dij.scaleFactor * (delta{i}' * dij.physicalDose{i}(:,dij.optBixel))';
+
+            if dij.memorySaverPhoton
+                g = g+matRad_memorySaverDoseAndGrad(delta{i},dij,'gradient');
             end
             
-            g = g.*dij.scaleFactor;
-
         elseif isequal(options.ID,'protons_const_RBExD')
             
-            g            = g + (delta{i}' * dij.physicalDose{i} * dij.RBE)';
+            g = g + dij.scaleFactor * dij.RBE * (delta{i}' * dij.physicalDose{i})';
             
         elseif isequal(options.bioOpt,'LEMIV_effect')
 
@@ -175,4 +124,5 @@ for i = 1:options.numOfScenarios
         end
 
     end
+    
 end

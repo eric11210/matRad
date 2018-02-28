@@ -44,66 +44,27 @@ else
     % pre-allocation
     d = cell(options.numOfScenarios,1);
     
+    if ~isfield(dij,'optBixel')
+        dij.optBixel = true(dij.totalNumOfBixels,1);
+    end
+    
     % Calculate dose vector
     if isequal(options.bioOpt,'none')
         
         for i = 1:options.numOfScenarios
-            
-            if isfield(dij,'optBixel')
-                
-                d{i} = dij.physicalDose{i}(:,dij.optBixel) * w(dij.optBixel);
-                
-                if dij.memorySaver
-                    depthOffset = uint32(0);
-                    tailOffset = uint32(0);
-                    
-                    for j = 1:dij.totalNumOfRays
-                        if ~dij.optBixel(j)
-                            continue
-                        end
-                        depthInd = depthOffset+(1:uint32(dij.nDepth{i}(j)));
-                        depthOffset = depthOffset+uint32(dij.nDepth{i}(j));
-                        
-                        for k = depthInd
-                            tailInd = tailOffset+(1:uint32(dij.nTailPerDepth{i}(k)));
-                            tailOffset = tailOffset+uint32(dij.nTailPerDepth{i}(k));
                             
-                            voxInd = dij.ixTail{1}(tailInd);
-                            d{i}(voxInd) = d{i}(voxInd) + dij.bixelDoseTail{i}(k).*w(j);
-                        end
-                    end
-                end
-                
-            else
-                
-                d{i} = dij.physicalDose{i} * w;
-                
-                if dij.memorySaver
-                    depthOffset = uint32(0);
-                    tailOffset = uint32(0);
-                    
-                    for j = 1:dij.totalNumOfRays
-                        depthInd = depthOffset+(1:uint32(dij.nDepth{i}(j)));
-                        depthOffset = depthOffset+uint32(dij.nDepth{i}(j));
-                        
-                        for k = depthInd
-                            tailInd = tailOffset+(1:uint32(dij.nTailPerDepth{i}(k)));
-                            tailOffset = tailOffset+uint32(dij.nTailPerDepth{i}(k));
-                            
-                            voxInd = dij.ixTail{i}(tailInd);
-                            d{i}(voxInd) = d{i}(voxInd) + dij.bixelDoseTail{i}(k).*w(j);
-                        end
-                    end
-                end
+            d{i} = dij.physicalDose{i}(:,dij.optBixel) * (w(dij.optBixel) * dij.scaleFactor);
+
+            if dij.memorySaverPhoton
+                d{i} = d{i}+matRad_memorySaverDoseAndGrad(w,dij,'dose');
             end
-            
-            d{i} = d{i}.*dij.scaleFactor;
+
         end
         
     elseif  isequal(options.ID,'protons_const_RBExD')
         
         for i = 1:options.numOfScenarios
-             d{i} =  dij.physicalDose{i} * (w * dij.RBE );
+             d{i} =  dij.physicalDose{i} * (w * dij.RBE * dij.scaleFactor);
         end
         
     elseif (isequal(options.bioOpt,'LEMIV_effect') || isequal(options.bioOpt,'LEMIV_RBExD'))

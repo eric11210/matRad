@@ -39,7 +39,7 @@ apertureInfo.planMU = 0;
 %apertureMU = nan(1000,1);
 %apertureArea = nan(1000,1);
 %l = 1;
-if pln.VMAT
+if pln.propOpt.runVMAT
     
     for i = 1:numel(apertureInfo.beam)
         apertureInfo.planMU = apertureInfo.planMU+apertureInfo.beam(i).MU;
@@ -121,15 +121,23 @@ ylabel('k = N*(1-BM)')
 
 %}
 l = 0;
-if pln.VMAT
+if pln.propOpt.runVMAT
+    
+    fileName = apertureInfo.propVMAT.machineConstraintFile;
+    try
+        load([pwd filesep fileName],'machine');
+    catch
+        error(['Could not find the following machine file: ' fileName ]);
+    end
+    
     %All of these are vectors
     %Each entry corresponds to a beam angle
     %Later, we will convert these to histograms, find max, mean, min, etc.
-    gantryRot = zeros(1,size(pln.optGantryAngles,2)-1);
+    gantryRot = zeros(1,size(pln.propStf.DAOGantryAngles,2)-1);
     MURate = gantryRot;
     times = gantryRot;
     angles = gantryRot;
-    maxLeafSpeed = 0*pln.optGantryAngles;
+    maxLeafSpeed = 0*pln.propStf.DAOGantryAngles;
     
     
     totTime = 0;
@@ -149,18 +157,18 @@ if pln.VMAT
     
     
     apertureInfoVec = apertureInfo.apertureVector;
-    if pln.dynamic
+    if pln.propOpt.VMAToptions.continuousAperture
         leftLeafPos  = apertureInfoVec([1:apertureInfo.totalNumOfLeafPairs]+apertureInfo.totalNumOfShapes);
         rightLeafPos = apertureInfoVec(1+apertureInfo.totalNumOfLeafPairs+apertureInfo.totalNumOfShapes:apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2);
         
         timeOptBorderAngles = apertureInfoVec((1+apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2):end);
-        timeDoseBorderAngles = timeOptBorderAngles.*[apertureInfo.beam([apertureInfo.beam.optimizeBeam]).timeFacCurr]';
+        timeDoseBorderAngles = timeOptBorderAngles.*[apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).timeFacCurr]';
         
         leftLeafDiff = diff(reshape(leftLeafPos,apertureInfo.beam(1).numOfActiveLeafPairs,[]),1,2);
         rightLeafDiff = diff(reshape(rightLeafPos,apertureInfo.beam(1).numOfActiveLeafPairs,[]),1,2);
         
-        leftLeafDiff = reshape(leftLeafDiff(repmat([apertureInfo.beam.optimizeBeam],apertureInfo.beam(1).numOfActiveLeafPairs,1)),apertureInfo.beam(1).numOfActiveLeafPairs,apertureInfo.totalNumOfShapes);
-        rightLeafDiff = reshape(rightLeafDiff(repmat([apertureInfo.beam.optimizeBeam],apertureInfo.beam(1).numOfActiveLeafPairs,1)),apertureInfo.beam(1).numOfActiveLeafPairs,apertureInfo.totalNumOfShapes);
+        leftLeafDiff = reshape(leftLeafDiff(repmat([apertureInfo.propVMAT.beam.DAOBeam],apertureInfo.beam(1).numOfActiveLeafPairs,1)),apertureInfo.beam(1).numOfActiveLeafPairs,apertureInfo.totalNumOfShapes);
+        rightLeafDiff = reshape(rightLeafDiff(repmat([apertureInfo.propVMAT.beam.DAOBeam],apertureInfo.beam(1).numOfActiveLeafPairs,1)),apertureInfo.beam(1).numOfActiveLeafPairs,apertureInfo.totalNumOfShapes);
         
         lfspd = reshape([leftLeafDiff rightLeafDiff]./ ...
             repmat(timeDoseBorderAngles',apertureInfo.beam(1).numOfActiveLeafPairs,2),2*apertureInfo.beam(1).numOfActiveLeafPairs*numel(timeDoseBorderAngles),1);
@@ -172,13 +180,13 @@ if pln.VMAT
         dv = reshape(dv,[],1);
         %}
             
-            optAngles = [apertureInfo.beam([apertureInfo.beam.optimizeBeam]).gantryAngle];
+            optAngles = [apertureInfo.beam([apertureInfo.propVMAT.beam.DAOBeam]).gantryAngle];
             optAnglesMat = reshape(repmat(optAngles,apertureInfo.beam(1).numOfActiveLeafPairs,2),2*apertureInfo.beam(1).numOfActiveLeafPairs*numel(timeDoseBorderAngles),1);
     else
         leftLeafPos  = apertureInfoVec([1:apertureInfo.totalNumOfLeafPairs]+apertureInfo.totalNumOfShapes);
         rightLeafPos = apertureInfoVec(1+apertureInfo.totalNumOfLeafPairs+apertureInfo.totalNumOfShapes:apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2);
         
-        optInd = [apertureInfo.beam.optimizeBeam];
+        optInd = [apertureInfo.propVMAT.beam.DAOBeam];
         timeOptBorderAngles = apertureInfoVec((1+apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2):end);
         
         i = repelem(1:(apertureInfo.totalNumOfShapes-1),2);
@@ -186,7 +194,7 @@ if pln.VMAT
         j(1) = [];
         j(end) = [];
         
-        timeFac = [apertureInfo.beam(optInd).timeFac]';
+        timeFac = [apertureInfo.propVMAT.beam(optInd).timeFac]';
         timeFac(timeFac == 0) = [];
         
         timeFacMatrix = sparse(i,j,timeFac,(apertureInfo.totalNumOfShapes-1),apertureInfo.totalNumOfShapes);
@@ -197,9 +205,21 @@ if pln.VMAT
             repmat(timeBNOptAngles',apertureInfo.beam(1).numOfActiveLeafPairs,2),2*apertureInfo.beam(1).numOfActiveLeafPairs*numel(timeBNOptAngles),1);
     end
     
-    if pln.dynamic
-        initBorders = unique([stf([stf.initializeBeam]).initAngleBorders]);
-        forwardDir = 1-2*mod(1:(numel(initBorders)-1),2);
+    if pln.propOpt.VMAToptions.continuousAperture
+        
+        FMOBorders = zeros(2*numel(pln.propStf.FMOGantryAngles),1);
+        counter = 1;
+        for i = 1:numel(pln.propStf.gantryAngles)
+            if stf(i).propVMAT.FMOBeam
+                FMOBorders(counter) = stf(i).propVMAT.FMOAngleBorders(1);
+                FMOBorders(counter+1) = stf(i).propVMAT.FMOAngleBorders(2);
+                counter = counter+2;
+            else
+                continue
+            end
+        end
+        FMOBorders = unique(FMOBorders);
+        forwardDir = 1-2*mod(1:(numel(FMOBorders)-1),2);
         numForward = zeros(numel(forwardDir),1);
         numBackward = zeros(numel(forwardDir),1);
         timeInInit = zeros(numel(forwardDir),1);
@@ -207,44 +227,45 @@ if pln.VMAT
         plot(optAnglesMat,lfspd,'.')
         hold on
         counter = 1;
-        for border = initBorders
-            plot([border border],[-pln.leafSpeedCst(2) pln.leafSpeedCst(2)],'r-')
+        for border = FMOBorders
+            plot([border border],[-machine.constraints.leafSpeed(2) machine.constraints.leafSpeed(2)],'r-')
             
-            if border < initBorders(end)
-                curr_lfspd = lfspd(initBorders(counter) <= optAnglesMat & optAnglesMat <= initBorders(counter+1));
+            if border < FMOBorders(end)
+                curr_lfspd = lfspd(FMOBorders(counter) <= optAnglesMat & optAnglesMat <= FMOBorders(counter+1));
                 
                 numForward(counter) = nnz(curr_lfspd*forwardDir(counter) >= 0);
                 numBackward(counter) = nnz(curr_lfspd*forwardDir(counter) < 0);
-                timeInInit(counter) = sum(times(initBorders(counter) <= angles & angles <= initBorders(counter+1)));
+                timeInInit(counter) = sum(times(FMOBorders(counter) <= angles & angles <= FMOBorders(counter+1)));
                 
                 counter = counter+1;
             end
         end
-        plot([min(initBorders)-5 max(initBorders)+5],[0 0],'k--')
-        xlim([min(initBorders)-5 max(initBorders)+5])
-        ylim([-pln.leafSpeedCst(2)-5 pln.leafSpeedCst(2)+5])
+        figure
+        plot([min(FMOBorders)-5 max(FMOBorders)+5],[0 0],'k--')
+        xlim([min(FMOBorders)-5 max(FMOBorders)+5])
+        ylim([-machine.constraints.leafSpeed(2)-5 machine.constraints.leafSpeed(2)+5])
         xlabel('gantry angle (^\circ)')
         ylabel('leaf speed (cm/s)')
         
         figure
         plot(optAngles,gantryRot,'.')
-        xlim([min(initBorders)-5 max(initBorders)+5])
-        ylim([0 pln.gantryRotCst(2)+1])
+        xlim([min(FMOBorders)-5 max(FMOBorders)+5])
+        ylim([0 machine.constraints.gantryRotationSpeed(2)+1])
         xlabel('gantry angle (^\circ)')
         ylabel('gantry rotation speed (^\circ/s)')
         
         figure
         plot(optAngles,MURate,'.')
-        xlim([min(initBorders)-5 max(initBorders)+5])
-        ylim([0 60*pln.doseRateCst(2)+5])
+        xlim([min(FMOBorders)-5 max(FMOBorders)+5])
+        ylim([0 60*machine.constraints.monitorUnitRate(2)+5])
         xlabel('gantry angle (^\circ)')
         ylabel('MU rate (MU/min)')
         
-        apertureInfo.fracMaxMURate = sum(times(MURate > 60*pln.doseRateCst(2)*(1-1e-5)))./sum(times);
-        apertureInfo.fracMinMURate = sum(times(MURate < 60*pln.doseRateCst(1)*(1+1e-5)))./sum(times);
-        apertureInfo.fracMaxGantryRot = sum(times(gantryRot > pln.gantryRotCst(2)*(1-1e-5)))./sum(times);
-        apertureInfo.fracMaxLeafSpeed = sum(times(maxLeafSpeed > pln.leafSpeedCst(2)/10*(1-1e-5)))./sum(times);
-        apertureInfo.fracHalfMaxLeafSpeed = sum(times(maxLeafSpeed > pln.leafSpeedCst(2)/10*(1-1e-5)/2))./sum(times);
+        apertureInfo.fracMaxMURate = sum(times(MURate > 60*machine.constraints.monitorUnitRate(2)*(1-1e-5)))./sum(times);
+        apertureInfo.fracMinMURate = sum(times(MURate < 60*machine.constraints.monitorUnitRate(1)*(1+1e-5)))./sum(times);
+        apertureInfo.fracMaxGantryRot = sum(times(gantryRot > machine.constraints.gantryRotationSpeed(2)*(1-1e-5)))./sum(times);
+        apertureInfo.fracMaxLeafSpeed = sum(times(maxLeafSpeed > machine.constraints.leafSpeed(2)/10*(1-1e-5)))./sum(times);
+        apertureInfo.fracHalfMaxLeafSpeed = sum(times(maxLeafSpeed > machine.constraints.leafSpeed(2)/10*(1-1e-5)/2))./sum(times);
         
         apertureInfo.fracForward = numForward./(numForward+numBackward);
         apertureInfo.fracBackward = 1-apertureInfo.fracForward;

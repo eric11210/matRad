@@ -37,7 +37,18 @@ function dij = matRad_calcPhotonDose(ct,stf,pln,cst,calcDoseDirect)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % set consistent random seed (enables reproducibility)
-rng(0);
+matRadRootDir = fileparts(mfilename('fullpath'));
+addpath(fullfile(matRadRootDir,'tools'))
+[env, ~] = matRad_getEnvironment();
+
+switch env
+     case 'MATLAB'
+          rng(0);
+     case 'OCTAVE'
+          rand('seed',0)
+end
+
+dij.radiationMode = pln.radiationMode;
 
 % default: dose influence matrix computation
 if ~exist('calcDoseDirect','var')
@@ -45,7 +56,7 @@ if ~exist('calcDoseDirect','var')
 end
 
 % issue warning if biological optimization not possible
-if sum(strcmp(pln.bioOptimization,{'effect','RBExD'}))>0
+if sum(strcmp(pln.propOpt.bioOptimization,{'effect','RBExD'}))>0
     warndlg('Effect based and RBE optimization not available for photons - physical optimization is carried out instead.');
     pln.bioOptimization = 'none';
 end
@@ -56,14 +67,14 @@ figureWait = waitbar(0,'calculate dose influence matrix for photons...');
 set(figureWait,'pointer','watch');
 
 % meta information for dij
-dij.numOfBeams         = pln.numOfBeams;
-dij.numOfVoxels        = pln.numOfVoxels;
+dij.numOfBeams         = pln.propStf.numOfBeams;
+dij.numOfVoxels        = prod(ct.cubeDim);
 dij.resolution         = ct.resolution;
-dij.dimensions         = pln.voxelDimensions;
+dij.dimensions         = ct.cubeDim;
 dij.numOfScenarios     = 1;
 dij.weightToMU         = 100;
 dij.scaleFactor        = 1;
-dij.memorySaver        = pln.memorySaver;
+dij.memorySaverPhoton  = pln.propDoseCalc.memorySaverPhoton;
 dij.numOfRaysPerBeam   = [stf(:).numOfRays];
 dij.totalNumOfBixels   = sum([stf(:).totalNumOfBixels]);
 dij.totalNumOfRays     = sum(dij.numOfRaysPerBeam);
@@ -155,14 +166,14 @@ for i = 1:dij.numOfScenarios
 end
 
 % set lateral cutoff value
-lateralCutoff = 50; % [mm]
+lateralCutoff = 5; % [mm]
 
 % toggle custom primary fluence on/off. if 0 we assume a homogeneous
 % primary fluence, if 1 we use measured radially symmetric data
 useCustomPrimFluenceBool = 1;
 
 % 0 if field calc is bixel based, 1 if dose calc is field based
-isFieldBasedDoseCalc = strcmp(num2str(pln.bixelWidth),'field');
+isFieldBasedDoseCalc = strcmp(num2str(pln.propStf.bixelWidth),'field');
 
 %% kernel convolution
 % prepare data for convolution to reduce calculation time
@@ -180,7 +191,7 @@ if isFieldBasedDoseCalc
     fieldWidth = pln.Collimation.fieldWidth;
 else
     intConvResolution = .5; % [mm]
-    fieldWidth = pln.bixelWidth;
+    fieldWidth = pln.propStf.bixelWidth;
 end
 
 % calculate field size and distances
@@ -426,7 +437,7 @@ for i = 1:dij.numOfBeams % loop over all beams
                 r0   = 25;   % [mm] sample beyond the inner core
                 Type = 'radius';
                 
-                if dij.memorySaver
+                if dij.memorySaverPhoton
                     [ix{k},bixelDose,ixTail,nTailPerDepth,bixelDoseTail,nTail,nDepth,nCore] = matRad_DijSampling_memorySaver(ix{k},bixelDose,radDepthV{k}(ix{k}),rad_distancesSq{k},Type,r0);
                     
                     dij.ixTail{k}(offsetTail{k}+(1:nTail)) = uint32(V{1}(ixTail));

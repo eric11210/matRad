@@ -22,67 +22,78 @@ clc
 % load patient data, i.e. ct, voi, cst
 
 %load HEAD_AND_NECK
-%load LUNG_XCAT
-%load TG119.mat
-load PROSTATE.mat
+load TG119.mat
+%load PROSTATE.mat
 %load LIVER.mat
 %load BOXPHANTOM.mat
 
 % meta information for treatment plan
-pln.bixelWidth      = 5; % [mm] / also corresponds to lateral spot spacing for particles
-pln.gantryAngles    = [0]; % [°]
-pln.couchAngles     = [0]; % [°]
-pln.numOfBeams      = numel(pln.gantryAngles);
-pln.numOfVoxels     = prod(ct.cubeDim);
-pln.isoCenter       = ones(pln.numOfBeams,1) * matRad_getIsoCenter(cst,ct,0);
-pln.voxelDimensions = ct.cubeDim;
 pln.radiationMode   = 'photons';     % either photons / protons / carbon
-pln.bioOptimization = 'none';        % none: physical optimization;             const_RBExD; constant RBE of 1.1;
-                                     % LEMIV_effect: effect-based optimization; LEMIV_RBExD: optimization of RBE-weighted dose
-%pln.numOfFractions  = 38;
-pln.runSequencing   = true; % 1/true: run sequencing, 0/false: don't / will be ignored for particles and also triggered by runDAO below
-pln.runDAO          = true; % 1/true: run DAO, 0/false: don't / will be ignored for particles
-pln.VMAT            = false; % 1/true: run VMAT, 0/false: don't
-%pln.dynamic         = false;
-%pln.halfFluOpt      = false; % indicates if you want to constrain half of each field to have 0 fluence (other half is compensated on the other side)
 pln.machine         = 'Generic';
+
+pln.numOfFractions  = 30;
+
+% beam geometry settings
+pln.propStf.bixelWidth      = 5; % [mm] / also corresponds to lateral spot spacing for particles
+pln.propStf.gantryAngles    = [0:72:359]; % [?]
+pln.propStf.couchAngles     = [0 0 0 0 0]; % [?]
+pln.propStf.numOfBeams      = numel(pln.propStf.gantryAngles);
+pln.propStf.isoCenter       = ones(pln.propStf.numOfBeams,1) * matRad_getIsoCenter(cst,ct,0);
+
+% dose calculation settings
+pln.propDoseCalc.memorySaverPhoton = false;
+
+% optimization settings
+pln.propOpt.bioOptimization = 'none'; % none: physical optimization;             const_RBExD; constant RBE of 1.1;
+                                            % LEMIV_effect: effect-based optimization; LEMIV_RBExD: optimization of RBE-weighted dose
+pln.propOpt.runDAO          = false;  % 1/true: run DAO, 0/false: don't / will be ignored for particles
+pln.propOpt.runSequencing   = false;  % 1/true: run sequencing, 0/false: don't / will be ignored for particles and also triggered by runDAO below
+pln.propOpt.runVMAT         = false;  % 1/true: run VMAT, 0/false: don't
 
 
 %% For VMAT
-pln.runSequencing   = true;
-pln.numLevels = 7;
-pln.runDAO          = true;
 
-pln.memorySaver     = false;
+clear
+close all
+clc
 
-pln.scaleDRx        = true;
+% load patient data, i.e. ct, voi, cst
 
-pln.VMAT            = true;
-pln.scaleDij        = true;
-pln.jacobi          = true;
-%pln.dynamic         = true;
+%load HEAD_AND_NECK
+load TG119.mat
+%load PROSTATE.mat
+%load LIVER.mat
+%load BOXPHANTOM.mat
+
+% meta information for treatment plan
+
+pln.radiationMode   = 'photons';   % either photons / protons / carbon
+pln.machine         = 'Generic';
+
+pln.numOfFractions  = 30;
+
+pln.propDoseCalc.memorySaverPhoton = false;
+
+% beam geometry settings
+pln.propStf.bixelWidth = 5;
 
 
-pln.numApertures = 7; %max val is pln.maxApertureAngleSpread/pln.minGantryAngleRes
-pln.minGantryAngleRes = 4; %Bzdusek
-pln.maxApertureAngleSpread = 28; %should be an even multiple of pln.minGantryAngleRes; Bzdusek
+% optimization settings
+pln.propOpt.bioOptimization = 'none';
+pln.propOpt.runVMAT = true;
+pln.propOpt.runDAO = true;
+pln.propOpt.runSequencing = true;
+pln.propOpt.preconditioner = true;
+pln.propOpt.numLevels = 7;
+
+pln.propOpt.VMAToptions.machineConstraintFile = [pln.radiationMode '_' pln.machine];
+pln.propOpt.VMAToptions.continuousAperture = true;
+
+pln.propOpt.VMAToptions.maxGantryAngleSpacing = 4;      % Max gantry angle spacing for dose calculation
+pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing = 8;      % Max gantry angle spacing for DAO
+pln.propOpt.VMAToptions.maxFMOGantryAngleSpacing = 56;      % Max gantry angle spacing for FMO
+
 pln = matRad_VMATGantryAngles(pln,cst,ct);
-
-pln.gantryRotCst = [0 6]; %degrees per second
-pln.defaultGantryRot = max(pln.gantryRotCst); %degrees per second
-pln.leafSpeedCst = [0 6]*10; %mm per second
-pln.defaultLeafSpeed = pln.leafSpeedCst(2);
-pln.doseRateCst = [75 600]/60; %MU per second
-pln.defaultDoseRate = pln.doseRateCst(2);
-%pln.maxLeafTravelPerDeg = pln.leafSpeedCst(2)/pln.defaultGantryRot;
-
-recalc.doRecalc = 0;
-recalc.dynamic = 0;
-recalc.interpNew = 0;
-recalc.pln = pln;
-recalc.pln.minGantryAngleRes = 1;
-
-
 
 %% initial visualization and change objective function settings if desired
 matRadGUI
@@ -108,10 +119,10 @@ end
 %At DKFZ: 95 cm SAD, 10 cm depth, 10x10cm2
 
 %% inverse planning for imrt
-resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf,0);
+resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
 
 %% sequencing
-if strcmp(pln.radiationMode,'photons') && (pln.runSequencing || pln.runDAO)
+if strcmp(pln.radiationMode,'photons') && (pln.propOpt.runSequencing || pln.propOpt.runDAO)
     %resultGUI = matRad_xiaLeafSequencing(resultGUI,stf,dij,5);
     %resultGUI = matRad_engelLeafSequencing(resultGUI,stf,dij,5);
     resultGUI = matRad_siochiLeafSequencing(resultGUI,stf,dij,pln,0);
@@ -119,11 +130,9 @@ if strcmp(pln.radiationMode,'photons') && (pln.runSequencing || pln.runDAO)
 end
 
 %% DAO
-if strcmp(pln.radiationMode,'photons') && pln.runDAO
+if strcmp(pln.radiationMode,'photons') && pln.propOpt.runDAO
    resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,resultGUI,pln,stf);
-   %matRad_visApertureInfo(resultGUI.apertureInfo);
-   
-   recalc = matRad_doseRecalc(dij,cst,pln,recalc,ct,resultGUI.apertureInfo);
+   matRad_visApertureInfo(resultGUI.apertureInfo);
 end
 
 %% start gui for visualization of result
