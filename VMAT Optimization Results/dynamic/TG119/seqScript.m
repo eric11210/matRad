@@ -5,7 +5,7 @@ close all
 
 % load patient data, i.e. ct, voi, cst
 
-load TG119.mat
+load TG119_NEW.mat
 
 % meta information for treatment plan
 
@@ -43,10 +43,10 @@ dij = matRad_calcPhotonDose(ct,stf,pln,cst);
 
 
 % inverse planning for imrt
-resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf,0);
+resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
 
 % DAO
-fname = 'Results';
+fname = 'Results_NEWCONTOURS';
 resultGUI = matRad_siochiLeafSequencing(resultGUI,stf,dij,pln,0);
 
 t0_nDij_nJ = tic;

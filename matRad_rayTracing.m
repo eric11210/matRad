@@ -1,4 +1,4 @@
-function [radDepthV,geoDistV] = matRad_rayTracing(stf,ct,V,rot_coordsV,lateralCutoff)
+function [radDepthV,geoDistV] = matRad_rayTracing(stf,ct,V,rot_coordsV,rot_coordsVRound,lateralCutoff)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % matRad visualization of two-dimensional dose distributions on ct including
 % segmentation
@@ -37,7 +37,7 @@ function [radDepthV,geoDistV] = matRad_rayTracing(stf,ct,V,rot_coordsV,lateralCu
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % set up rad depth cube for results
-radDepthCube = repmat({NaN*ones(ct.cubeDim)},ct.numOfCtScen);
+radDepthCube = repmat({NaN*ones(ct.cubeDim)},ct.numOfCtScen,1);
 
 % set up ray matrix direct behind last voxel
 rayMx_bev_y = -inf;
@@ -60,7 +60,7 @@ coords = cell(ct.numOfCtScen,1);
 
 for i = 1:ct.numOfCtScen
     coords{i} = zeros(prod(ct.cubeDim),3);
-    coords{i}(V{i},:) = rot_coordsV{i};
+    coords{i}(V{i},:) = rot_coordsVRound{i};
 end
 
 % calculate spacing of rays on ray matrix

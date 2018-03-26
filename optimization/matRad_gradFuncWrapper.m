@@ -84,20 +84,20 @@ end
 % Calculate gradient
 g = zeros(dij.totalNumOfBixels,1);
 
-if ~isfield(dij,'optBixel')
-    dij.optBixel = true(dij.totalNumOfBixels,1);
-end
-
 for i = 1:options.numOfScenarios
     
     if any(delta{i} ~= 0) % exercise only if contributions from scenario i
         
         if isequal(options.bioOpt,'none')
             
-            g(dij.optBixel) = g(dij.optBixel) + dij.scaleFactor * (delta{i}' * dij.physicalDose{i}(:,dij.optBixel))';
-
+            if isfield(dij,'optBixel')
+                g(dij.optBixel) = g(dij.optBixel) + dij.scaleFactor * (delta{i}' * dij.physicalDose{i}(:,dij.optBixel))';
+            else
+                g = g + dij.scaleFactor * (delta{i}' * dij.physicalDose{i})';
+            end
+            
             if dij.memorySaverPhoton
-                g = g+matRad_memorySaverDoseAndGrad(delta{i},dij,'gradient');
+                g = g+matRad_memorySaverDoseAndGrad(delta{i},dij,'gradient',i);
             end
             
         elseif isequal(options.ID,'protons_const_RBExD')

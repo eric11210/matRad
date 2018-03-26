@@ -80,7 +80,13 @@ for i = 1:size(cst,1)
 end
 
 % Initializes constraints
-jacobStructVec = zeros(1,numOfConstraints*nnz(dij.optBixel));
+if isfield(dij,'optBixel')
+    numOptBixel = nnz(dij.optBixel);
+else
+    numOptBixel = dij.totalNumOfBixels;
+end
+
+jacobStructVec = zeros(1,numOfConstraints*numOptBixel);
 offset = 0;
 
 % compute objective function for every VOI.
@@ -107,7 +113,11 @@ for i = 1:size(cst,1)
                             isequal(cst{i,6}(j).type, 'max DVH constraint') || ...
                             isequal(cst{i,6}(j).type, 'min DVH constraint')
                         
-                        jacobStructVec(offset+(1:nnz(dij.optBixel))) = mean(dij.physicalDose{1}(cst{i,4}{1},dij.optBixel));
+                        if isfield(dij,'optBixel')
+                            jacobStructVec(offset+(1:nnz(dij.optBixel))) = mean(dij.physicalDose{1}(cst{i,4}{1},dij.optBixel));
+                        else
+                            jacobStructVec(offset+(1:numOptBixel)) = mean(dij.physicalDose{1}(cst{i,4}{1},:));
+                        end
                         
                         if dij.memorySaverPhoton
                             jacobVariables.voxInStructure = cst{i,4}{1};
@@ -131,10 +141,12 @@ for i = 1:size(cst,1)
 end
 
 i = 1:numOfConstraints;
-i = kron(i,ones(1,nnz(dij.optBixel)));
+i = kron(i,ones(1,numOptBixel));
 
 j = 1:dij.totalNumOfBixels;
-j(~dij.optBixel) = [];
+if isfield(dij,'optBixel')
+    j(~dij.optBixel) = [];
+end
 j = repmat(j,1,numOfConstraints);
 
 jacobStructVec(jacobStructVec ~= 0) = 1;

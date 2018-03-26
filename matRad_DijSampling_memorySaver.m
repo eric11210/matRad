@@ -109,7 +109,7 @@ else
     maxRadDepth         = double(max(B_r));
     C                   = int32(linspace(0,maxRadDepth,round(maxRadDepth)/deltaRadDepth));     % coarse clustering of rad depths
     
-    nDepth = numel(C)-1;
+    nDepth = max(numel(C)-1,0);
     bixelDoseTailNew = zeros(nDepth,1);
     ixTailNew = zeros(nDepth*500,1,'uint32');
     nTailPerDepth = zeros(nDepth,1,'uint16');

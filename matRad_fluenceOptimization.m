@@ -196,7 +196,7 @@ elseif (strcmp(pln.propOpt.bioOptimization,'LEMIV_effect') || strcmp(pln.propOpt
     end
     
 else 
-    bixelWeight =  (doseTarget)/(mean(dij.physicalDose{1}(V,:)*wOnes)); 
+    bixelWeight =  (doseTarget)/(mean(dij.physicalDose{1}(V,dij.optBixel)*wOnes(dij.optBixel))); 
     wInit       = wOnes * bixelWeight;
     pln.propOpt.bioOptimization = 'none';
 end
@@ -234,6 +234,7 @@ if isfield(pln,'scaleDRx') && pln.scaleDRx
 end
 
 resultGUI.wUnsequenced = wOpt;
+resultGUI.scaleFacRx_FMO = scaleFacRx;
 
 
 

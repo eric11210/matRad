@@ -1,11 +1,11 @@
 %% prep
 
-clearvars -except *dir
+clearvars -except *dir dij
 close all
 
 % load patient data, i.e. ct, voi, cst
 
-load HEAD_AND_NECK.mat
+load HEAD_AND_NECK_NEW.mat
 
 % meta information for treatment plan
 
@@ -39,14 +39,15 @@ pln = matRad_VMATGantryAngles(pln,cst,ct);
 stf = matRad_generateStf(ct,cst,pln);
 
 % calc Dij
-dij = matRad_calcPhotonDose(ct,stf,pln,cst);
+%dij = matRad_calcPhotonDose(ct,stf,pln,cst);
+
 
 
 % inverse planning for imrt
-resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf,0);
+resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
 
 % DAO
-fname = 'Results';
+fname = 'Results_NEWCONTOURS';
 resultGUI = matRad_siochiLeafSequencing(resultGUI,stf,dij,pln,0);
 
 t0_nDij_nJ = tic;

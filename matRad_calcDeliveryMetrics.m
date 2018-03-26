@@ -125,7 +125,7 @@ if pln.propOpt.runVMAT
     
     fileName = apertureInfo.propVMAT.machineConstraintFile;
     try
-        load([pwd filesep fileName],'machine');
+        load(fileName,'machine');
     catch
         error(['Could not find the following machine file: ' fileName ]);
     end

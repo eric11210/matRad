@@ -48,10 +48,6 @@ if nargin < 5
     visBool = 0;
 end
 
-if pln.propOpt.runVMAT
-    %First beam sweeps right-to-left, next left-to-right, ...
-    leafDir = 1;
-end
 sequencing.runVMAT = pln.propOpt.runVMAT;
 
 numOfBeams = numel(stf);
@@ -66,6 +62,10 @@ if visBool
 end
 
 offset = 0;
+
+if isfield(resultGUI,'scaleFacRx_FMO')
+     resultGUI.wUnsequenced = resultGUI.wUnsequenced/resultGUI.scaleFacRx_FMO;
+end
 
 for i = 1:numOfBeams
     numOfRaysPerBeam = stf(i).numOfRays;
@@ -124,14 +124,14 @@ for i = 1:numOfBeams
     
     %Save weights in fluence matrix.
     fluenceMx(indInFluenceMx) = wOfCurrBeams;
-    %{
+    
     temp = zeros(size(fluenceMx));
     for row = 1:dimOfFluenceMxZ
         temp(row,:) = imgaussfilt(fluenceMx(row,:),1);
     end
     fluenceMx = temp;
     clear temp
-    %}
+    
     
     %allow for possibility to repeat sequencing with higher number of
     %levels if number of apertures is lower than required

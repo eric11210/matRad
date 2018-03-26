@@ -48,18 +48,18 @@ if ~strcmp(dij.radiationMode,'photons')
     end
 end
 
-if ~isfield(dij,'optBixel')
-    dij.optBixel = true(dij.totalNumOfBixels,1);
-end
-
 % compute physical dose for all beams individually and together
 for i = 1:length(beamInfo)
     
-    d = dij.physicalDose{scenNum}(:,dij.optBixel) * (w(dij.optBixel) * dij.scaleFactor);
+    if isfield(dij,'optBixel')
+        d = dij.physicalDose{scenNum}(:,dij.optBixel) * (w(dij.optBixel) * dij.scaleFactor);
+    else
+        d = dij.physicalDose{scenNum}(:) * (w * dij.scaleFactor);
+    end
     
     if dij.memorySaverPhoton
         % don't worry about computing individual dose for photons
-        d = d+matRad_memorySaverDoseAndGrad(w,dij,'dose');
+        d = d+matRad_memorySaverDoseAndGrad(w,dij,'dose',i);
     end
     
     resultGUI.(['physicalDose', beamInfo(i).suffix]) = reshape(d,dij.dimensions);

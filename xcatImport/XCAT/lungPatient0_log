@@ -1,0 +1,1352 @@
+
+*** DYNAMIC XCAT PHANTOM, version 2.0 in C***
+--------------------------------------------
+-----------------------------------------------
+ PARAMETERS: (dynamic XCAT version 2.0 in C)
+-----------------------------------------------
+act_phan_each = 0  (activity phantom frames NOT saved)
+act_phan_ave = 0 (time-average activity phantom NOT saved)
+atten_phan_each = 1  (atten. coeff. phantom each frame saved)
+atten_phan_ave = 0 (time-average atten. coeff. phantom NOT saved)
+Respiration motion and beating heart motions included
+Total Output Period =       5.0000 secs
+Total Output Frames = 10
+ ==>Time Per Frame =       0.5000 secs
+
+beating heart period =       1.0000 secs
+Respiratory period =       5.0000 secs
+maximum diaphragm motion =       2.0000
+heart scale x =       1.0000
+heart scale y =       1.0000
+heart scale z =       1.0000
+phantom height scale =       1.0000
+phantom long axis scale =       1.0000
+phantom short axis scale =       1.0000
+head height scale =       1.0000
+head x scale =       1.0000
+head y scale =       1.0000
+head skin x scale =       1.0000
+head skin y scale =       1.0000
+torso long axis scale =       1.0000
+torso short axis scale =       1.0000
+abdomen long axis scale =       1.0000
+abdomen short axis scale =       1.0000
+arms length =       1.0000
+arms circumference scale =       1.0000
+arms skin circumference scale =       1.0000
+legs length =       1.0000
+legs circumference scale =       1.0000
+legs skin circumference  scale =       1.0000
+li_air_flag = 5
+si_air_flag = 1
+breast_type = 1    (prone position model)
+which_breast = 0   (no breasts, male)
+right breast_long_axis_scale =       1.0000
+right breast_short_axis_scale =       1.0000
+right breast_height_scale =       1.0000
+left breast_long_axis_scale =       1.0000
+left breast_short_axis_scale =       1.0000
+left breast_height_scale =       1.0000
+rdiaph_liv_scale =       1.0000
+ldiaph_scale =       1.0000
+ pixel width =  0.3000 (cm/pixel)
+ slice width =  0.3000 (cm/pixel)
+ voxel volume (pixel width^2)(slice_width) =  0.027000 ml
+ array_size = 145
+ subvoxel_index = 4 => 64 subvoxels per voxel
+ starting slice number    = 388
+ ending slice number      = 495
+ 
+Main orientation of heart:
+    zy_rotation (beta)=    0.00 (deg)
+    xz_rotation ( phi)=    0.00 (deg)
+    yx_rotation ( psi)=    0.00 (deg)
+ 
+Translation of heart:
+    X translation     =    0.00  (cm)
+    Y translation     =    0.00  (cm)
+    Z translation     =    0.00  (cm)
+ 
+activity_unit = 0 (no scaling of activity values)
+ 
+radionuclide energy (keV)=     140.0000
+ 
+Calculating bones with a water fraction of 0.500000
+Linear Attenuation Coefficients (1/cm):
+   Body (water)   =       0.1538
+   Muscle         =       0.1601
+   Adipose (fat)  =       0.1415
+   Lung           =       0.0457
+   Spine Bone     =       0.1853
+   Rib Bone       =       0.2237
+   Blood          =       0.1617
+   Heart          =       0.1603
+   Kidney         =       0.1602
+   Liver          =       0.1616
+   Lymph          =       0.1579
+   Pancreas       =       0.1590
+   Spleen         =       0.1618
+   Intestine      =       0.1575
+   Skull          =       0.2000
+   Cartilage      =       0.1672
+   Brain          =       0.1592
+   Iodine blood   =       0.1723
+   Skin           =       0.1663
+   Eye Lens       =       0.1620
+   Ovary          =       0.1605
+   Red Marrow     =       0.1570
+   Yellow Marrow  =       0.1501
+   Testis         =       0.1591
+   Thyroid        =       0.1610
+   Bladder        =       0.1590
+
+Linear Attenuation Coefficients (1/pixel):
+   Body (water)   =       0.0462
+   Muscle         =       0.0480
+   Adipose (fat)  =       0.0425
+   Lung           =       0.0137
+   Spine Bone     =       0.0556
+   Rib Bone       =       0.0671
+   Blood          =       0.0485
+   Heart          =       0.0481
+   Kidney         =       0.0481
+   Liver          =       0.0485
+   Lymph          =       0.0474
+   Pancreas       =       0.0477
+   Spleen         =       0.0485
+   Intestine      =       0.0473
+   Skull          =       0.0600
+   Cartilage      =       0.0501
+   Brain          =       0.0478
+   Iodine Blood   =       0.0517
+   Skin           =       0.0499
+   Eye Lens       =       0.0486
+   Ovary          =       0.0482
+   Red Marrow     =       0.0471
+   Yellow Marrow  =       0.0450
+   Testis         =       0.0477
+   Thyroid        =       0.0483
+   Bladder        =       0.0477
+
+---------------------------------------------------
+
+Activity Ratios
+-----------------------------------------------------------------
+myoLV_act = 75.000000
+myoRV_act = 75.000000
+myoLA_act = 75.000000
+myoRA_act = 75.000000
+bldplLV_act = 2.000000
+bldplRV_act = 2.000000
+bldplLA_act = 2.000000
+bldplRA_act = 2.000000
+body_activity = 2.000000
+rbreast_activity = 2.000000
+lbreast_activity = 2.000000
+muscle_activity = 2.000000
+brain_activity = 2.000000
+liver_activity = 75.000000
+gall_bladder_activity = 60.000000
+right lung_activity = 4.000000
+left lung_activity = 4.000000
+esophagus_activity = 50.000000
+esophagus_contents_activity = 30.000000
+laryngopharynx_activity = 2.000000
+st_wall_activity = 2.000000
+st_cnts_activity = 2.000000
+pancreas_activity = 2.000000
+right kidney_cortex_activity = 75.000000
+right kidney_medulla_activity = 75.000000
+left kidney_cortex_activity = 75.000000
+left kidney_medulla_activity = 75.000000
+adrenal_activity = 2.000000
+right renal_pelvis_activity = 2.000000
+left renal_pelvis_activity = 2.000000
+spleen_activity = 75.000000
+rib_activity = 5.000000
+cortical_bone_activity = 5.000000
+spine_activity = 6.000000
+bone_marrow_activity = 2.000000
+art_activity = 2.000000
+vein_activity = 2.000000
+bladder_activity = 2.000000
+prostate_activity = 30.000000
+asc_large_intest_activity = 2.000000
+trans_large_intest_activity = 2.000000
+desc_large_intest_activity = 2.000000
+small_intest_activity = 2.000000
+rectum_activity = 2.000000
+sem_activity = 2.000000
+vas_def_activity = 2.000000
+test_activity = 2.000000
+epididymus_activity = 2.000000
+ejac_duct_activity = 2.000000
+pericardium_activity = 2.000000
+cartilage_activity = 2.000000
+intest_air_activity = 2.000000
+ureter_activity = 2.000000
+urethra_activity = 2.000000
+lymph_activity = 2.000000
+lymph_abnormal_activity = 2.000000
+trach_bronch_activity = 4.000000
+airway_activity = 2.000000
+uterus_activity = 60.000000
+vagina_activity = 50.000000
+right_ovary_activity = 40.000000
+left_ovary_activity = 30.000000
+fallopian_tubes_activity = 20.000000
+parathyroid_activity = 2.000000
+thymus_activity = 2.000000
+salivary_activity = 2.000000
+pituitary_activity = 2.000000
+eye_activity = 2.000000
+Corpus_Callosum_act = 8.000000
+Caudate_act = 16.000000
+Internal_capsule_act = 8.000000
+Putamen_act = 16.000000
+Globus_pallidus_act = 16.000000
+Thalamus_act = 8.000000
+Fornix_act = 8.000000
+Anterior_commissure_act = 8.000000
+Amygdala_act = 16.000000
+Hippocampus_act = 16.000000
+Lateral_ventricle_act = 8.000000
+Third_ventricle_act = 8.000000
+Fourth_ventricle_act = 8.000000
+Cerebral_aqueduct_act = 8.000000
+Mamillary_bodies_act = 8.000000
+Cerebral_peduncles_act = 8.000000
+Superior_colliculus_act = 8.000000
+Inferior_colliculus_act = 8.000000
+Pineal_gland_act = 8.000000
+Periacquaductal_grey_outer_act = 16.000000
+Periacquaductal_grey_act = 16.000000
+Pons_act = 8.000000
+Superior_cerebellar_peduncle_act = 8.000000
+Middle_cerebellar_peduncle_act = 8.000000
+Substantia_nigra_act = 16.000000
+Medulla_act = 8.000000
+Medullary_pyramids_act = 8.000000
+Inferior_olive_act = 8.000000
+Tegmentum_of_midbrain_act = 8.000000
+Midbrain_act = 8.000000
+cerebellum_act = 8.000000
+white_matter_act = 8.000000
+grey_matter_act = 16.000000
+lens_activity = 2.000000
+lesn_activity = 2.000000
+-----------------------------------------------------------------
+-----------------Phantom Dimensions------------------
+Total Body
+  Height             1711.2317 mm
+Head
+  Short axis (AP)     207.1844 mm
+  Long axis (LAT)     155.9293 mm
+  Circumference       590.8525 mm
+Chest
+  Short axis (AP)     232.1896 mm
+  Long axis (LAT)     325.2440 mm
+  Circumference       993.6164 mm
+Waist
+  Short axis (AP)     233.3064 mm
+  Long axis (LAT)     288.9887 mm
+Arms
+  Length (shoulder to wrist)      593.2043 mm
+Arms (upper, midpoint)
+  Short axis (AP)     110.1922 mm
+  Long axis (LAT)      95.3863 mm
+  Circumference       333.3551 mm
+Arms (lower, midpoint)
+  Short axis (AP)      76.1145 mm
+  Long axis (LAT)      66.7673 mm
+  Circumference       237.9090 mm
+Legs
+  Length (from crotch)    1508.7611 mm
+Legs (Thigh, below buttocks)
+  Short axis (AP)     183.1309 mm
+  Long axis (LAT)     175.2761 mm
+  Circumference       572.0107 mm
+Legs (Calf, below knee)
+  Short axis (AP)     107.5007 mm
+  Long axis (LAT)     105.7886 mm
+  Circumference       332.0060 mm
+Rib Cage
+  Short axis (AP)     194.1303 mm
+  Long axis (LAT)     262.5328 mm
+Right Diaphragm
+  Height               97.0000 mm
+Left Diaphragm
+  Height               71.5473 mm
+Breasts (prone)
+  Short axis (AP)      22.4000 mm
+  Long axis (LAT)      34.6757 mm
+  Height               42.8400 mm
+Breasts (supine)
+  Short axis (AP)      22.4000 mm
+  Long axis (LAT)      34.6757 mm
+  Height               42.8400 mm
+-----------------------------------------------------
+----------------Heart Orientation Angles-------------
+  YX_rotation -52.055786
+  XZ_rotation -27.128632
+  ZY_rotation -104.385605
+-----------------------------------------------------
+-------------LV Size (Diastole)----------
+  Length	     96.5130 mm's
+  Radius         31.8726 mm's
+-----------------------------------------
+-------------LV Size (Systole)----------
+  Length         85.4235 mm's
+  Radius         28.6712 mm's
+-----------------------------------------
+-------------LV Volumes at Different Phases----------
+  V1 (end-diastole)               132.1859 mL
+  V2 (end-systole)                 50.5649 mL
+  V3 (beg. quiet phase)            82.7740 mL
+  V4 (end quiet phase)            109.7526 mL
+  V5 (red. filling, diastole)     123.3906 mL
+-----------------------------------------------------
+--------------------------------------------------
+--------------------------------------------------
+CREATING FRAME #1 ...
+
+Time =   0.000 seconds
+Current heart phase index =   0.000 (LV fully relaxed, i.e. end-diastole)
+Current resp phase index  =   0.000 (full exhalation)
+
+RESPIRATION PARAMETERS ------------------------
+diaphragm motion    =    0.00 mm
+delta AP diameter =    0.00 mm
+
+
+ORGAN VOLUMES: 
+Total         =  19966.036145 ml
+skin          =      0.000000 ml
+skeleton      =   1039.823255 ml
+muscle        =   5442.915329 ml
+cartilage     =    173.404141 ml
+arteries      =     65.194037 ml
+veins         =    125.423871 ml
+lung tree     =     19.010111 ml
+marrow         =    351.693174 ml
+intestinal air =    121.662855 ml
+small intestine =    138.794357 ml
+large intestine =    122.274574 ml
+salivary glands =      0.000000 ml
+stomach contents =    208.526926 ml
+esophagus contents =     25.039549 ml
+right kidney =      3.353485 ml
+left kidney =     36.221769 ml
+larynx =      0.000000 ml
+internal_carotid_left         =      0.000844 ml
+internal_carotid_right         =      2.722618 ml
+rlung         =   1336.538330 ml
+llung         =   1347.025879 ml
+liver         =   1510.236938 ml
+pancreas         =    100.152649 ml
+stomach         =    174.631439 ml
+esophagus         =     30.204905 ml
+laryngopharynx         =      5.224783 ml
+musc490         =      0.191954 ml
+musc491         =      0.696524 ml
+musc908         =      1.195189 ml
+musc909         =      1.053858 ml
+musc910         =      0.545069 ml
+musc911         =      0.626914 ml
+musc914         =      0.467865 ml
+musc915         =      0.597382 ml
+musc916         =      0.159891 ml
+musc917         =      0.192798 ml
+musc918         =      0.020672 ml
+musc919         =      0.020250 ml
+musc920         =      0.143859 ml
+musc921         =      0.167485 ml
+musc922         =      0.393192 ml
+cricoid_cart         =      2.462390 ml
+cricoid_cart         =      2.373820 ml
+thyroid_cart         =      5.969193 ml
+arytenoid_cart         =      0.336659 ml
+arytenoid_cart         =      0.344675 ml
+cuneiform_cart         =      0.004641 ml
+cuneiform_cart         =      0.004219 ml
+corniculate_cart         =      0.002953 ml
+corniculate_cart         =      0.003375 ml
+epiglottis         =      0.223595 ml
+vocal_folds         =      0.108422 ml
+vocal_folds         =      0.209251 ml
+vocal_folds         =      0.031641 ml
+vocal_folds         =      0.062016 ml
+vestibular_ligament         =      0.043875 ml
+vestibular_ligament         =      0.038812 ml
+conus_elasticus         =      1.083812 ml
+conus_elasticus         =      1.000701 ml
+spleen         =    131.817108 ml
+gall_bladder         =     64.076523 ml
+r_adrenal         =      7.270643 ml
+l_adrenal         =      8.296192 ml
+l_renal_pelvis         =      0.350581 ml
+r_thyroid         =     10.989309 ml
+l_thyroid         =     10.199795 ml
+r_sup_parathyroid         =      0.029531 ml
+r_inf_parathyroid         =      0.013500 ml
+l_sup_parathyroid         =      0.027422 ml
+l_inf_parathyroid         =      0.010969 ml
+thymus         =     31.010437 ml
+---------------------------------------- 
+---------------------------------------- 
+
+Volume of LV myocardium =   110.442070 ml
+Volume of RV myocardium =    27.774818 ml
+Volume of LA myocardium =    10.754520 ml
+Volume of RA myocardium =    13.543324 ml
+Volume of LV chamber    =   134.298126 ml
+Volume of RV chamber    =   101.612495 ml
+Volume of LA chamber    =    34.778732 ml
+Volume of RA chamber    =    48.950134 ml
+----------------------------------------
+Volume of TOTAL HEART   =   859.437082 ml
+
+Maximum activity per voxel =      75.000000
+Total activity = 352515616.000000
+
+Saving attenuation coefficient phantom in file : lungPatient0_atn_1
+-------------------------------------------------
+--------------------------------------------------
+--------------------------------------------------
+CREATING FRAME #2 ...
+
+Time =   0.500 seconds
+Current heart phase index =   0.500 (LV relaxing,  17% relaxed
+Current resp phase index  =   0.100 (inhaling:  22% inhaled)
+
+RESPIRATION PARAMETERS ------------------------
+diaphragm motion    =   -3.77 mm
+delta AP diameter =    2.26 mm
+
+
+ORGAN VOLUMES: 
+Total         =  20075.736312 ml
+skin          =      0.000000 ml
+skeleton      =   1041.613271 ml
+muscle        =   5432.192531 ml
+cartilage     =    174.560079 ml
+arteries      =     66.176163 ml
+veins         =    123.671824 ml
+lung tree     =     19.222736 ml
+marrow         =    351.613862 ml
+intestinal air =    106.752948 ml
+small intestine =    122.622199 ml
+large intestine =    108.506260 ml
+salivary glands =      0.000000 ml
+stomach contents =    208.716348 ml
+esophagus contents =     25.584190 ml
+right kidney =      0.797344 ml
+left kidney =     28.893800 ml
+larynx =      0.000000 ml
+internal_carotid_left         =      0.000844 ml
+internal_carotid_right         =      2.717135 ml
+rlung         =   1410.218506 ml
+llung         =   1431.603760 ml
+liver         =   1486.891357 ml
+pancreas         =     94.435791 ml
+stomach         =    173.801300 ml
+esophagus         =     30.897469 ml
+laryngopharynx         =      5.224783 ml
+musc490         =      0.191954 ml
+musc491         =      0.696524 ml
+musc908         =      1.195189 ml
+musc909         =      1.053858 ml
+musc910         =      0.545069 ml
+musc911         =      0.626914 ml
+musc914         =      0.467865 ml
+musc915         =      0.597382 ml
+musc916         =      0.159891 ml
+musc917         =      0.192798 ml
+musc918         =      0.020672 ml
+musc919         =      0.020250 ml
+musc920         =      0.143859 ml
+musc921         =      0.167485 ml
+musc922         =      0.393192 ml
+cricoid_cart         =      2.462390 ml
+cricoid_cart         =      2.373820 ml
+thyroid_cart         =      5.969193 ml
+arytenoid_cart         =      0.336659 ml
+arytenoid_cart         =      0.344675 ml
+cuneiform_cart         =      0.004641 ml
+cuneiform_cart         =      0.004219 ml
+corniculate_cart         =      0.002953 ml
+corniculate_cart         =      0.003375 ml
+epiglottis         =      0.223595 ml
+vocal_folds         =      0.108422 ml
+vocal_folds         =      0.209251 ml
+vocal_folds         =      0.031641 ml
+vocal_folds         =      0.062016 ml
+vestibular_ligament         =      0.043875 ml
+vestibular_ligament         =      0.038812 ml
+conus_elasticus         =      1.083812 ml
+conus_elasticus         =      1.000701 ml
+spleen         =    128.338470 ml
+gall_bladder         =     62.399162 ml
+r_adrenal         =      6.799690 ml
+l_adrenal         =      8.071941 ml
+l_renal_pelvis         =      0.109687 ml
+r_thyroid         =     10.989309 ml
+l_thyroid         =     10.199795 ml
+r_sup_parathyroid         =      0.029531 ml
+r_inf_parathyroid         =      0.013500 ml
+l_sup_parathyroid         =      0.027422 ml
+l_inf_parathyroid         =      0.010969 ml
+thymus         =     30.130295 ml
+---------------------------------------- 
+---------------------------------------- 
+
+Volume of LV myocardium =   121.373924 ml
+Volume of RV myocardium =    23.548197 ml
+Volume of LA myocardium =    13.513817 ml
+Volume of RA myocardium =    16.256252 ml
+Volume of LV chamber    =    52.434128 ml
+Volume of RV chamber    =    60.755825 ml
+Volume of LA chamber    =    64.650978 ml
+Volume of RA chamber    =    86.679596 ml
+----------------------------------------
+Volume of TOTAL HEART   =   829.065876 ml
+
+Maximum activity per voxel =      75.000000
+Total activity = 348205984.000000
+
+Saving attenuation coefficient phantom in file : lungPatient0_atn_2
+-------------------------------------------------
+--------------------------------------------------
+--------------------------------------------------
+CREATING FRAME #3 ...
+
+Time =   1.000 seconds
+Current heart phase index =   0.000 (LV fully relaxed, i.e. end-diastole)
+Current resp phase index  =   0.200 (inhaling:  44% inhaled)
+
+RESPIRATION PARAMETERS ------------------------
+diaphragm motion    =  -10.00 mm
+delta AP diameter =    6.00 mm
+
+
+ORGAN VOLUMES: 
+Total         =  20331.031883 ml
+skin          =      0.000000 ml
+skeleton      =   1042.120786 ml
+muscle        =   5431.309125 ml
+cartilage     =    176.548798 ml
+arteries      =     66.923725 ml
+veins         =    122.711215 ml
+lung tree     =     19.355627 ml
+marrow         =    351.668705 ml
+intestinal air =     80.467601 ml
+small intestine =     94.289915 ml
+large intestine =     86.595758 ml
+salivary glands =      0.000000 ml
+stomach contents =    208.884254 ml
+esophagus contents =     26.758690 ml
+right kidney =      0.000000 ml
+left kidney =     17.790470 ml
+larynx =      0.000000 ml
+internal_carotid_left         =      0.000844 ml
+internal_carotid_right         =      2.715026 ml
+rlung         =   1530.514038 ml
+llung         =   1552.607544 ml
+liver         =   1441.896851 ml
+pancreas         =     82.082275 ml
+stomach         =    168.318024 ml
+esophagus         =     33.024456 ml
+laryngopharynx         =      5.224783 ml
+musc490         =      0.191954 ml
+musc491         =      0.696524 ml
+musc908         =      1.195189 ml
+musc909         =      1.053858 ml
+musc910         =      0.545069 ml
+musc911         =      0.626914 ml
+musc914         =      0.467865 ml
+musc915         =      0.597382 ml
+musc916         =      0.159891 ml
+musc917         =      0.192798 ml
+musc918         =      0.020672 ml
+musc919         =      0.020250 ml
+musc920         =      0.143859 ml
+musc921         =      0.167485 ml
+musc922         =      0.393192 ml
+cricoid_cart         =      2.462390 ml
+cricoid_cart         =      2.373820 ml
+thyroid_cart         =      5.969193 ml
+arytenoid_cart         =      0.336659 ml
+arytenoid_cart         =      0.344675 ml
+cuneiform_cart         =      0.004641 ml
+cuneiform_cart         =      0.004219 ml
+corniculate_cart         =      0.002953 ml
+corniculate_cart         =      0.003375 ml
+epiglottis         =      0.223595 ml
+vocal_folds         =      0.108422 ml
+vocal_folds         =      0.209251 ml
+vocal_folds         =      0.031641 ml
+vocal_folds         =      0.062016 ml
+vestibular_ligament         =      0.043875 ml
+vestibular_ligament         =      0.038812 ml
+conus_elasticus         =      1.083812 ml
+conus_elasticus         =      1.000701 ml
+spleen         =    121.547226 ml
+gall_bladder         =     58.262238 ml
+r_adrenal         =      5.596566 ml
+l_adrenal         =      7.555494 ml
+r_thyroid         =     10.989309 ml
+l_thyroid         =     10.199795 ml
+r_sup_parathyroid         =      0.029531 ml
+r_inf_parathyroid         =      0.013500 ml
+l_sup_parathyroid         =      0.027422 ml
+l_inf_parathyroid         =      0.010969 ml
+thymus         =     31.171038 ml
+---------------------------------------- 
+---------------------------------------- 
+
+Volume of LV myocardium =   110.410179 ml
+Volume of RV myocardium =    27.781984 ml
+Volume of LA myocardium =    10.806368 ml
+Volume of RA myocardium =    13.539951 ml
+Volume of LV chamber    =   134.330597 ml
+Volume of RV chamber    =   101.594032 ml
+Volume of LA chamber    =    34.773651 ml
+Volume of RA chamber    =    48.953098 ml
+----------------------------------------
+Volume of TOTAL HEART   =   863.218769 ml
+
+Maximum activity per voxel =      75.000000
+Total activity = 334967840.000000
+
+Saving attenuation coefficient phantom in file : lungPatient0_atn_3
+-------------------------------------------------
+--------------------------------------------------
+--------------------------------------------------
+CREATING FRAME #4 ...
+
+Time =   1.500 seconds
+Current heart phase index =   0.500 (LV relaxing,  17% relaxed
+Current resp phase index  =   0.300 (inhaling:  66% inhaled)
+
+RESPIRATION PARAMETERS ------------------------
+diaphragm motion    =  -16.89 mm
+delta AP diameter =   10.13 mm
+
+
+ORGAN VOLUMES: 
+Total         =  20588.247829 ml
+skin          =      0.000000 ml
+skeleton      =   1042.174786 ml
+muscle        =   5422.515140 ml
+cartilage     =    179.863470 ml
+arteries      =     68.434460 ml
+veins         =    119.778761 ml
+lung tree     =     19.715908 ml
+marrow         =    351.530330 ml
+intestinal air =     52.893427 ml
+small intestine =     61.730443 ml
+large intestine =     63.628037 ml
+salivary glands =      0.000000 ml
+stomach contents =    204.449082 ml
+esophagus contents =     27.877925 ml
+right kidney =      0.000000 ml
+left kidney =      8.138391 ml
+larynx =      0.000000 ml
+internal_carotid_left         =      0.000844 ml
+internal_carotid_right         =      2.712074 ml
+rlung         =   1662.463135 ml
+llung         =   1696.136597 ml
+liver         =   1390.668701 ml
+pancreas         =     66.073479 ml
+stomach         =    161.116364 ml
+esophagus         =     34.606819 ml
+laryngopharynx         =      5.224783 ml
+musc490         =      0.191954 ml
+musc491         =      0.696524 ml
+musc908         =      1.195189 ml
+musc909         =      1.053858 ml
+musc910         =      0.545069 ml
+musc911         =      0.626914 ml
+musc914         =      0.467865 ml
+musc915         =      0.597382 ml
+musc916         =      0.159891 ml
+musc917         =      0.192798 ml
+musc918         =      0.020672 ml
+musc919         =      0.020250 ml
+musc920         =      0.143859 ml
+musc921         =      0.167485 ml
+musc922         =      0.393192 ml
+cricoid_cart         =      2.462390 ml
+cricoid_cart         =      2.373820 ml
+thyroid_cart         =      5.969193 ml
+arytenoid_cart         =      0.336659 ml
+arytenoid_cart         =      0.344675 ml
+cuneiform_cart         =      0.004641 ml
+cuneiform_cart         =      0.004219 ml
+corniculate_cart         =      0.002953 ml
+corniculate_cart         =      0.003375 ml
+epiglottis         =      0.223595 ml
+vocal_folds         =      0.108422 ml
+vocal_folds         =      0.209251 ml
+vocal_folds         =      0.031641 ml
+vocal_folds         =      0.062016 ml
+vestibular_ligament         =      0.043875 ml
+vestibular_ligament         =      0.038812 ml
+conus_elasticus         =      1.083812 ml
+conus_elasticus         =      1.000701 ml
+spleen         =    112.438606 ml
+gall_bladder         =     51.230736 ml
+r_adrenal         =      3.112326 ml
+l_adrenal         =      6.642284 ml
+r_thyroid         =     10.989309 ml
+l_thyroid         =     10.199795 ml
+r_sup_parathyroid         =      0.029531 ml
+r_inf_parathyroid         =      0.013500 ml
+l_sup_parathyroid         =      0.027422 ml
+l_inf_parathyroid         =      0.010969 ml
+thymus         =     30.273191 ml
+---------------------------------------- 
+---------------------------------------- 
+
+Volume of LV myocardium =   121.413788 ml
+Volume of RV myocardium =    23.516161 ml
+Volume of LA myocardium =    13.469557 ml
+Volume of RA myocardium =    16.273535 ml
+Volume of LV chamber    =    52.454453 ml
+Volume of RV chamber    =    60.785465 ml
+Volume of LA chamber    =    64.669022 ml
+Volume of RA chamber    =    86.646027 ml
+----------------------------------------
+Volume of TOTAL HEART   =   833.762189 ml
+
+Maximum activity per voxel =      75.000000
+Total activity = 324158624.000000
+
+Saving attenuation coefficient phantom in file : lungPatient0_atn_4
+-------------------------------------------------
+--------------------------------------------------
+--------------------------------------------------
+CREATING FRAME #5 ...
+
+Time =   2.000 seconds
+Current heart phase index =   0.000 (LV fully relaxed, i.e. end-diastole)
+Current resp phase index  =   0.400 (inhaling:  88% inhaled)
+
+RESPIRATION PARAMETERS ------------------------
+diaphragm motion    =  -19.82 mm
+delta AP diameter =   11.89 mm
+
+
+ORGAN VOLUMES: 
+Total         =  20697.266246 ml
+skin          =      0.000000 ml
+skeleton      =   1042.024177 ml
+muscle        =   5422.552687 ml
+cartilage     =    181.204611 ml
+arteries      =     68.208756 ml
+veins         =    119.041746 ml
+lung tree     =     19.893939 ml
+marrow         =    351.575471 ml
+intestinal air =     41.610801 ml
+small intestine =     49.131989 ml
+large intestine =     55.975224 ml
+salivary glands =      0.000000 ml
+stomach contents =    201.188832 ml
+esophagus contents =     28.416659 ml
+right kidney =      0.000000 ml
+left kidney =      5.059547 ml
+larynx =      0.000000 ml
+internal_carotid_left         =      0.000844 ml
+internal_carotid_right         =      2.710809 ml
+rlung         =   1719.635254 ml
+llung         =   1749.973633 ml
+liver         =   1365.482910 ml
+pancreas         =     59.005783 ml
+stomach         =    158.159821 ml
+esophagus         =     35.860600 ml
+laryngopharynx         =      5.224783 ml
+musc490         =      0.191954 ml
+musc491         =      0.696524 ml
+musc908         =      1.195189 ml
+musc909         =      1.053858 ml
+musc910         =      0.545069 ml
+musc911         =      0.626914 ml
+musc914         =      0.467865 ml
+musc915         =      0.597382 ml
+musc916         =      0.159891 ml
+musc917         =      0.192798 ml
+musc918         =      0.020672 ml
+musc919         =      0.020250 ml
+musc920         =      0.143859 ml
+musc921         =      0.167485 ml
+musc922         =      0.393192 ml
+cricoid_cart         =      2.462390 ml
+cricoid_cart         =      2.373820 ml
+thyroid_cart         =      5.969193 ml
+arytenoid_cart         =      0.336659 ml
+arytenoid_cart         =      0.344675 ml
+cuneiform_cart         =      0.004641 ml
+cuneiform_cart         =      0.004219 ml
+corniculate_cart         =      0.002953 ml
+corniculate_cart         =      0.003375 ml
+epiglottis         =      0.223595 ml
+vocal_folds         =      0.108422 ml
+vocal_folds         =      0.209251 ml
+vocal_folds         =      0.031641 ml
+vocal_folds         =      0.062016 ml
+vestibular_ligament         =      0.043875 ml
+vestibular_ligament         =      0.038812 ml
+conus_elasticus         =      1.083812 ml
+conus_elasticus         =      1.000701 ml
+spleen         =    108.114456 ml
+gall_bladder         =     47.616749 ml
+r_adrenal         =      2.236748 ml
+l_adrenal         =      6.206357 ml
+r_thyroid         =     10.989309 ml
+l_thyroid         =     10.199795 ml
+r_sup_parathyroid         =      0.029531 ml
+r_inf_parathyroid         =      0.013500 ml
+l_sup_parathyroid         =      0.027422 ml
+l_inf_parathyroid         =      0.010969 ml
+thymus         =     31.257872 ml
+---------------------------------------- 
+---------------------------------------- 
+
+Volume of LV myocardium =   110.366959 ml
+Volume of RV myocardium =    27.791258 ml
+Volume of LA myocardium =    10.769695 ml
+Volume of RA myocardium =    13.539108 ml
+Volume of LV chamber    =   134.345123 ml
+Volume of RV chamber    =   101.585220 ml
+Volume of LA chamber    =    34.786777 ml
+Volume of RA chamber    =    48.955215 ml
+----------------------------------------
+Volume of TOTAL HEART   =   866.203535 ml
+
+Maximum activity per voxel =      75.000000
+Total activity = 316125120.000000
+
+Saving attenuation coefficient phantom in file : lungPatient0_atn_5
+-------------------------------------------------
+--------------------------------------------------
+--------------------------------------------------
+CREATING FRAME #6 ...
+
+Time =   2.500 seconds
+Current heart phase index =   0.500 (LV relaxing,  17% relaxed
+Current resp phase index  =   0.500 (exhaling:   8% exhaled)
+
+RESPIRATION PARAMETERS ------------------------
+diaphragm motion    =  -18.56 mm
+delta AP diameter =   11.14 mm
+
+
+ORGAN VOLUMES: 
+Total         =  20652.057273 ml
+skin          =      0.000000 ml
+skeleton      =   1042.188286 ml
+muscle        =   5423.485452 ml
+cartilage     =    180.636767 ml
+arteries      =     68.546678 ml
+veins         =    119.035839 ml
+lung tree     =     19.780033 ml
+marrow         =    351.573783 ml
+intestinal air =     46.413004 ml
+small intestine =     54.317677 ml
+large intestine =     59.082756 ml
+salivary glands =      0.000000 ml
+stomach contents =    202.682691 ml
+esophagus contents =     28.183362 ml
+right kidney =      0.000000 ml
+left kidney =      6.287626 ml
+larynx =      0.000000 ml
+internal_carotid_left         =      0.000844 ml
+internal_carotid_right         =      2.709543 ml
+rlung         =   1694.580200 ml
+llung         =   1729.471313 ml
+liver         =   1377.105347 ml
+pancreas         =     62.110382 ml
+stomach         =    159.427460 ml
+esophagus         =     35.053539 ml
+laryngopharynx         =      5.224783 ml
+musc490         =      0.191954 ml
+musc491         =      0.696524 ml
+musc908         =      1.195189 ml
+musc909         =      1.053858 ml
+musc910         =      0.545069 ml
+musc911         =      0.626914 ml
+musc914         =      0.467865 ml
+musc915         =      0.597382 ml
+musc916         =      0.159891 ml
+musc917         =      0.192798 ml
+musc918         =      0.020672 ml
+musc919         =      0.020250 ml
+musc920         =      0.143859 ml
+musc921         =      0.167485 ml
+musc922         =      0.393192 ml
+cricoid_cart         =      2.462390 ml
+cricoid_cart         =      2.373820 ml
+thyroid_cart         =      5.969193 ml
+arytenoid_cart         =      0.336659 ml
+arytenoid_cart         =      0.344675 ml
+cuneiform_cart         =      0.004641 ml
+cuneiform_cart         =      0.004219 ml
+corniculate_cart         =      0.002953 ml
+corniculate_cart         =      0.003375 ml
+epiglottis         =      0.223595 ml
+vocal_folds         =      0.108422 ml
+vocal_folds         =      0.209251 ml
+vocal_folds         =      0.031641 ml
+vocal_folds         =      0.062016 ml
+vestibular_ligament         =      0.043875 ml
+vestibular_ligament         =      0.038812 ml
+conus_elasticus         =      1.083812 ml
+conus_elasticus         =      1.000701 ml
+spleen         =    109.984688 ml
+gall_bladder         =     49.208004 ml
+r_adrenal         =      2.590184 ml
+l_adrenal         =      6.398367 ml
+r_thyroid         =     10.989309 ml
+l_thyroid         =     10.199795 ml
+r_sup_parathyroid         =      0.029531 ml
+r_inf_parathyroid         =      0.013500 ml
+l_sup_parathyroid         =      0.027422 ml
+l_inf_parathyroid         =      0.010969 ml
+thymus         =     30.287523 ml
+---------------------------------------- 
+---------------------------------------- 
+
+Volume of LV myocardium =   121.375603 ml
+Volume of RV myocardium =    23.508995 ml
+Volume of LA myocardium =    13.527306 ml
+Volume of RA myocardium =    16.257517 ml
+Volume of LV chamber    =    52.466732 ml
+Volume of RV chamber    =    60.779537 ml
+Volume of LA chamber    =    64.628319 ml
+Volume of RA chamber    =    86.657356 ml
+----------------------------------------
+Volume of TOTAL HEART   =   834.222876 ml
+
+Maximum activity per voxel =      75.000000
+Total activity = 320779744.000000
+
+Saving attenuation coefficient phantom in file : lungPatient0_atn_6
+-------------------------------------------------
+--------------------------------------------------
+--------------------------------------------------
+CREATING FRAME #7 ...
+
+Time =   3.000 seconds
+Current heart phase index =   0.000 (LV fully relaxed, i.e. end-diastole)
+Current resp phase index  =   0.600 (exhaling:  27% exhaled)
+
+RESPIRATION PARAMETERS ------------------------
+diaphragm motion    =  -14.94 mm
+delta AP diameter =    8.97 mm
+
+
+ORGAN VOLUMES: 
+Total         =  20515.484510 ml
+skin          =      0.000000 ml
+skeleton      =   1042.004771 ml
+muscle        =   5425.021921 ml
+cartilage     =    178.945892 ml
+arteries      =     67.608428 ml
+veins         =    120.970558 ml
+lung tree     =     19.619299 ml
+marrow         =    351.718065 ml
+intestinal air =     60.659725 ml
+small intestine =     70.868679 ml
+large intestine =     69.649038 ml
+salivary glands =      0.000000 ml
+stomach contents =    206.415441 ml
+esophagus contents =     27.652221 ml
+right kidney =      0.000000 ml
+left kidney =     10.578095 ml
+larynx =      0.000000 ml
+internal_carotid_left         =      0.000844 ml
+internal_carotid_right         =      2.710387 ml
+rlung         =   1625.903198 ml
+llung         =   1652.241455 ml
+liver         =   1404.935547 ml
+pancreas         =     70.575127 ml
+stomach         =    162.867645 ml
+esophagus         =     34.400185 ml
+laryngopharynx         =      5.224783 ml
+musc490         =      0.191954 ml
+musc491         =      0.696524 ml
+musc908         =      1.195189 ml
+musc909         =      1.053858 ml
+musc910         =      0.545069 ml
+musc911         =      0.626914 ml
+musc914         =      0.467865 ml
+musc915         =      0.597382 ml
+musc916         =      0.159891 ml
+musc917         =      0.192798 ml
+musc918         =      0.020672 ml
+musc919         =      0.020250 ml
+musc920         =      0.143859 ml
+musc921         =      0.167485 ml
+musc922         =      0.393192 ml
+cricoid_cart         =      2.462390 ml
+cricoid_cart         =      2.373820 ml
+thyroid_cart         =      5.969193 ml
+arytenoid_cart         =      0.336659 ml
+arytenoid_cart         =      0.344675 ml
+cuneiform_cart         =      0.004641 ml
+cuneiform_cart         =      0.004219 ml
+corniculate_cart         =      0.002953 ml
+corniculate_cart         =      0.003375 ml
+epiglottis         =      0.223595 ml
+vocal_folds         =      0.108422 ml
+vocal_folds         =      0.209251 ml
+vocal_folds         =      0.031641 ml
+vocal_folds         =      0.062016 ml
+vestibular_ligament         =      0.043875 ml
+vestibular_ligament         =      0.038812 ml
+conus_elasticus         =      1.083812 ml
+conus_elasticus         =      1.000701 ml
+spleen         =    115.201363 ml
+gall_bladder         =     53.384731 ml
+r_adrenal         =      3.809500 ml
+l_adrenal         =      6.910254 ml
+r_thyroid         =     10.989309 ml
+l_thyroid         =     10.199795 ml
+r_sup_parathyroid         =      0.029531 ml
+r_inf_parathyroid         =      0.013500 ml
+l_sup_parathyroid         =      0.027422 ml
+l_inf_parathyroid         =      0.010969 ml
+thymus         =     31.210661 ml
+---------------------------------------- 
+---------------------------------------- 
+
+Volume of LV myocardium =   110.431580 ml
+Volume of RV myocardium =    27.772289 ml
+Volume of LA myocardium =    10.756628 ml
+Volume of RA myocardium =    13.523512 ml
+Volume of LV chamber    =   134.311798 ml
+Volume of RV chamber    =   101.583961 ml
+Volume of LA chamber    =    34.770687 ml
+Volume of RA chamber    =    48.961990 ml
+----------------------------------------
+Volume of TOTAL HEART   =   864.832863 ml
+
+Maximum activity per voxel =      75.000000
+Total activity = 325742400.000000
+
+Saving attenuation coefficient phantom in file : lungPatient0_atn_7
+-------------------------------------------------
+--------------------------------------------------
+--------------------------------------------------
+CREATING FRAME #8 ...
+
+Time =   3.500 seconds
+Current heart phase index =   0.500 (LV relaxing,  17% relaxed
+Current resp phase index  =   0.700 (exhaling:  45% exhaled)
+
+RESPIRATION PARAMETERS ------------------------
+diaphragm motion    =  -10.00 mm
+delta AP diameter =    6.00 mm
+
+
+ORGAN VOLUMES: 
+Total         =  20331.495524 ml
+skin          =      0.000000 ml
+skeleton      =   1042.122052 ml
+muscle        =   5431.521750 ml
+cartilage     =    176.515892 ml
+arteries      =     67.299616 ml
+veins         =    122.189777 ml
+lung tree     =     19.423971 ml
+marrow         =    351.668705 ml
+intestinal air =     80.467601 ml
+small intestine =     94.290337 ml
+large intestine =     86.595758 ml
+salivary glands =      0.000000 ml
+stomach contents =    208.884254 ml
+esophagus contents =     26.668409 ml
+right kidney =      0.000000 ml
+left kidney =     17.790470 ml
+larynx =      0.000000 ml
+internal_carotid_left         =      0.000844 ml
+internal_carotid_right         =      2.714604 ml
+rlung         =   1530.096924 ml
+llung         =   1557.785767 ml
+liver         =   1442.885620 ml
+pancreas         =     82.081856 ml
+stomach         =    168.318024 ml
+esophagus         =     32.644215 ml
+laryngopharynx         =      5.224783 ml
+musc490         =      0.191954 ml
+musc491         =      0.696524 ml
+musc908         =      1.195189 ml
+musc909         =      1.053858 ml
+musc910         =      0.545069 ml
+musc911         =      0.626914 ml
+musc914         =      0.467865 ml
+musc915         =      0.597382 ml
+musc916         =      0.159891 ml
+musc917         =      0.192798 ml
+musc918         =      0.020672 ml
+musc919         =      0.020250 ml
+musc920         =      0.143859 ml
+musc921         =      0.167485 ml
+musc922         =      0.393192 ml
+cricoid_cart         =      2.462390 ml
+cricoid_cart         =      2.373820 ml
+thyroid_cart         =      5.969193 ml
+arytenoid_cart         =      0.336659 ml
+arytenoid_cart         =      0.344675 ml
+cuneiform_cart         =      0.004641 ml
+cuneiform_cart         =      0.004219 ml
+corniculate_cart         =      0.002953 ml
+corniculate_cart         =      0.003375 ml
+epiglottis         =      0.223595 ml
+vocal_folds         =      0.108422 ml
+vocal_folds         =      0.209251 ml
+vocal_folds         =      0.031641 ml
+vocal_folds         =      0.062016 ml
+vestibular_ligament         =      0.043875 ml
+vestibular_ligament         =      0.038812 ml
+conus_elasticus         =      1.083812 ml
+conus_elasticus         =      1.000701 ml
+spleen         =    121.547226 ml
+gall_bladder         =     58.262238 ml
+r_adrenal         =      5.596566 ml
+l_adrenal         =      7.555494 ml
+r_thyroid         =     10.989309 ml
+l_thyroid         =     10.199795 ml
+r_sup_parathyroid         =      0.029531 ml
+r_inf_parathyroid         =      0.013500 ml
+l_sup_parathyroid         =      0.027422 ml
+l_inf_parathyroid         =      0.010969 ml
+thymus         =     30.216286 ml
+---------------------------------------- 
+---------------------------------------- 
+
+Volume of LV myocardium =   121.375183 ml
+Volume of RV myocardium =    23.517426 ml
+Volume of LA myocardium =    13.544588 ml
+Volume of RA myocardium =    16.279858 ml
+Volume of LV chamber    =    52.442596 ml
+Volume of RV chamber    =    60.785465 ml
+Volume of LA chamber    =    64.641747 ml
+Volume of RA chamber    =    86.675819 ml
+----------------------------------------
+Volume of TOTAL HEART   =   831.378173 ml
+
+Maximum activity per voxel =      75.000000
+Total activity = 337103520.000000
+
+Saving attenuation coefficient phantom in file : lungPatient0_atn_8
+-------------------------------------------------
+--------------------------------------------------
+--------------------------------------------------
+CREATING FRAME #9 ...
+
+Time =   4.000 seconds
+Current heart phase index =   0.000 (LV fully relaxed, i.e. end-diastole)
+Current resp phase index  =   0.800 (exhaling:  63% exhaled)
+
+RESPIRATION PARAMETERS ------------------------
+diaphragm motion    =   -5.06 mm
+delta AP diameter =    3.03 mm
+
+
+ORGAN VOLUMES: 
+Total         =  20129.923630 ml
+skin          =      0.000000 ml
+skeleton      =   1041.863865 ml
+muscle        =   5432.689500 ml
+cartilage     =    174.875642 ml
+arteries      =     66.090522 ml
+veins         =    123.893309 ml
+lung tree     =     19.178439 ml
+marrow         =    351.683471 ml
+intestinal air =    101.414119 ml
+small intestine =    117.178324 ml
+large intestine =    103.934400 ml
+salivary glands =      0.000000 ml
+stomach contents =    208.715082 ml
+esophagus contents =     25.920846 ml
+right kidney =      0.323578 ml
+left kidney =     26.487846 ml
+larynx =      0.000000 ml
+internal_carotid_left         =      0.000844 ml
+internal_carotid_right         =      2.716713 ml
+rlung         =   1434.965942 ml
+llung         =   1452.169800 ml
+liver         =   1477.160400 ml
+pancreas         =     92.137970 ml
+stomach         =    173.160004 ml
+esophagus         =     31.647781 ml
+laryngopharynx         =      5.224783 ml
+musc490         =      0.191954 ml
+musc491         =      0.696524 ml
+musc908         =      1.195189 ml
+musc909         =      1.053858 ml
+musc910         =      0.545069 ml
+musc911         =      0.626914 ml
+musc914         =      0.467865 ml
+musc915         =      0.597382 ml
+musc916         =      0.159891 ml
+musc917         =      0.192798 ml
+musc918         =      0.020672 ml
+musc919         =      0.020250 ml
+musc920         =      0.143859 ml
+musc921         =      0.167485 ml
+musc922         =      0.393192 ml
+cricoid_cart         =      2.462390 ml
+cricoid_cart         =      2.373820 ml
+thyroid_cart         =      5.969193 ml
+arytenoid_cart         =      0.336659 ml
+arytenoid_cart         =      0.344675 ml
+cuneiform_cart         =      0.004641 ml
+cuneiform_cart         =      0.004219 ml
+corniculate_cart         =      0.002953 ml
+corniculate_cart         =      0.003375 ml
+epiglottis         =      0.223595 ml
+vocal_folds         =      0.108422 ml
+vocal_folds         =      0.209251 ml
+vocal_folds         =      0.031641 ml
+vocal_folds         =      0.062016 ml
+vestibular_ligament         =      0.043875 ml
+vestibular_ligament         =      0.038812 ml
+conus_elasticus         =      1.083812 ml
+conus_elasticus         =      1.000701 ml
+spleen         =    127.045464 ml
+gall_bladder         =     61.737762 ml
+r_adrenal         =      6.611478 ml
+l_adrenal         =      7.987201 ml
+l_renal_pelvis         =      0.061594 ml
+r_thyroid         =     10.989309 ml
+l_thyroid         =     10.199795 ml
+r_sup_parathyroid         =      0.029531 ml
+r_inf_parathyroid         =      0.013500 ml
+l_sup_parathyroid         =      0.027422 ml
+l_inf_parathyroid         =      0.010969 ml
+thymus         =     31.118769 ml
+---------------------------------------- 
+---------------------------------------- 
+
+Volume of LV myocardium =   110.434517 ml
+Volume of RV myocardium =    27.779455 ml
+Volume of LA myocardium =    10.755785 ml
+Volume of RA myocardium =    13.534050 ml
+Volume of LV chamber    =   134.308380 ml
+Volume of RV chamber    =   101.586899 ml
+Volume of LA chamber    =    34.786354 ml
+Volume of RA chamber    =    48.959026 ml
+----------------------------------------
+Volume of TOTAL HEART   =   861.600035 ml
+
+Maximum activity per voxel =      75.000000
+Total activity = 343852032.000000
+
+Saving attenuation coefficient phantom in file : lungPatient0_atn_9
+-------------------------------------------------
+--------------------------------------------------
+--------------------------------------------------
+CREATING FRAME #10 ...
+
+Time =   4.500 seconds
+Current heart phase index =   0.500 (LV relaxing,  17% relaxed
+Current resp phase index  =   0.900 (exhaling:  82% exhaled)
+
+RESPIRATION PARAMETERS ------------------------
+diaphragm motion    =   -1.76 mm
+delta AP diameter =    1.06 mm
+
+
+ORGAN VOLUMES: 
+Total         =  20001.446227 ml
+skin          =      0.000000 ml
+skeleton      =   1040.931521 ml
+muscle        =   5433.903235 ml
+cartilage     =    173.990126 ml
+arteries      =     65.757662 ml
+veins         =    124.400824 ml
+lung tree     =     19.097861 ml
+marrow         =    351.601205 ml
+intestinal air =    114.968964 ml
+small intestine =    131.020044 ml
+large intestine =    115.626667 ml
+salivary glands =      0.000000 ml
+stomach contents =    208.408801 ml
+esophagus contents =     25.245424 ml
+right kidney =      1.954969 ml
+left kidney =     32.802894 ml
+larynx =      0.000000 ml
+internal_carotid_left         =      0.000844 ml
+internal_carotid_right         =      2.724305 ml
+rlung         =   1371.466431 ml
+llung         =   1390.093018 ml
+liver         =   1500.139404 ml
+pancreas         =     97.463745 ml
+stomach         =    174.723297 ml
+esophagus         =     30.328411 ml
+laryngopharynx         =      5.224783 ml
+musc490         =      0.191954 ml
+musc491         =      0.696524 ml
+musc908         =      1.195189 ml
+musc909         =      1.053858 ml
+musc910         =      0.545069 ml
+musc911         =      0.626914 ml
+musc914         =      0.467865 ml
+musc915         =      0.597382 ml
+musc916         =      0.159891 ml
+musc917         =      0.192798 ml
+musc918         =      0.020672 ml
+musc919         =      0.020250 ml
+musc920         =      0.143859 ml
+musc921         =      0.167485 ml
+musc922         =      0.393192 ml
+cricoid_cart         =      2.462390 ml
+cricoid_cart         =      2.373820 ml
+thyroid_cart         =      5.969193 ml
+arytenoid_cart         =      0.336659 ml
+arytenoid_cart         =      0.344675 ml
+cuneiform_cart         =      0.004641 ml
+cuneiform_cart         =      0.004219 ml
+corniculate_cart         =      0.002953 ml
+corniculate_cart         =      0.003375 ml
+epiglottis         =      0.223595 ml
+vocal_folds         =      0.108422 ml
+vocal_folds         =      0.209251 ml
+vocal_folds         =      0.031641 ml
+vocal_folds         =      0.062016 ml
+vestibular_ligament         =      0.043875 ml
+vestibular_ligament         =      0.038812 ml
+conus_elasticus         =      1.083812 ml
+conus_elasticus         =      1.000701 ml
+spleen         =    130.203827 ml
+gall_bladder         =     63.408199 ml
+r_adrenal         =      7.083275 ml
+l_adrenal         =      8.190811 ml
+l_renal_pelvis         =      0.200814 ml
+r_thyroid         =     10.989309 ml
+l_thyroid         =     10.199795 ml
+r_sup_parathyroid         =      0.029531 ml
+r_inf_parathyroid         =      0.013500 ml
+l_sup_parathyroid         =      0.027422 ml
+l_inf_parathyroid         =      0.010969 ml
+thymus         =     30.077604 ml
+---------------------------------------- 
+---------------------------------------- 
+
+Volume of LV myocardium =   121.408333 ml
+Volume of RV myocardium =    23.517004 ml
+Volume of LA myocardium =    13.520140 ml
+Volume of RA myocardium =    16.274799 ml
+Volume of LV chamber    =    52.439632 ml
+Volume of RV chamber    =    60.802402 ml
+Volume of LA chamber    =    64.658112 ml
+Volume of RA chamber    =    86.655678 ml
+----------------------------------------
+Volume of TOTAL HEART   =   828.275704 ml
+
+Maximum activity per voxel =      75.000000
+Total activity = 351678048.000000
+
+Saving attenuation coefficient phantom in file : lungPatient0_atn_10
+-------------------------------------------------

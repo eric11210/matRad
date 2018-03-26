@@ -127,57 +127,71 @@ end
 
 
 numOfConstraints = numel(scenID);
+if isfield(dij,'optBixel')
+    numOptBixel = nnz(dij.optBixel);
+else
+    numOptBixel = dij.totalNumOfBixels;
+end
+
 
 i_sparse = 1:numOfConstraints;
-i_sparse = kron(i_sparse,ones(1,nnz(dij.optBixel)));
+i_sparse = kron(i_sparse,ones(1,numOptBixel));
 
 j_sparse = 1:dij.totalNumOfBixels;
-j_sparse(~dij.optBixel) = [];
+if isfield(dij,'optBixel')
+    j_sparse(~dij.optBixel) = [];
+end
 j_sparse = repmat(j_sparse,1,numOfConstraints);
 
-jacobSparseVec = zeros(1,numOfConstraints*nnz(dij.optBixel));
+jacobSparseVec = zeros(1,numOfConstraints*numOptBixel);
 
 setOfConstraints = 1:numOfConstraints;
 
 % Calculate jacobian with dij projections
 for i = 1:dij.numOfScenarios
-        % enter if statement also for protons using a constant RBE
-        if isequal(options.bioOpt,'none') ||  isequal(options.ID,'protons_const_RBExD')
+    % enter if statement also for protons using a constant RBE
+    if isequal(options.bioOpt,'none') ||  isequal(options.ID,'protons_const_RBExD')
+        
+        if ~isempty(physicalDoseProjection)
             
-            if ~isempty(physicalDoseProjection)
-                
-                jacobLogical          = (scenID == i);
-                currConstraints = setOfConstraints(jacobLogical);
-                
-                indInSparseVec = repmat(1:nnz(dij.optBixel),1,numel(currConstraints))...
-                    +kron((currConstraints-1)*nnz(dij.optBixel),ones(1,nnz(dij.optBixel)));
+            jacobLogical          = (scenID == i);
+            currConstraints = setOfConstraints(jacobLogical);
+            
+            
+            indInSparseVec = repmat(1:numOptBixel,1,numel(currConstraints))...
+                +kron((currConstraints-1)*numOptBixel,ones(1,numOptBixel));
+            if isfield(dij,'optBixel')
                 
                 jacobSparseVec(indInSparseVec) = transpose(physicalDoseProjection(:,jacobLogical)' * dij.scaleFactor * dij.physicalDose{i}(:,dij.optBixel));
+            else
                 
-                if dij.memorySaverPhoton
-                    jacobVariables.currConstraints = currConstraints;
-                    jacobVariables.jacobLogical = jacobLogical;
-                    
-                    jacobSparseVec = jacobSparseVec+matRad_memorySaverDoseAndGrad(physicalDoseProjection,dij,'jacobian',jacobVariables);
-                end
-                
+                jacobSparseVec(indInSparseVec) = transpose(physicalDoseProjection(:,jacobLogical)' * dij.scaleFactor * dij.physicalDose{i});
             end
             
-        elseif isequal(options.bioOpt,'LEMIV_effect') || isequal(options.bioOpt,'LEMIV_RBExD')
-            
-            if ~isempty(mSqrtBetaDoseProjection) && ~isempty(mAlphaDoseProjection)
+            if dij.memorySaverPhoton
+                jacobVariables.currConstraints = currConstraints;
+                jacobVariables.jacobLogical = jacobLogical;
                 
-                jacobLogical            = (scenID == i);
-                jacobLogical2           = (scenID2 == i);
-                mSqrtBetaDoseProjection = mSqrtBetaDoseProjection(:,jacobLogical2)' * dij.mSqrtBetaDose{i} * w;
-                mSqrtBetaDoseProjection = sparse(voxelID(jacobLogical2),constraintID(jacobLogical2),mSqrtBetaDoseProjection,...
-                    size(mAlphaDoseProjection(:,jacobLogical),1),size(mAlphaDoseProjection(:,jacobLogical),2));
-                
-                jacob(jacobLogical,:)   = mAlphaDoseProjection(:,jacobLogical)' * dij.mAlphaDose{i} +...
-                    mSqrtBetaDoseProjection' * dij.mSqrtBetaDose{i};
-                
+                jacobSparseVec = jacobSparseVec+matRad_memorySaverDoseAndGrad(physicalDoseProjection,dij,'jacobian',i,jacobVariables);
             end
+            
         end
+        
+    elseif isequal(options.bioOpt,'LEMIV_effect') || isequal(options.bioOpt,'LEMIV_RBExD')
+        
+        if ~isempty(mSqrtBetaDoseProjection) && ~isempty(mAlphaDoseProjection)
+            
+            jacobLogical            = (scenID == i);
+            jacobLogical2           = (scenID2 == i);
+            mSqrtBetaDoseProjection = mSqrtBetaDoseProjection(:,jacobLogical2)' * dij.mSqrtBetaDose{i} * w;
+            mSqrtBetaDoseProjection = sparse(voxelID(jacobLogical2),constraintID(jacobLogical2),mSqrtBetaDoseProjection,...
+                size(mAlphaDoseProjection(:,jacobLogical),1),size(mAlphaDoseProjection(:,jacobLogical),2));
+            
+            jacob(jacobLogical,:)   = mAlphaDoseProjection(:,jacobLogical)' * dij.mAlphaDose{i} +...
+                mSqrtBetaDoseProjection' * dij.mSqrtBetaDose{i};
+            
+        end
+    end
 end
 
 if isequal(options.bioOpt,'none') ||  isequal(options.ID,'protons_const_RBExD')

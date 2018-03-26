@@ -84,7 +84,7 @@ for i = 1:size(cst_Over,1)
 end
 
 % create optBixel mask, which is just true everywhere
-dij.optBixel = true(dij.totalNumOfBixels,1);
+%dij.optBixel = true(dij.totalNumOfBixels,1);
 
 if isfield(apertureInfo,'scaleFacRx')
     %weights were scaled to acheive 95% PTV coverage

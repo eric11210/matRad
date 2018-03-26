@@ -71,7 +71,7 @@ dij.numOfBeams         = pln.propStf.numOfBeams;
 dij.numOfVoxels        = prod(ct.cubeDim);
 dij.resolution         = ct.resolution;
 dij.dimensions         = ct.cubeDim;
-dij.numOfScenarios     = 1;
+dij.numOfScenarios     = ct.numOfCtScen;
 dij.weightToMU         = 100;
 dij.scaleFactor        = 1;
 dij.memorySaverPhoton  = pln.propDoseCalc.memorySaverPhoton;
@@ -104,6 +104,8 @@ dij.bixelDoseTail = cell(dij.numOfScenarios,1);
 offsetTail = cell(dij.numOfScenarios,1);
 offsetDepth = cell(dij.numOfScenarios,1);
 
+dij.physicalDose = cell(dij.numOfScenarios,1);
+
 for k = 1:dij.numOfScenarios
     dij.nCore{k}    = zeros*ones(dij.totalNumOfRays,1,'uint16');
     dij.nTail{k}    = zeros*ones(dij.totalNumOfRays,1,'uint16');
@@ -131,9 +133,17 @@ V{1} = [cst{:,4}];
 V{1} = unique(vertcat(V{1}{:}));
 
 % Convert CT subscripts to linear indices.
+
+% these are the actual coordinates of the transformed voxel (in voxel
+% coordinate system, not physical)
 xCoordsV_vox = cell(dij.numOfScenarios,1);
 yCoordsV_vox = cell(dij.numOfScenarios,1);
 zCoordsV_vox = cell(dij.numOfScenarios,1);
+
+% these are the coordinates rounded to the nearest voxel
+xCoordsV_voxRound = cell(dij.numOfScenarios,1);
+yCoordsV_voxRound = cell(dij.numOfScenarios,1);
+zCoordsV_voxRound = cell(dij.numOfScenarios,1);
 
 [yCoordsV_vox{1}, xCoordsV_vox{1}, zCoordsV_vox{1}] = ind2sub(ct.cubeDim,V{1});
 for i = 2:dij.numOfScenarios
@@ -144,18 +154,18 @@ for i = 2:dij.numOfScenarios
     
     % to get the voxel index to which each point belongs, round to the
     % nearest integer
-    temp_xCoordsV_vox = round(xCoordsV_vox{i});
-    temp_yCoordsV_vox = round(yCoordsV_vox{i});
-    temp_zCoordsV_vox = round(zCoordsV_vox{i});
+    xCoordsV_voxRound{i} = round(xCoordsV_vox{i});
+    yCoordsV_voxRound{i} = round(yCoordsV_vox{i});
+    zCoordsV_voxRound{i} = round(zCoordsV_vox{i});
     % round up or down at boundaries
-    temp_xCoordsV_vox(temp_xCoordsV_vox < 1) = 1;
-    temp_xCoordsV_vox(temp_xCoordsV_vox > ct.cubeDim(2)) = ct.cubeDim(2);
-    temp_yCoordsV_vox(temp_yCoordsV_vox < 1) = 1;
-    temp_yCoordsV_vox(temp_yCoordsV_vox > ct.cubeDim(1)) = ct.cubeDim(1);
-    temp_zCoordsV_vox(temp_zCoordsV_vox < 1) = 1;
-    temp_zCoordsV_vox(temp_zCoordsV_vox > ct.cubeDim(3)) = ct.cubeDim(3);
+    xCoordsV_voxRound{i}(xCoordsV_voxRound{i} < 1) = 1;
+    xCoordsV_voxRound{i}(xCoordsV_voxRound{i} > ct.cubeDim(2)) = ct.cubeDim(2);
+    yCoordsV_voxRound{i}(yCoordsV_voxRound{i} < 1) = 1;
+    yCoordsV_voxRound{i}(yCoordsV_voxRound{i} > ct.cubeDim(1)) = ct.cubeDim(1);
+    zCoordsV_voxRound{i}(zCoordsV_voxRound{i} < 1) = 1;
+    zCoordsV_voxRound{i}(zCoordsV_voxRound{i} > ct.cubeDim(3)) = ct.cubeDim(3);
     
-    V{i} = sub2ind(ct.cubeDim,temp_yCoordsV_vox,temp_xCoordsV_vox,temp_zCoordsV_vox);
+    V{i} = sub2ind(ct.cubeDim,yCoordsV_voxRound{i},xCoordsV_voxRound{i},zCoordsV_voxRound{i});
 end
 
 % ignore densities outside of contours
@@ -166,7 +176,7 @@ for i = 1:dij.numOfScenarios
 end
 
 % set lateral cutoff value
-lateralCutoff = 5; % [mm]
+lateralCutoff = 50; % [mm]
 
 % toggle custom primary fluence on/off. if 0 we assume a homogeneous
 % primary fluence, if 1 we use measured radially symmetric data
@@ -260,30 +270,46 @@ for i = 1:dij.numOfBeams % loop over all beams
     
     coordsV = cell(dij.numOfScenarios,1);
     rot_coordsV = cell(dij.numOfScenarios,1);
+    coordsVRound = cell(dij.numOfScenarios,1);
+    rot_coordsVRound = cell(dij.numOfScenarios,1);
     for j = 1:dij.numOfScenarios
         % convert voxel indices to real coordinates using iso center of beam i
         xCoordsV = xCoordsV_vox{j}(:)*ct.resolution.x-stf(i).isoCenter(1);
         yCoordsV = yCoordsV_vox{j}(:)*ct.resolution.y-stf(i).isoCenter(2);
         zCoordsV = zCoordsV_vox{j}(:)*ct.resolution.z-stf(i).isoCenter(3);
         coordsV{j}  = [xCoordsV yCoordsV zCoordsV];
+        % now rounded to neareast voxel centre
+        xCoordsVRound = xCoordsV_voxRound{j}(:)*ct.resolution.x-stf(i).isoCenter(1);
+        yCoordsVRound = yCoordsV_voxRound{j}(:)*ct.resolution.y-stf(i).isoCenter(2);
+        zCoordsVRound = zCoordsV_voxRound{j}(:)*ct.resolution.z-stf(i).isoCenter(3);
+        coordsVRound{j}  = [xCoordsVRound yCoordsVRound zCoordsVRound];
         
         % Get Rotation Matrix
         % Do not transpose matrix since we usage of row vectors &
         % transformation of the coordinate system need double transpose
         
-        rotMat_system_T = matRad_getRotationMatrix(pln.gantryAngles(i),pln.couchAngles(i));
+        rotMat_system_T = matRad_getRotationMatrix(pln.propStf.gantryAngles(i),pln.propStf.couchAngles(i));
         
         % Rotate coordinates (1st couch around Y axis, 2nd gantry movement)
         rot_coordsV{j} = coordsV{j}*rotMat_system_T;
+        % now rounded to nearest voxel centre
+        rot_coordsVRound{j} = coordsVRound{j}*rotMat_system_T;
         
         rot_coordsV{j}(:,1) = rot_coordsV{j}(:,1)-stf(i).sourcePoint_bev(1);
         rot_coordsV{j}(:,2) = rot_coordsV{j}(:,2)-stf(i).sourcePoint_bev(2);
         rot_coordsV{j}(:,3) = rot_coordsV{j}(:,3)-stf(i).sourcePoint_bev(3);
+        % now rounded to nearest voxel centre
+        rot_coordsVRound{j}(:,1) = rot_coordsVRound{j}(:,1)-stf(i).sourcePoint_bev(1);
+        rot_coordsVRound{j}(:,2) = rot_coordsVRound{j}(:,2)-stf(i).sourcePoint_bev(2);
+        rot_coordsVRound{j}(:,3) = rot_coordsVRound{j}(:,3)-stf(i).sourcePoint_bev(3);
     end
+    % xCoordsV_voxRound{1}, etc. are empty
+    coordsVRound{1} = coordsV{1};
+    rot_coordsVRound{1} = rot_coordsV{1};
 
     % ray tracing
     fprintf('matRad: calculate radiological depth cube...');
-    [radDepthV,geoDistV] = matRad_rayTracing(stf(i),ct,V,rot_coordsV,effectiveLateralCutoff);
+    [radDepthV,geoDistV] = matRad_rayTracing(stf(i),ct,V,rot_coordsV,rot_coordsVRound,effectiveLateralCutoff);
     fprintf('done \n');
     
     radDepthIx = cell(dij.numOfScenarios,1);
@@ -450,12 +476,19 @@ for i = 1:dij.numOfBeams % loop over all beams
                     
                     offsetTail{k} = offsetTail{k}+nTail;
                     offsetDepth{k} = offsetDepth{k}+nDepth;
+                    
                 else
                     [ix{k},bixelDose] = matRad_DijSampling(ix{k},bixelDose,radDepthV{k}(ix{k}),rad_distancesSq{k},Type,r0);
                 end
             end
+            
             % Save dose for every bixel in cell array
             doseTmpContainer{mod(counter-1,numOfBixelsContainer)+1,k} = sparse(V{1}(ix{k}),1,bixelDose,dij.numOfVoxels,1);
+            % Because it is V{1}(ix{k}), we are calculating the dose on the
+            % transformed CT, but bringing back to the reference CT for the
+            % Dij.  Also, this ensures that even if two different voxels on
+            % the reference map to the same voxel, we don't need to worry
+            % about accumulation.
             
             % save computation time and memory by sequentially filling the
             % sparse matrix dose.dij from the cell array

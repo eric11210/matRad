@@ -1,4 +1,4 @@
-function d_or_g_or_j = matRad_memorySaverDoseAndGrad(w_or_g_or_j,dij,option,jacobVariables)
+function d_or_g_or_j = matRad_memorySaverDoseAndGrad(w_or_g_or_j,dij,option,i,jacobVariables)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % matRad function to calculate the ADDITIONAL dose, bixel gradient, or bixel jacobian/struct contributed
 % by voxels in the tail if the memorySaverPhoton option is turned on.
@@ -59,12 +59,16 @@ depthOffset = uint32(0);
 tailOffset = uint32(0);
 bixelOffset = 1;
 
+if ~isfield(dij,'optBixel')
+    dij.optBixel = true(dij.totalNumOfBixels,1);
+end
+
 for j = 1:dij.totalNumOfRays
     if ~dij.optBixel(j)
         continue
     end
-    depthInd = depthOffset+(1:uint32(dij.nDepth(j)));
-    depthOffset = depthOffset+uint32(dij.nDepth(j));
+    depthInd = depthOffset+(1:uint32(dij.nDepth{i}(j)));
+    depthOffset = depthOffset+uint32(dij.nDepth{i}(j));
     
     if strcmp(option,'jacobian')
         indInSparseVec = repmat(bixelOffset,1,numel(currConstraints))...
@@ -72,17 +76,17 @@ for j = 1:dij.totalNumOfRays
     end
     
     for k = depthInd
-        tailInd = tailOffset+(1:uint32(dij.nTailPerDepth(k)));
-        tailOffset = tailOffset+uint32(dij.nTailPerDepth(k));
+        tailInd = tailOffset+(1:uint32(dij.nTailPerDepth{i}(k)));
+        tailOffset = tailOffset+uint32(dij.nTailPerDepth{i}(k));
         
-        voxInd = dij.ixTail(tailInd);
+        voxInd = dij.ixTail{i}(tailInd);
         
         if strcmp(option,'gradient')
             % w_or_g_or_j is g (voxel), d_or_g_or_j is g (bixel)
-            d_or_g_or_j(j) = d_or_g_or_j(j) + dij.scaleFactor .* sum(w_or_g_or_j(voxInd)) .*dij.bixelDoseTail(k);
+            d_or_g_or_j(j) = d_or_g_or_j(j) + dij.scaleFactor .* sum(w_or_g_or_j(voxInd)) .*dij.bixelDoseTail{i}(k);
         elseif strcmp(option,'jacobian')
             % w_or_g_or_j is j (voxel), d_or_g_or_j is j (bixel)
-            d_or_g_or_j(indInSparseVec) = d_or_g_or_j(indInSparseVec) + dij.scaleFactor .* sum(w_or_g_or_j(voxInd,jacobLogical)) .*dij.bixelDoseTail(k);
+            d_or_g_or_j(indInSparseVec) = d_or_g_or_j(indInSparseVec) + dij.scaleFactor .* sum(w_or_g_or_j(voxInd,jacobLogical)) .*dij.bixelDoseTail{i}(k);
         elseif strcmp(option,'jacobianStruct')
             % w_or_g_or_j is j (voxel), d_or_g_or_j is j (bixel)
             voxInd = intersect(voxInd,voxInStructure);
@@ -94,7 +98,7 @@ for j = 1:dij.totalNumOfRays
             d_or_g_or_j(offset+bixelOffset) = 1;
         elseif strcmp(option,'dose')
             % w_or_g_or_j is w, d_or_g_or_j is d
-            d_or_g_or_j(voxInd) = d_or_g_or_j(voxInd) + dij.scaleFactor .* w_or_g_or_j(j) .*dij.bixelDoseTail(k);
+            d_or_g_or_j(voxInd) = d_or_g_or_j(voxInd) + dij.scaleFactor .* w_or_g_or_j(j) .*dij.bixelDoseTail{i}(k);
         end
     end
     
