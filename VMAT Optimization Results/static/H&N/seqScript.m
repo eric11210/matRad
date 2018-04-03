@@ -39,7 +39,7 @@ pln = matRad_VMATGantryAngles(pln,cst,ct);
 stf = matRad_generateStf(ct,cst,pln);
 
 % calc Dij
-dij = matRad_calcPhotonDose(ct,stf,pln,cst);
+%dij = matRad_calcPhotonDose(ct,stf,pln,cst);
 
 
 
