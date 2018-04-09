@@ -62,7 +62,7 @@ centralLeafPair = ceil(numOfMLCLeafPairs/2);
 % initializing variables
 totalNumOfShapes = numel(stf);
 for i = 1:numel(apertureInfoOld.beam)
-    newInd = (apertureInfoOld.beam(i).doseAngleBorders(1) <= [stf.gantryAngle] & [stf.gantryAngle] <= apertureInfoOld.beam(i).doseAngleBorders(2)).*(1:numel([stf.gantryAngle]));
+    newInd = (apertureInfoOld.propVMAT.beam(i).doseAngleBorders(1) <= [stf.gantryAngle] & [stf.gantryAngle] <= apertureInfoOld.propVMAT.beam(i).doseAngleBorders(2)).*(1:numel([stf.gantryAngle]));
     newInd(newInd == 0) = [];
     
     for j = newInd
@@ -140,22 +140,22 @@ for i = 1:numel(apertureInfoOld.beam)
         apertureInfoNew.beam(j).shape(1).vectorOffset = totalNumOfShapes+1+(j-1)*dimZ;
         
         %inherit from old beam
-        apertureInfoNew.beam(j).leafDir = apertureInfoOld.beam(i).leafDir;
+        apertureInfoNew.propVMAT.beam(j).leafDir = apertureInfoOld.propVMAT.beam(i).leafDir;
         
         %specific to new beam
-        apertureInfoNew.beam(j).gantryAngle = pln.gantryAngles(j);
-        apertureInfoNew.beam(j).doseAngleBorders = stf(j).doseAngleBorders;
-        apertureInfoNew.beam(j).doseAngleBorderCentreDiff = stf(j).doseAngleBorderCentreDiff;
-        apertureInfoNew.beam(j).doseAngleBordersDiff = stf(j).doseAngleBordersDiff;
-        apertureInfoNew.beam(j).lastOptIndex = stf(j).lastOptIndex;
-        apertureInfoNew.beam(j).nextOptIndex = stf(j).lastOptIndex;
+        apertureInfoNew.beam(j).gantryAngle = pln.propStf.gantryAngles(j);
+        apertureInfoNew.propVMAT.beam(j).doseAngleBorders = stf(j).propVMAT.doseAngleBorders;
+        apertureInfoNew.propVMAT.beam(j).doseAngleBorderCentreDiff = stf(j).propVMAT.doseAngleBorderCentreDiff;
+        apertureInfoNew.propVMAT.beam(j).doseAngleBordersDiff = stf(j).propVMAT.doseAngleBordersDiff;
+        apertureInfoNew.propVMAT.beam(j).lastDAOIndex = stf(j).propVMAT.lastDAOIndex;
+        apertureInfoNew.propVMAT.beam(j).nextDAOIndex = stf(j).propVMAT.lastDAOIndex;
         
         
-        amountOfOldSpeed = (min(apertureInfoNew.beam(j).doseAngleBorders(2),apertureInfoOld.beam(i).doseAngleBorders(2))-max(apertureInfoNew.beam(j).doseAngleBorders(1),apertureInfoOld.beam(i).doseAngleBorders(1)))./apertureInfoNew.beam(j).doseAngleBordersDiff;
-        amountOfOldWeight = (min(apertureInfoNew.beam(j).doseAngleBorders(2),apertureInfoOld.beam(i).doseAngleBorders(2))-max(apertureInfoNew.beam(j).doseAngleBorders(1),apertureInfoOld.beam(i).doseAngleBorders(1)))./apertureInfoOld.beam(i).doseAngleBordersDiff;
+        amountOfOldSpeed = (min(apertureInfoNew.propVMAT.beam(j).doseAngleBorders(2),apertureInfoOld.propVMAT.beam(i).doseAngleBorders(2))-max(apertureInfoNew.propVMAT.beam(j).doseAngleBorders(1),apertureInfoOld.propVMAT.beam(i).doseAngleBorders(1)))./apertureInfoNew.propVMAT.beam(j).doseAngleBordersDiff;
+        amountOfOldWeight = (min(apertureInfoNew.propVMAT.beam(j).doseAngleBorders(2),apertureInfoOld.propVMAT.beam(i).doseAngleBorders(2))-max(apertureInfoNew.propVMAT.beam(j).doseAngleBorders(1),apertureInfoOld.propVMAT.beam(i).doseAngleBorders(1)))./apertureInfoOld.propVMAT.beam(i).doseAngleBordersDiff;
         
-        amountOfOldWeight_I = (min(apertureInfoNew.beam(j).gantryAngle,apertureInfoOld.beam(i).doseAngleBorders(2))-max(apertureInfoNew.beam(j).doseAngleBorders(1),apertureInfoOld.beam(i).doseAngleBorders(1)))./apertureInfoOld.beam(i).doseAngleBordersDiff;
-        amountOfOldWeight_F = (min(apertureInfoNew.beam(j).doseAngleBorders(2),apertureInfoOld.beam(i).doseAngleBorders(2))-max(apertureInfoNew.beam(j).gantryAngle,apertureInfoOld.beam(i).doseAngleBorders(1)))./apertureInfoOld.beam(i).doseAngleBordersDiff;
+        amountOfOldWeight_I = (min(apertureInfoNew.beam(j).gantryAngle,apertureInfoOld.propVMAT.beam(i).doseAngleBorders(2))-max(apertureInfoNew.propVMAT.beam(j).doseAngleBorders(1),apertureInfoOld.propVMAT.beam(i).doseAngleBorders(1)))./apertureInfoOld.propVMAT.beam(i).doseAngleBordersDiff;
+        amountOfOldWeight_F = (min(apertureInfoNew.propVMAT.beam(j).doseAngleBorders(2),apertureInfoOld.propVMAT.beam(i).doseAngleBorders(2))-max(apertureInfoNew.beam(j).gantryAngle,apertureInfoOld.propVMAT.beam(i).doseAngleBorders(1)))./apertureInfoOld.propVMAT.beam(i).doseAngleBordersDiff;
         
         if ~isfield(apertureInfoNew.beam(j),'gantryRot') || isempty(apertureInfoNew.beam(j).gantryRot)
             apertureInfoNew.beam(j).gantryRot = 0;
@@ -171,9 +171,10 @@ for i = 1:numel(apertureInfoOld.beam)
         apertureInfoNew.beam(j).shape(1).weight_F = apertureInfoNew.beam(j).shape(1).weight_F+amountOfOldWeight_F*apertureInfoOld.beam(i).shape(1).weight;
         apertureInfoNew.beam(j).MU = apertureInfoNew.beam(j).shape(1).weight.*apertureInfoNew.weightToMU;
         
-        apertureInfoNew.beam(j).MURate = apertureInfoNew.beam(j).MU.*apertureInfoNew.beam(j).gantryRot./apertureInfoNew.beam(j).doseAngleBordersDiff;
+        apertureInfoNew.beam(j).MURate = apertureInfoNew.beam(j).MU.*apertureInfoNew.beam(j).gantryRot./apertureInfoNew.propVMAT.beam(j).doseAngleBordersDiff;
         
         %apertureInfoNew.beam(j).shape(1).jacobiScale = apertureInfoOld.beam(i).shape(1).jacobiScale;
+        apertureInfoNew.jacobiScale(j) = 1;
         apertureInfoNew.beam(j).shape(1).jacobiScale = 1;
         
         if recalc.interpNew
@@ -182,11 +183,11 @@ for i = 1:numel(apertureInfoOld.beam)
             apertureInfoNew.beam(j).shape(1).leftLeafPos = (interp1(oldGantryAngles',oldLeftLeafPoss',apertureInfoNew.beam(j).gantryAngle))';
             apertureInfoNew.beam(j).shape(1).rightLeafPos = (interp1(oldGantryAngles',oldRightLeafPoss',apertureInfoNew.beam(j).gantryAngle))';
             
-            apertureInfoNew.beam(j).shape(1).leftLeafPos_I = (interp1(oldGantryAngles',oldLeftLeafPoss',apertureInfoNew.beam(j).doseAngleBorders(1)))';
-            apertureInfoNew.beam(j).shape(1).rightLeafPos_I = (interp1(oldGantryAngles',oldRightLeafPoss',apertureInfoNew.beam(j).doseAngleBorders(1)))';
+            apertureInfoNew.beam(j).shape(1).leftLeafPos_I = (interp1(oldGantryAngles',oldLeftLeafPoss',apertureInfoNew.propVMAT.beam(j).doseAngleBorders(1)))';
+            apertureInfoNew.beam(j).shape(1).rightLeafPos_I = (interp1(oldGantryAngles',oldRightLeafPoss',apertureInfoNew.propVMAT.beam(j).doseAngleBorders(1)))';
             
-            apertureInfoNew.beam(j).shape(1).leftLeafPos_F = (interp1(oldGantryAngles',oldLeftLeafPoss',apertureInfoNew.beam(j).doseAngleBorders(2)))';
-            apertureInfoNew.beam(j).shape(1).rightLeafPos_F = (interp1(oldGantryAngles',oldRightLeafPoss',apertureInfoNew.beam(j).doseAngleBorders(2)))';
+            apertureInfoNew.beam(j).shape(1).leftLeafPos_F = (interp1(oldGantryAngles',oldLeftLeafPoss',apertureInfoNew.propVMAT.beam(j).doseAngleBorders(2)))';
+            apertureInfoNew.beam(j).shape(1).rightLeafPos_F = (interp1(oldGantryAngles',oldRightLeafPoss',apertureInfoNew.propVMAT.beam(j).doseAngleBorders(2)))';
         else
             apertureInfoNew.beam(j).shape(1).leftLeafPos = apertureInfoOld.beam(i).shape(1).leftLeafPos;
             apertureInfoNew.beam(j).shape(1).rightLeafPos = apertureInfoOld.beam(i).shape(1).rightLeafPos;
@@ -196,17 +197,17 @@ for i = 1:numel(apertureInfoOld.beam)
         %overwritten
         %optAngleBorders becomes doseAngleBorders
         apertureInfoNew.beam(j).numOfShapes = 1;
-        apertureInfoNew.beam(j).optimizeBeam = true;
-        apertureInfoNew.beam(j).doseAngleOpt = stf(j).doseAngleOpt;
-        apertureInfoNew.beam(j).optAngleBorders = stf(j).doseAngleBorders;
-        apertureInfoNew.beam(j).optAngleBorderCentreDiff = stf(j).doseAngleBorderCentreDiff;
-        apertureInfoNew.beam(j).optAngleBordersDiff = stf(j).doseAngleBordersDiff;
-        apertureInfoNew.beam(j).timeFacCurr = stf(j).timeFacCurr;
-        apertureInfoNew.beam(j).timeFacPrev = stf(j).timeFacPrev;
-        apertureInfoNew.beam(j).timeFacNext = stf(j).timeFacNext;
-        apertureInfoNew.beam(j).IandFTimeInd = stf(j).IandFTimeInd;
-        apertureInfoNew.beam(j).IandFFac = stf(j).IandFFac;
-        apertureInfoNew.beam(j).timeFac = stf(j).timeFac;
+        apertureInfoNew.propVMAT.beam(j).DAOBeam = true;
+        %apertureInfoNew.beam(j).doseAngleOpt = stf(j).doseAngleOpt;
+        apertureInfoNew.propVMAT.beam(j).DAOAngleBorders = stf(j).propVMAT.doseAngleBorders;
+        apertureInfoNew.propVMAT.beam(j).DAOAngleBorderCentreDiff = stf(j).propVMAT.doseAngleBorderCentreDiff;
+        apertureInfoNew.propVMAT.beam(j).DAOAngleBordersDiff = stf(j).propVMAT.doseAngleBordersDiff;
+        apertureInfoNew.propVMAT.beam(j).timeFacCurr = apertureInfoNew.propVMAT.beam(j).doseAngleBordersDiff./apertureInfoNew.propVMAT.beam(j).DAOAngleBordersDiff; % = 1
+        %apertureInfoNew.beam(j).timeFacPrev = stf(j).timeFacPrev;
+        %apertureInfoNew.beam(j).timeFacNext = stf(j).timeFacNext;
+        %apertureInfoNew.beam(j).IandFTimeInd = stf(j).IandFTimeInd;
+        %apertureInfoNew.beam(j).IandFFac = stf(j).IandFFac;
+        %apertureInfoNew.propVMAT.beam(j).timeFac = stf(j).propVMAT.timeFac;
         
         %{
         if isfield(recalc,'dijNew') && ~recalc.dijNew
@@ -223,14 +224,16 @@ for i = 1:numel(apertureInfoOld.beam)
         end
         %}
         
-        if apertureInfoOld.beam(i).initializeBeam
-            apertureInfoNew.beam(j).initializeBeam = true;
-            apertureInfoNew.beam(j).initAngleBorders = stf(j).initAngleBorders;
-            apertureInfoNew.beam(j).initAngleBorderCentreDiff = stf(j).initAngleBorderCentreDiff;
-            apertureInfoNew.beam(j).initAngleBordersDiff = stf(j).initAngleBordersDiff;
+        %{
+        if apertureInfoOld.propVMAT.beam(i).FMOBeam
+            apertureInfoNew.propVMAT.beam(j).FMOBeam = true;
+            apertureInfoNew.propVMAT.beam(j).FMOAngleBorders = stf(j).propVMAT.FMOAngleBorders;
+            apertureInfoNew.propVMAT.beam(j).FMOAngleBorderCentreDiff = stf(j).propVMAT.FMOAngleBorderCentreDiff;
+            apertureInfoNew.propVMAT.beam(j).FMOAngleBordersDiff = stf(j).propVMAT.FMOAngleBordersDiff;
         else
-            apertureInfoNew.beam(j).initializeBeam = false;
+            apertureInfoNew.propVMAT.beam(j).FMOBeam = false;
         end
+        %}
         
         apertureInfoNew.apertureVector(shapeInd) = apertureInfoNew.beam(j).shape(1).weight;
         shapeInd = shapeInd+1;

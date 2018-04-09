@@ -40,7 +40,7 @@ if nargin < 6
 end
 
 recalc.apertureInfo = apertureInfo;
-recalc.apertureInfo.recalcDynamic = recalc.dynamic;
+recalc.apertureInfo.propVMAT.recalcContAperture = recalc.continuousAperture;
 
 
 %recalculate dose with finer gantry angles
@@ -48,15 +48,15 @@ recalc.apertureInfo.recalcDynamic = recalc.dynamic;
 %Calculate dose directly
 
 %first, we need to update/generate new apertures for these angles
-recalc.pln = matRad_VMATGantryAngles(recalc.pln,'new');
+recalc.pln = matRad_VMATGantryAngles(recalc.pln,cst,ct);
 if ~recalc.interpNew
     %we will not interpolate new apertures
     %easiest way to to this is to make ALL gantryAngles optGantryAngles
-    recalc.pln.optGantryAngles = recalc.pln.gantryAngles;
+    recalc.pln.propStf.DAOGantryAngles = recalc.pln.propStf.gantryAngles;
 end
 
 cd stf
-fname = sprintf('%.1f deg.mat',recalc.pln.minGantryAngleRes);
+fname = sprintf('%.1f deg.mat',recalc.pln.propOpt.VMAToptions.maxGantryAngleSpacing);
 if exist(fname,'file')
     load(fname);
 else
@@ -70,47 +70,47 @@ cd ..
 if ~recalc.interpNew || ~recalc.dijNew
     %duplicate any beam angles that are directly between two old
     %ones
-    duplicate = false(size(recalc.pln.gantryAngles));
-    for i = 1:numel(recalc.pln.gantryAngles)
-        if numel(find(abs(recalc.pln.gantryAngles(i)-pln.gantryAngles) == min(abs(recalc.pln.gantryAngles(i)-pln.gantryAngles)))) > 1
+    duplicate = false(size(recalc.pln.propStf.gantryAngles));
+    for i = 1:numel(recalc.pln.propStf.gantryAngles)
+        if numel(find(abs(recalc.pln.propStf.gantryAngles(i)-pln.propStf.gantryAngles) == min(abs(recalc.pln.propStf.gantryAngles(i)-pln.propStf.gantryAngles)))) > 1
             duplicate(i) = true;
         end
     end
-    newGantryAngles = zeros(1,numel(recalc.pln.gantryAngles)+nnz(duplicate));
-    newCouchAngles = zeros(1,numel(recalc.pln.gantryAngles)+nnz(duplicate));
+    newGantryAngles = zeros(1,numel(recalc.pln.propStf.gantryAngles)+nnz(duplicate));
+    newCouchAngles = zeros(1,numel(recalc.pln.propStf.gantryAngles)+nnz(duplicate));
     tempStf = recalc.stf;
     recalc.stf(1).copyInd = [];
     tempStf(1).copyInd = [];
     recalc.stf(1).stfCorr = [];
     tempStf(1).stfCorr = [];
     j = 1;
-    for i = 1:numel(recalc.pln.gantryAngles)
+    for i = 1:numel(recalc.pln.propStf.gantryAngles)
         if duplicate(i)
             tempStf(j).stfCorr = false;
-            newGantryAngles(j) = recalc.pln.gantryAngles(i);
-            newCouchAngles(j) = recalc.pln.couchAngles(i);
+            newGantryAngles(j) = recalc.pln.propStf.gantryAngles(i);
+            newCouchAngles(j) = recalc.pln.propStf.couchAngles(i);
             tempStf(j) = recalc.stf(i);
             tempStf(j).gantryAngle = recalc.stf(i-1).gantryAngle;
             tempStf(j).copyInd = 1;
             
             j = j+1;
             
-            newGantryAngles(j) = recalc.pln.gantryAngles(i);
-            newCouchAngles(j) = recalc.pln.couchAngles(i);
+            newGantryAngles(j) = recalc.pln.propStf.gantryAngles(i);
+            newCouchAngles(j) = recalc.pln.propStf.couchAngles(i);
             tempStf(j) = recalc.stf(i);
             tempStf(j).gantryAngle = recalc.stf(i+1).gantryAngle;
             tempStf(j).copyInd = 2;
         else
             tempStf(j).stfCorr = true;
-            newGantryAngles(j) = recalc.pln.gantryAngles(i);
-            newCouchAngles(j) = recalc.pln.couchAngles(i);
+            newGantryAngles(j) = recalc.pln.propStf.gantryAngles(i);
+            newCouchAngles(j) = recalc.pln.propStf.couchAngles(i);
             tempStf(j) = recalc.stf(i);
         end
         j = j+1;
     end
-    recalc.pln.gantryAngles = newGantryAngles;
-    recalc.pln.couchAngles = newCouchAngles;
-    recalc.pln.numOfBeams = numel(recalc.pln.gantryAngles);
+    recalc.pln.propStf.gantryAngles = newGantryAngles;
+    recalc.pln.propStf.couchAngles = newCouchAngles;
+    recalc.pln.propStf.numOfBeams = numel(recalc.pln.propStf.gantryAngles);
     %recalc.pln.optGantryAngles = recalc.pln.gantryAngles;
     recalc.stf = tempStf;
 end
@@ -120,36 +120,37 @@ recalc = matRad_recalcApertureInfo(recalc,recalc.apertureInfo);
 if ~recalc.interpNew || ~recalc.dijNew
     tempPln = recalc.pln;
     tempStf = recalc.stf;
-    for i = 1:numel(tempPln.gantryAngles)
-        diff = abs(tempPln.gantryAngles(i)-pln.gantryAngles);
+    for i = 1:numel(tempPln.propStf.gantryAngles)
+        diff = abs(tempPln.propStf.gantryAngles(i)-pln.propStf.gantryAngles);
         minDiffInd = diff == min(diff);
-        minDiffInd1 = find(tempPln.gantryAngles == pln.gantryAngles(find(minDiffInd,1,'first')));
-        minDiffInd2 = find(tempPln.gantryAngles == pln.gantryAngles(find(minDiffInd,1,'last')));
+        minDiffInd1 = find(tempPln.propStf.gantryAngles == pln.propStf.gantryAngles(find(minDiffInd,1,'first')));
+        minDiffInd2 = find(tempPln.propStf.gantryAngles == pln.propStf.gantryAngles(find(minDiffInd,1,'last')));
         
         if ~recalc.dijNew
             if isempty(recalc.stf(i).copyInd)
                 recalc.stf(i) = tempStf(minDiffInd1);
-                recalc.pln.gantryAngles(i) = tempPln.gantryAngles(minDiffInd1);
+                recalc.pln.gantryAngles(i) = tempPln.propStf.gantryAngles(minDiffInd1);
             elseif recalc.stf(i).copyInd == 1
                 recalc.stf(i) = tempStf(minDiffInd1);
-                recalc.pln.gantryAngles(i) = tempPln.gantryAngles(minDiffInd1);
+                recalc.pln.gantryAngles(i) = tempPln.propStf.gantryAngles(minDiffInd1);
             elseif recalc.stf(i).copyInd == 2
                 recalc.stf(i) = tempStf(minDiffInd2);
-                recalc.pln.gantryAngles(i) = tempPln.gantryAngles(minDiffInd2);
+                recalc.pln.gantryAngles(i) = tempPln.propStf.gantryAngles(minDiffInd2);
             end
         elseif ~recalc.interpNew
             if numel(minDiffInd) > 1
-                recalc.stf(i).gantryAngle = tempPln.gantryAngles(i);
+                recalc.stf(i).gantryAngle = tempPln.propStf.gantryAngles(i);
             end
         end
     end
 end
 
-if recalc.dynamic
+if recalc.continuousAperture
     recalc.apertureInfo =  matRad_daoVec2ApertureInfo_VMATrecalcDynamic(recalc.apertureInfo,recalc.apertureInfo.apertureVector);
 else
-    recalc.apertureInfo =  matRad_daoVec2ApertureInfo_VMATstatic(recalc.apertureInfo,recalc.apertureInfo.apertureVector);
+    recalc.apertureInfo =  matRad_daoVec2ApertureInfo(recalc.apertureInfo,recalc.apertureInfo.apertureVector);
 end
+
 
 if calcDoseDirect
     recalc.resultGUI = matRad_calcDoseDirect(ct,recalc.stf,recalc.pln,cst,recalc.apertureInfo.bixelWeights);
@@ -161,5 +162,3 @@ else
     d = matRad_backProjection(recalc.resultGUI.w,dij,options);
     recalc.resultGUI.physicalDose = reshape(d{1},dij.dimensions);
 end
-
-

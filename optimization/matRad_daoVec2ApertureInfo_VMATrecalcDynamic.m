@@ -64,6 +64,27 @@ offset = 0;
 round2 = @(a,b) round(a*10^b)/10^b;
 
 
+if updatedInfo.runVMAT && ~all([updatedInfo.propVMAT.beam.DAOBeam])
+    j = 1;
+    for i = 1:numel(updatedInfo.beam)
+        if updatedInfo.propVMAT.beam(i).DAOBeam
+            % update the shape weight
+            % rescale the weight from the vector using the previous
+            % iteration scaling factor
+            updatedInfo.beam(i).shape(j).weight = apertureInfoVect(shapeInd)./updatedInfo.beam(i).shape(j).jacobiScale;
+            
+            updatedInfo.beam(i).MU = updatedInfo.beam(i).shape(j).weight*updatedInfo.weightToMU;
+            updatedInfo.beam(i).time = apertureInfoVect(updatedInfo.totalNumOfShapes+updatedInfo.totalNumOfLeafPairs*2+shapeInd)*updatedInfo.propVMAT.beam(i).timeFacCurr;
+            updatedInfo.beam(i).gantryRot = updatedInfo.propVMAT.beam(i).doseAngleBordersDiff/updatedInfo.beam(i).time;
+            updatedInfo.beam(i).MURate = updatedInfo.beam(i).MU./updatedInfo.beam(i).time;
+            
+            shapeInd = shapeInd+1;
+        end
+    end
+    shapeInd = 1;
+end
+
+
 %Interpolate segment between adjacent optimized gantry angles.
 % Include in updatedInfo, but NOT the vector (since these are not
 % optimized by DAO).  Also update bixel weights to include these.
@@ -84,6 +105,9 @@ for i = 1:numel(updatedInfo.beam)
     edges_r = updatedInfo.beam(i).posOfCornerBixel(1)...
         + ([1:size(apertureInfo.beam(i).bixelIndMap,2)]-1+1/2)*updatedInfo.bixelWidth;
     
+    % get dimensions of 2d matrices that store shape/bixel information
+    n = apertureInfo.beam(i).numOfActiveLeafPairs;
+    
     if updatedInfo.beam(i).numOfShapes ~= 0 %numOfShapes is 0 for interpolated beams!
         
         % loop over all shapes
@@ -93,11 +117,8 @@ for i = 1:numel(updatedInfo.beam)
             
             updatedInfo.beam(i).MU = updatedInfo.beam(i).shape(j).weight*updatedInfo.weightToMU;
             updatedInfo.beam(i).time = apertureInfoVect(updatedInfo.totalNumOfShapes+updatedInfo.totalNumOfLeafPairs*2+shapeInd);
-            updatedInfo.beam(i).gantryRot = updatedInfo.beam(i).optAngleBordersDiff/updatedInfo.beam(i).time;
-            updatedInfo.beam(i).MURate = updatedInfo.beam(i).MU*updatedInfo.beam(i).gantryRot/updatedInfo.beam(i).doseAngleBordersDiff;
-            
-            % get dimensions of 2d matrices that store shape/bixel information
-            n = apertureInfo.beam(i).numOfActiveLeafPairs;
+            updatedInfo.beam(i).gantryRot = updatedInfo.propVMAT.beam(i).doseAngleBordersDiff/updatedInfo.beam(i).time;
+            updatedInfo.beam(i).MURate = updatedInfo.beam(i).MU./updatedInfo.beam(i).time;
             
             leftLeafPosI_I = min([updatedInfo.beam(i).shape(j).leftLeafPos_I,updatedInfo.beam(i).shape(j).leftLeafPos],[],2);
             leftLeafPosF_I = max([updatedInfo.beam(i).shape(j).leftLeafPos_I,updatedInfo.beam(i).shape(j).leftLeafPos],[],2);
