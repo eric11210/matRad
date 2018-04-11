@@ -54,7 +54,7 @@ for i = 1:length(beamInfo)
     if isfield(dij,'optBixel')
         d = dij.physicalDose{scenNum}(:,dij.optBixel) * (w(dij.optBixel) * dij.scaleFactor);
     else
-        d = dij.physicalDose{scenNum}(:) * (w * dij.scaleFactor);
+        d = dij.physicalDose{scenNum} * (w * dij.scaleFactor);
     end
     
     if dij.memorySaverPhoton

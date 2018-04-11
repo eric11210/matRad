@@ -129,13 +129,13 @@ if ~recalc.interpNew || ~recalc.dijNew
         if ~recalc.dijNew
             if isempty(recalc.stf(i).copyInd)
                 recalc.stf(i) = tempStf(minDiffInd1);
-                recalc.pln.gantryAngles(i) = tempPln.propStf.gantryAngles(minDiffInd1);
+                recalc.pln.propStf.gantryAngles(i) = tempPln.propStf.gantryAngles(minDiffInd1);
             elseif recalc.stf(i).copyInd == 1
                 recalc.stf(i) = tempStf(minDiffInd1);
-                recalc.pln.gantryAngles(i) = tempPln.propStf.gantryAngles(minDiffInd1);
+                recalc.pln.propStf.gantryAngles(i) = tempPln.propStf.gantryAngles(minDiffInd1);
             elseif recalc.stf(i).copyInd == 2
                 recalc.stf(i) = tempStf(minDiffInd2);
-                recalc.pln.gantryAngles(i) = tempPln.propStf.gantryAngles(minDiffInd2);
+                recalc.pln.propStf.gantryAngles(i) = tempPln.propStf.gantryAngles(minDiffInd2);
             end
         elseif ~recalc.interpNew
             if numel(minDiffInd) > 1
