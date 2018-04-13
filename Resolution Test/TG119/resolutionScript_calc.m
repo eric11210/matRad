@@ -41,7 +41,7 @@ for angularRes = angularResS
     %the worst
     recalc.pln = pln;
     recalc.pln.propOpt.VMAToptions.maxGantryAngleSpacing = angularRes;
-    
+    %{
     %first time, do interpolation and dynamic fluence calculation
     fname = sprintf('%.1f degrees, dyn + interp.mat',angularRes);
     fprintf('%s\n',fname);
@@ -87,7 +87,7 @@ for angularRes = angularResS
     
     recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo);
     save(fname,'resultGUI','recalc');
-    
+    %}
     
     %finally, do neither interpolation nor dynamic fluence
     fname = sprintf('%.1f degrees, Ndyn + Ninterp.mat',angularRes);
