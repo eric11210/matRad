@@ -1,4 +1,4 @@
-load HEAD_AND_NECK_NEW.mat
+load HEAD_AND_NECK.mat
 
 % meta information for treatment plan
 
