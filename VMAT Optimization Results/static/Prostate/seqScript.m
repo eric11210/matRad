@@ -5,7 +5,7 @@ close all
 
 % load patient data, i.e. ct, voi, cst
 
-load PROSTATE_NEW.mat
+load PROSTATE.mat
 
 % meta information for treatment plan
 
@@ -53,7 +53,21 @@ t0_nDij_nJ = tic;
 resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,resultGUI,pln,stf);
 t_nDij_nJ = toc(t0_nDij_nJ);
 savefig(fname)
-save(fname,'resultGUI','-v7.3')
+
+
+% recalculation
+angularRes = 4;
+
+recalc.pln = pln;
+recalc.pln.propOpt.VMAToptions.maxGantryAngleSpacing = angularRes;
+
+recalc.continuousAperture = true;
+recalc.interpNew = true;
+recalc.dijNew = true;
+
+recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo,0,dij);
+
+save(fname,'resultGUI','recalc','-v7.3')
 
 save('timings','t_*')
 

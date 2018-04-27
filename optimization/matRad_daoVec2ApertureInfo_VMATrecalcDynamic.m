@@ -168,6 +168,25 @@ for i = 1:numel(updatedInfo.beam)
             xPosIndRightLeafI_F = round((rightLeafPosI_F - apertureInfo.beam(i).posOfCornerBixel(1))/apertureInfo.bixelWidth + 1);
             xPosIndRightLeafF_F = round((rightLeafPosF_F - apertureInfo.beam(i).posOfCornerBixel(1))/apertureInfo.bixelWidth + 1);
             
+            xPosIndLeftLeafI_I(xPosIndLeftLeafI_I > size(edges_l,2)) = size(edges_l,2);
+            xPosIndLeftLeafF_I(xPosIndLeftLeafF_I > size(edges_l,2)) = size(edges_l,2);
+            xPosIndRightLeafI_I(xPosIndRightLeafI_I > size(edges_l,2)) = size(edges_l,2);
+            xPosIndRightLeafF_I(xPosIndRightLeafF_I > size(edges_l,2)) = size(edges_l,2);
+            xPosIndLeftLeafI_F(xPosIndLeftLeafI_F > size(edges_l,2)) = size(edges_l,2);
+            xPosIndLeftLeafF_F(xPosIndLeftLeafF_F > size(edges_l,2)) = size(edges_l,2);
+            xPosIndRightLeafI_F(xPosIndRightLeafI_F > size(edges_l,2)) = size(edges_l,2);
+            xPosIndRightLeafF_F(xPosIndRightLeafF_F > size(edges_l,2)) = size(edges_l,2);
+            
+            xPosIndLeftLeafI_I(xPosIndLeftLeafI_I < 1) = 1;
+            xPosIndLeftLeafF_I(xPosIndLeftLeafF_I < 1) = 1;
+            xPosIndRightLeafI_I(xPosIndRightLeafI_I < 1) = 1;
+            xPosIndRightLeafF_I(xPosIndRightLeafF_I < 1) = 1;
+            xPosIndLeftLeafI_F(xPosIndLeftLeafI_F < 1) = 1;
+            xPosIndLeftLeafF_F(xPosIndLeftLeafF_F < 1) = 1;
+            xPosIndRightLeafI_F(xPosIndRightLeafI_F < 1) = 1;
+            xPosIndRightLeafF_F(xPosIndRightLeafF_F < 1) = 1;
+            
+            
             xPosLinearIndLeftLeafI_I = sub2ind([n size(edges_l)],(1:n)',xPosIndLeftLeafI_I);
             xPosLinearIndLeftLeafF_I = sub2ind([n size(edges_l)],(1:n)',xPosIndLeftLeafF_I);
             xPosLinearIndRightLeafI_I = sub2ind([n size(edges_l)],(1:n)',xPosIndRightLeafI_I);
@@ -257,7 +276,7 @@ for i = 1:numel(updatedInfo.beam)
             end
             
             % find open bixels
-            tempMapIx = tempMap > 0;
+            tempMapIx = tempMap > 10E-8;
             
             currBixelIx = apertureInfo.beam(i).bixelIndMap(tempMapIx);
             w(currBixelIx) = w(currBixelIx) + tempMap(tempMapIx)*updatedInfo.beam(i).shape(j).weight;

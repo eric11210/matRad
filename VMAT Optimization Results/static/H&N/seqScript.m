@@ -5,7 +5,7 @@ close all
 
 % load patient data, i.e. ct, voi, cst
 
-load HEAD_AND_NECK_NEW.mat
+load HEAD_AND_NECK.mat
 
 % meta information for treatment plan
 
@@ -39,9 +39,7 @@ pln = matRad_VMATGantryAngles(pln,cst,ct);
 stf = matRad_generateStf(ct,cst,pln);
 
 % calc Dij
-%dij = matRad_calcPhotonDose(ct,stf,pln,cst);
-
-
+dij = matRad_calcPhotonDose(ct,stf,pln,cst);
 
 % inverse planning for imrt
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
@@ -54,7 +52,22 @@ t0_nDij_nJ = tic;
 resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,resultGUI,pln,stf);
 t_nDij_nJ = toc(t0_nDij_nJ);
 savefig(fname)
-save(fname,'resultGUI','-v7.3')
+
+
+% recalculation
+angularRes = 2;
+
+recalc.pln = pln;
+recalc.pln.propOpt.VMAToptions.maxGantryAngleSpacing = angularRes;
+
+recalc.continuousAperture = true;
+recalc.interpNew = true;
+recalc.dijNew = true;
+
+recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo,0,dij);
+
+save(fname,'resultGUI','recalc','-v7.3')
+
 
 save('timings','t_*')
 
