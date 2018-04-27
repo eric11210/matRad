@@ -30,17 +30,6 @@ for i = 1:size(cst_Over,1)
     end
 end
 
-options.lb              = recalc.apertureInfo.limMx(:,1);                                          % Lower bound on the variables.
-options.ub              = recalc.apertureInfo.limMx(:,2);                                          % Upper bound on the variables.
-[options.cl,options.cu] = matRad_daoGetConstBounds(cst_Over,recalc.apertureInfo,options,recalc.pln.leafSpeedCst,recalc.pln.doseRateCst);   % Lower and upper bounds on the constraint functions.
-options.VMAT = recalc.pln.VMAT;
-
-% set optimization options
-options.radMod          = recalc.pln.radiationMode;
-options.bioOpt          = recalc.pln.bioOptimization;
-options.ID              = [recalc.pln.radiationMode '_' recalc.pln.bioOptimization];
-%options.numOfScenarios  = dij.numOfScenarios;
-
 angularResS = [0.5 1 2 4];
 
 
@@ -363,7 +352,7 @@ path = 'C:\Users\eric\Carleton University\OneDrive - Carleton University\Carleto
 figure(1)
 xlabel('Relative dose difference (\%)')
 ylabel('Volume (\%)')
-fname = 'HN_Dynamic_interpolated';
+fname = 'Prostate_Dynamic_interpolated';
 %title(fname)
 legend({'$\Delta\theta_{\mathrm{dose}} = \SI{0.5}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{1}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{2}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{4}{\degree}$'},'Location','Best')
 grid on
@@ -375,7 +364,7 @@ matlab2tikz('filename',fullpath,'interpretTickLabelsAsTex',true,'parseStrings',f
 figure(2)
 xlabel('Relative dose difference (\%)')
 ylabel('Volume (\%)')
-fname = 'HN_Notdynamic_notinterpolated';
+fname = 'Prostate_Notdynamic_notinterpolated';
 %title(fname)
 legend({'$\Delta\theta_{\mathrm{dose}} = \SI{0.5}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{1}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{2}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{4}{\degree}$'},'Location','Best')
 grid on
@@ -387,7 +376,7 @@ matlab2tikz('filename',fullpath,'interpretTickLabelsAsTex',true,'parseStrings',f
 figure(3)
 xlabel('Relative dose difference (\%)')
 ylabel('Volume (\%)')
-fname = 'HN_Dynamic_interpolated_oldDij';
+fname = 'Prostate_Dynamic_interpolated_oldDij';
 %title(fname)
 legend({'$\Delta\theta_{\mathrm{dose}} = \SI{0.5}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{1}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{2}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{4}{\degree}$'},'Location','Best')
 grid on
@@ -399,7 +388,7 @@ matlab2tikz('filename',fullpath,'interpretTickLabelsAsTex',true,'parseStrings',f
 figure(4)
 xlabel('Relative dose difference (\%)')
 ylabel('Volume (\%)')
-fname = 'HN_Notdynamic_interpolated';
+fname = 'Prostate_Notdynamic_interpolated';
 %title(fname)
 legend({'$\Delta\theta_{\mathrm{dose}} = \SI{0.5}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{1}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{2}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{4}{\degree}$'},'Location','Best')
 grid on

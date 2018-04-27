@@ -34,14 +34,14 @@ load('Results_NEWCONTOURS.mat');
 
 
 
-angularResS = [0.5 1 2 4];
+angularResS = [1 2 4];
 
 for angularRes = angularResS
     %for each angular resolution, proceed from the best approximation to
     %the worst
     recalc.pln = pln;
     recalc.pln.propOpt.VMAToptions.maxGantryAngleSpacing = angularRes;
-    %{
+    
     %first time, do interpolation and dynamic fluence calculation
     fname = sprintf('%.1f degrees, dyn + interp.mat',angularRes);
     fprintf('%s\n',fname);
@@ -87,8 +87,8 @@ for angularRes = angularResS
     
     recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo);
     save(fname,'resultGUI','recalc');
-    %}
     
+    %{
     %finally, do neither interpolation nor dynamic fluence
     fname = sprintf('%.1f degrees, Ndyn + Ninterp.mat',angularRes);
     fprintf('%s\n',fname);
@@ -98,6 +98,6 @@ for angularRes = angularResS
     
     recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo);
     save(fname,'resultGUI','recalc');
-    
+    %}
     
 end

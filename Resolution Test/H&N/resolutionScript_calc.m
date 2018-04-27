@@ -34,7 +34,7 @@ load('Results_NEWCONTOURS_4Deg.mat');
 
 
 
-angularResS = [0.5 1 2 4];
+angularResS = [4 2];
 
 for angularRes = angularResS
     %for each angular resolution, proceed from the best approximation to

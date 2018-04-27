@@ -30,17 +30,6 @@ for i = 1:size(cst_Over,1)
     end
 end
 
-options.lb              = recalc.apertureInfo.limMx(:,1);                                          % Lower bound on the variables.
-options.ub              = recalc.apertureInfo.limMx(:,2);                                          % Upper bound on the variables.
-[options.cl,options.cu] = matRad_daoGetConstBounds(cst_Over,recalc.apertureInfo,options,recalc.pln.leafSpeedCst,recalc.pln.doseRateCst);   % Lower and upper bounds on the constraint functions.
-options.VMAT = recalc.pln.VMAT;
-
-% set optimization options
-options.radMod          = recalc.pln.radiationMode;
-options.bioOpt          = recalc.pln.bioOptimization;
-options.ID              = [recalc.pln.radiationMode '_' recalc.pln.bioOptimization];
-%options.numOfScenarios  = dij.numOfScenarios;
-
 angularResS = [0.5 1 2 4];
 
 
