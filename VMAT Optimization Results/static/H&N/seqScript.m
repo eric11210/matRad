@@ -39,22 +39,28 @@ pln = matRad_VMATGantryAngles(pln,cst,ct);
 stf = matRad_generateStf(ct,cst,pln);
 
 % calc Dij
+t0 = tic;
 dij = matRad_calcPhotonDose(ct,stf,pln,cst);
+tDij = toc(t0);
 
 % inverse planning for imrt
+t0 = tic;
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
+tFMO = toc(t0);
 
 % DAO
 fname = 'Results_NEWCONTOURS';
+t0 = tic;
 resultGUI = matRad_siochiLeafSequencing(resultGUI,stf,dij,pln,0);
+tSeq = toc(t0);
 
-t0_nDij_nJ = tic;
+t0 = tic;
 resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,resultGUI,pln,stf);
-t_nDij_nJ = toc(t0_nDij_nJ);
+tDAO = toc(t0);
 savefig(fname)
 
-
 % recalculation
+%{
 angularRes = 2;
 
 recalc.pln = pln;
@@ -65,11 +71,12 @@ recalc.interpNew = true;
 recalc.dijNew = true;
 
 recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo,0,dij);
+%}
+%save(fname,'resultGUI','recalc','-v7.3')
 
-save(fname,'resultGUI','recalc','-v7.3')
+tOpt = tFMO+tSeq+tDAO;
 
-
-save('timings','t_*')
+save('timings','t*')
 
 
 

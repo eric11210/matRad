@@ -159,6 +159,7 @@ else
     
     options.numOfScenarios = 1;
     options.bioOpt = 'none';
+    dij.scaleFactor = apertureInfo.weightToMU./dij.weightToMU;
     d = matRad_backProjection(recalc.resultGUI.w,dij,options);
     recalc.resultGUI.physicalDose = reshape(d{1},dij.dimensions);
 end
