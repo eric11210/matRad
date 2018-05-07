@@ -29,7 +29,7 @@ pln.propOpt.numLevels = 7;
 pln.propOpt.VMAToptions.machineConstraintFile = [pln.radiationMode '_' pln.machine];
 pln.propOpt.VMAToptions.continuousAperture = false;
 
-pln.propOpt.VMAToptions.maxGantryAngleSpacing = 4;      % Max gantry angle spacing for dose calculation
+pln.propOpt.VMAToptions.maxGantryAngleSpacing = 2;      % Max gantry angle spacing for dose calculation
 pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing = 4;      % Max gantry angle spacing for DAO
 pln.propOpt.VMAToptions.maxFMOGantryAngleSpacing = 28;      % Max gantry angle spacing for FMO
 
