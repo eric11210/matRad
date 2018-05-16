@@ -27,6 +27,8 @@ end
 
 ct.numOfCtScen = xcatLog.numPhases;
 
+%delete(fullfile(dirDICOM,'*Slice*.dcm'));
+
 %% Import vector files
 fprintf('matRad: Importing motion vectors from XCAT files ... \n');
 
@@ -49,7 +51,7 @@ fprintf('Done!\n');
 cst = matRad_createCst(structures);
 
 
-save(fnameXcatRoot,'ct','cst');
+save(fnameXcatRoot,'ct','cst','-v7.3');
 
 end
 

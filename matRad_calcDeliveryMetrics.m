@@ -209,7 +209,7 @@ if pln.propOpt.runVMAT
     
     if pln.propOpt.VMAToptions.continuousAperture
         
-        FMOBorders = zeros(2*numel(pln.propStf.FMOGantryAngles),1);
+        FMOBorders = zeros(1,2*numel(pln.propStf.FMOGantryAngles));
         counter = 1;
         for i = 1:numel(pln.propStf.gantryAngles)
             if stf(i).propVMAT.FMOBeam

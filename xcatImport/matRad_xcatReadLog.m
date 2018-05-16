@@ -5,15 +5,20 @@ fid = fopen(fnameLog,'r');
 tline = fgetl(fid);
 tline = fgetl(fid);
 
-finished = false;
 muPixel = false;
 
-while(~finished && ischar(tline))
+while(ischar(tline))
     
     if ~isempty(strfind(tline,'Total Output Frames'))
         
         equalInd = find(tline == '=');
         numPhases = str2double(tline((equalInd+1):end));
+        
+    elseif ~isempty(strfind(tline,'Time Per Frame'))
+        
+        equalInd = find(tline == '=');
+        sInd = find(tline == 's');
+        deltaT = str2double(tline((equalInd(3)+1):(sInd(1)-1)));
     
     elseif ~isempty(strfind(tline,'pixel width')) && isempty(strfind(tline,'voxel volume'))
         
@@ -69,6 +74,7 @@ xcatLog.dim = dim;
 xcatLog.resolution = resolution;
 xcatLog.muWater = muWater;
 xcatLog.numPhases = numPhases;
+xcatLog.deltaT = deltaT;
 
 fclose(fid);
 

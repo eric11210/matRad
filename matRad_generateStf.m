@@ -94,8 +94,36 @@ if strcmp(pln.radiationMode,'protons') || strcmp(pln.radiationMode,'carbon')
     %clear machine;
 end
 
-% Convert linear indices to 3D voxel coordinates
-[coordsY_vox, coordsX_vox, coordsZ_vox] = ind2sub(ct.cubeDim,V);
+% for 4D
+coordsX_vox = zeros(numel(V)*ct.numOfCtScen,1);
+coordsY_vox = zeros(numel(V)*ct.numOfCtScen,1);
+coordsZ_vox = zeros(numel(V)*ct.numOfCtScen,1);
+
+offset = 0;
+[coordsY_voxTemp, coordsX_voxTemp, coordsZ_voxTemp] = ind2sub(ct.cubeDim,V);
+coordsX_vox(offset+(1:numel(V))) = coordsX_voxTemp;
+coordsY_vox(offset+(1:numel(V))) = coordsY_voxTemp;
+coordsZ_vox(offset+(1:numel(V))) = coordsZ_voxTemp;
+for i = 2:ct.numOfCtScen
+    
+    offset = offset+numel(V);
+    % these are probably fractional voxels
+    coordsX_voxTemp = ct.motionVecX{i}(V);
+    coordsY_voxTemp = ct.motionVecY{i}(V);
+    coordsZ_voxTemp = ct.motionVecZ{i}(V);
+    
+    coordsX_vox(offset+(1:numel(V))) = coordsX_voxTemp;
+    coordsY_vox(offset+(1:numel(V))) = coordsY_voxTemp;
+    coordsZ_vox(offset+(1:numel(V))) = coordsZ_voxTemp;
+end
+%{
+round2 = @(a,b) round(a*10^b)/10^b;
+coordsV_vox = [coordsX_vox coordsY_vox coordsZ_vox];
+coordsV_vox = unique(round2(coordsV_vox,1),'rows');
+coordsX_vox = coordsV_vox(:,1);
+coordsY_vox = coordsV_vox(:,2);
+coordsZ_vox = coordsV_vox(:,3);
+%}
 
 % Define steering file like struct. Prellocating for speed.
 % Preallocate with known size of array to avoid errors in VMAT-specific

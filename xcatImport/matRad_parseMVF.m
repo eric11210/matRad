@@ -6,9 +6,9 @@ for phase = 2:xcatLog.numPhases
     
     fprintf('Phase %d of %d.\n',phase,xcatLog.numPhases);
     
-    fnameXcatLog = fullfile(dirXCAT,sprintf('%s_vec_frame1_to_frame%d.txt',fnameXcatRoot,phase));
+    fnameXcatMVF = fullfile(dirXCAT,sprintf('%s_vec_frame1_to_frame%d.txt',fnameXcatRoot,phase));
     
-    fid = fopen(fnameXcatLog,'r');
+    fid = fopen(fnameXcatMVF,'r');
     
     %first line is empty
     tline = fgetl(fid);

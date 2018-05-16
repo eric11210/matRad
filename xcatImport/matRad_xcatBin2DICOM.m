@@ -25,8 +25,9 @@ for phase = 1:xcatLog.numPhases
         fnameXcatBin = fullfile(dirXCAT,sprintf('%s_atn_%d.bin',fnameXcatRoot,phase));
         
         fid = fopen(fnameXcatBin);
-        phant = fread(fid,numVox,'float');
+        phant = fread(fid,numVox,'single');
         phant = reshape(phant,[xcatLog.dim.x xcatLog.dim.y xcatLog.dim.z]);
+        phant = permute(phant,[2 1 3]);
         fclose(fid);
         
         phant = 1000*(phant-xcatLog.muWater)./xcatLog.muWater;
@@ -58,8 +59,8 @@ for phase = 1:xcatLog.numPhases
             
             image = phant(:,:,slice);
             
-            image=imrotate(image,-90);
-            image=fliplr(image);
+            %image=imrotate(image,-90);
+            %image=fliplr(image);
             
             image = (image-dicomInfo.RescaleIntercept)./dicomInfo.RescaleSlope;
             dicomwrite(uint16(image),fnameDICOM,dicomInfo,'CreateMode','Copy');
