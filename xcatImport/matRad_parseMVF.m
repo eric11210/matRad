@@ -2,9 +2,17 @@ function ct = matRad_parseMVF(ct,xcatLog,fnameXcatRoot)
 
 dirXCAT = fullfile(fileparts(mfilename('fullpath')),'XCAT',filesep);
 
-for phase = 2:xcatLog.numPhases
+fnameXcatPar = fullfile(dirXCAT,sprintf('%s.par',fnameXcatRoot));
+tumourPosInit = matRad_xcatReadPar(fnameXcatPar);
+
+tumourPos = zeros(xcatLog.numFrames+1,3);
+tumourPos(1,:) = tumourPosInit;
+tumourPos(xcatLog.numFrames+1,:) = tumourPos(1,:);
+t = xcatLog.deltaT.*((1:(xcatLog.numFrames+1))-1);
+
+for phase = 2:xcatLog.numFrames
     
-    fprintf('Phase %d of %d.\n',phase,xcatLog.numPhases);
+    fprintf('Phase %d of %d.\n',phase,xcatLog.numFrames);
     
     fnameXcatMVF = fullfile(dirXCAT,sprintf('%s_vec_frame1_to_frame%d.txt',fnameXcatRoot,phase));
     
@@ -74,6 +82,10 @@ for phase = 2:xcatLog.numPhases
             ct.motionVecY{phase}(yCoord_vox,xCoord_vox,zCoord_vox) = yCoordNewFrame_vox;
             ct.motionVecZ{phase}(yCoord_vox,xCoord_vox,zCoord_vox) = zCoordNewFrame_vox;
             
+            tumourPos(phase,1) = interp3(ct.motionVecX{phase},tumourPos(1,1),tumourPos(1,2),tumourPos(1,3));
+            tumourPos(phase,2) = interp3(ct.motionVecY{phase},tumourPos(1,1),tumourPos(1,2),tumourPos(1,3));
+            tumourPos(phase,3) = interp3(ct.motionVecZ{phase},tumourPos(1,1),tumourPos(1,2),tumourPos(1,3));
+            
             
             matRad_progress(i,numel(ct.motionVecX{phase}));
             i = i+1;
@@ -88,5 +100,8 @@ for phase = 2:xcatLog.numPhases
     fclose(fid);
     
 end
+
+ct.tumourMotion.coordsVox = tumourPos;
+ct.tumourMotion.t = t;
 
 end

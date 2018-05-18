@@ -1,4 +1,4 @@
-function [ct,cst] = matRad_importXCATfromBin(fnameXcatRoot)
+function [ct,cst] = matRad_importXCATfromBin(fnameXcatRoot,numPhases)
 
 %% Convert binaries from XCAT to DICOM
 dirDICOM = fullfile(fileparts(mfilename('fullpath')),'DICOM',filesep);
@@ -9,11 +9,11 @@ xcatLog = matRad_xcatBin2DICOM(fnameXcatRoot);
 %% Convert DICOM to ct structure
 fprintf('matRad: Converting DICOM to ct struct ... \n');
 
-for phase = 1:xcatLog.numPhases
+for frame = 1:xcatLog.numFrames
     
-    fprintf('Phase %d of %d.\n',phase,xcatLog.numPhases);
+    fprintf('Phase %d of %d.\n',frame,xcatLog.numFrames);
     
-    ctList = xcatLog.ctList(:,phase);
+    ctList = xcatLog.ctList(:,frame);
     
     ctTemp = matRad_importDicomCt(ctList,xcatLog.resolution,false);
     
@@ -21,13 +21,11 @@ for phase = 1:xcatLog.numPhases
         ct = ctTemp;
     end
     
-    ct.cube{phase} = ctTemp.cube{1};
-    ct.cubeHU{phase} = ctTemp.cubeHU{1};
+    ct.cube{frame} = ctTemp.cube{1};
+    ct.cubeHU{frame} = ctTemp.cubeHU{1};
 end
 
-ct.numOfCtScen = xcatLog.numPhases;
-
-%delete(fullfile(dirDICOM,'*Slice*.dcm'));
+ct.numOfCtScen = xcatLog.numFrames;
 
 %% Import vector files
 fprintf('matRad: Importing motion vectors from XCAT files ... \n');
@@ -35,6 +33,12 @@ fprintf('matRad: Importing motion vectors from XCAT files ... \n');
 ct = matRad_parseMVF(ct,xcatLog,fnameXcatRoot);
 
 fprintf('Done!\n');
+
+%% Bin ct frames based on tumour motion data from XCAT
+fprintf('matRad: Binning frames into phases ... \n');
+
+ct = matRad_binFrames2Phases(ct,numPhases);
+
 
 %% Import DICOM structure set
 fprintf('matRad: Importing DICOM structure set ... \n');

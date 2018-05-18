@@ -1,6 +1,6 @@
 function dose = matRad_calcPhotonDoseBixel(SAD,m,betas,Interp_kernel1,...
                   Interp_kernel2,Interp_kernel3,radDepths,geoDists,...
-                  isoLatDistsX,isoLatDistsZ)
+                  isoLatDistsX,isoLatDistsZ,ix,nPatientVox)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % matRad photon dose calculation for an individual bixel
 % 
@@ -45,12 +45,31 @@ function dose = matRad_calcPhotonDoseBixel(SAD,m,betas,Interp_kernel1,...
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Define function_Di
-func_Di = @(beta,x) beta/(beta-m) * (exp(-m*x) - exp(-beta*x)); 
+func_Di = @(beta,x) beta/(beta-m) * (exp(-m*x) - exp(-beta*x));
 
-% Calulate lateral distances using grid interpolation.
-lat1 = Interp_kernel1(isoLatDistsX,isoLatDistsZ);
-lat2 = Interp_kernel2(isoLatDistsX,isoLatDistsZ);
-lat3 = Interp_kernel3(isoLatDistsX,isoLatDistsZ);
+if nargin < 11
+    % Calulate lateral distances using grid interpolation.
+    lat1 = Interp_kernel1(isoLatDistsX,isoLatDistsZ);
+    lat2 = Interp_kernel2(isoLatDistsX,isoLatDistsZ);
+    lat3 = Interp_kernel3(isoLatDistsX,isoLatDistsZ);
+else
+    lat1 = zeros(size(isoLatDistsX));
+    lat2 = zeros(size(isoLatDistsX));
+    lat3 = zeros(size(isoLatDistsX));
+    
+    for i = 1:size(Interp_kernel1)
+        minIxInd = (i-1)*nPatientVox+1;
+        maxIxInd = minIxInd+nPatientVox-1;
+        
+        ind = minIxInd <= ix & ix <= maxIxInd;
+        isoLatDistsXTemp = isoLatDistsX(ind);
+        isoLatDistsZTemp = isoLatDistsZ(ind);
+        
+        lat1(ind) = Interp_kernel1{i}(isoLatDistsXTemp,isoLatDistsZTemp);
+        lat2(ind) = Interp_kernel2{i}(isoLatDistsXTemp,isoLatDistsZTemp);
+        lat3(ind) = Interp_kernel3{i}(isoLatDistsXTemp,isoLatDistsZTemp);
+    end
+end
 
 % now add everything together (eq 19 w/o inv sq corr -> see below)
 dose = lat1 .* func_Di(betas(1),radDepths) + ...

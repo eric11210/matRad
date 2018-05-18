@@ -73,7 +73,7 @@ dim.z = endingSlice-startingSlice+1;
 xcatLog.dim = dim;
 xcatLog.resolution = resolution;
 xcatLog.muWater = muWater;
-xcatLog.numPhases = numPhases;
+xcatLog.numFrames = numPhases;
 xcatLog.deltaT = deltaT;
 
 fclose(fid);

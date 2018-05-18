@@ -1,4 +1,4 @@
-function [radDepthV,geoDistV] = matRad_rayTracing(stf,ct,V,rot_coordsV,rot_coordsVRound,lateralCutoff)
+function [radDepthV,geoDistV] = matRad_rayTracing_CELL(stf,ct,V,rot_coordsV,rot_coordsVRound,lateralCutoff)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % matRad visualization of two-dimensional dose distributions on ct including
 % segmentation
@@ -40,17 +40,28 @@ function [radDepthV,geoDistV] = matRad_rayTracing(stf,ct,V,rot_coordsV,rot_coord
 radDepthCube = repmat({NaN*ones(ct.cubeDim)},ct.numOfCtScen,1);
 
 % set up ray matrix direct behind last voxel
-rayMx_bev_y = max(rot_coordsV(:,2)) + max([ct.resolution.x ct.resolution.y ct.resolution.z]);
+rayMx_bev_y = -inf;
+for i = 1:ct.numOfCtScen
+    rayMx_bev_y = max(max(rot_coordsV{i}(:,2)) + max([ct.resolution.x ct.resolution.y ct.resolution.z]),rayMx_bev_y);
+end
+
 rayMx_bev_y = rayMx_bev_y + stf.sourcePoint_bev(2);
 
 % calculate geometric distances
+geoDistV = cell(ct.numOfCtScen,1);
 if nargout > 1
-    geoDistV = sqrt(sum(rot_coordsV.^2,2));
+    for i = 1:ct.numOfCtScen
+        geoDistV{i} = sqrt(sum(rot_coordsV{i}.^2,2));
+    end
 end
 
 % set up list with bev coordinates for calculation of radiological depth
-coords = zeros(prod(ct.cubeDim),3);
-coords(V,:) = rot_coordsVRound;
+coords = cell(ct.numOfCtScen,1);
+
+for i = 1:ct.numOfCtScen
+    coords{i} = zeros(prod(ct.cubeDim),3);
+    coords{i}(V{i},:) = rot_coordsVRound{i};
+end
 
 % calculate spacing of rays on ray matrix
 rayMxSpacing = 1/sqrt(2) * min([ct.resolution.x ct.resolution.y ct.resolution.z]);
@@ -94,31 +105,31 @@ raySelection = rayMxSpacing/2;
 
 % perform ray tracing over all rays
 for i = 1:size(rayMx_world,1)
-    
+
     % run siddon ray tracing algorithm
     [~,l,rho,~,ixHitVoxel] = matRad_siddonRayTracer(stf.isoCenter, ...
-        ct.resolution, ...
-        stf.sourcePoint, ...
-        rayMx_world(i,:), ...
-        ct.cube);
-    
-    
-    % find voxels for which we should remember this tracing because this is
-    % the closest ray by projecting the voxel coordinates to the
-    % intersection points with the ray matrix and checking if the distance
-    % in x and z direction is smaller than the resolution of the ray matrix
-    scale_factor = (rayMx_bev_y - stf.sourcePoint_bev(2)) ./ ...
-        coords(ixHitVoxel,2);
-    
-    x_dist = coords(ixHitVoxel,1).*scale_factor - rayMx_bev(i,1);
-    z_dist = coords(ixHitVoxel,3).*scale_factor - rayMx_bev(i,3);
-    
-    ixRememberFromCurrTracing = x_dist > -raySelection & x_dist <= raySelection ...
-        & z_dist > -raySelection & z_dist <= raySelection;
+                                ct.resolution, ...
+                                stf.sourcePoint, ...
+                                rayMx_world(i,:), ...
+                                ct.cube);
     
     for j = 1:ct.numOfCtScen
+        % find voxels for which we should remember this tracing because this is
+        % the closest ray by projecting the voxel coordinates to the
+        % intersection points with the ray matrix and checking if the distance
+        % in x and z direction is smaller than the resolution of the ray matrix
+        scale_factor = (rayMx_bev_y - stf.sourcePoint_bev(2)) ./ ...
+            coords{j}(ixHitVoxel,2);
+        
+        x_dist = coords{j}(ixHitVoxel,1).*scale_factor - rayMx_bev(i,1);
+        z_dist = coords{j}(ixHitVoxel,3).*scale_factor - rayMx_bev(i,3);
+        
+        ixRememberFromCurrTracing = x_dist > -raySelection & x_dist <= raySelection ...
+            & z_dist > -raySelection & z_dist <= raySelection;
         
         if any(ixRememberFromCurrTracing) > 0
+            
+            
             % calc radiological depths
             
             % eq 14
@@ -136,13 +147,7 @@ for i = 1:size(rayMx_world,1)
 end
 
 % only take voxel inside the patient
-radDepthV = zeros(size(geoDistV));
-nPatientVox = numel(geoDistV)./ct.tumourMotion.numFrames;
 for i = 1:ct.numOfCtScen
-    
-    offset = (i-1)*nPatientVox;
-    ind = offset+(1:nPatientVox);
-    
-    radDepthV(ind) = radDepthCube{i}(V(ind));
+    radDepthV{i} = radDepthCube{i}(V{i});
 end
 

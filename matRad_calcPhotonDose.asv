@@ -135,7 +135,7 @@ doseTmpContainer     = cell(numOfBixelsContainer,dij.numOfScenarios);
 % take only voxels inside patient
 V_frame1 = [cst{:,4}];
 V_frame1 = unique(vertcat(V_frame1{:}));
-V_frame1AllPhases = repmat(V_frame1,dij.numPhases,1);
+V_frame1All = repmat(V_frame1,dij.numPhases,1);
 nPatientVox = numel(V_frame1);
 
 % Convert CT subscripts to linear indices.
@@ -472,82 +472,86 @@ for i = 1:dij.numOfBeams % loop over all beams
             continue;
         end
         
-        % calculate photon dose for beam i and bixel j
-        bixelDose = matRad_calcPhotonDoseBixel(machine.meta.SAD,machine.data.m,...
-            machine.data.betas, ...
-            Interp_kernel1,...
-            Interp_kernel2,...
-            Interp_kernel3,...
-            radDepthV(ix),...
-            geoDistV(ix),...
-            isoLatDistsX,...
-            isoLatDistsZ,...
-            ix,...
-            nPatientVox);
-        
-        
-        % sample dose only for bixel based dose calculation
-        if ~isFieldBasedDoseCalc && ~calcDoseDirect
-            r0   = 25;   % [mm] sample beyond the inner core
-            Type = 'radius';
+        for k = 1:dij.numFrames
+            % calculate photon dose for beam i and bixel j
+            bixelDose = matRad_calcPhotonDoseBixel(machine.meta.SAD,machine.data.m,...
+                machine.data.betas, ...
+                Interp_kernel1,...
+                Interp_kernel2,...
+                Interp_kernel3,...
+                radDepthV(ix),...
+                geoDistV(ix),...
+                isoLatDistsX,...
+                isoLatDistsZ,...
+                ix,...
+                nPatientVox);
             
-            if dij.memorySaverPhoton
-                warning('Memory saver option not tested!')
-                %{
-                [ix{k},bixelDose,ixTail,nTailPerDepth,bixelDoseTail,nTail,nDepth,nCore] = matRad_DijSampling_memorySaver(ix{k},bixelDose,radDepthV{k}(ix{k}),rad_distancesSq{k},Type,r0);
+            
+            % sample dose only for bixel based dose calculation
+            if ~isFieldBasedDoseCalc && ~calcDoseDirect
+                r0   = 25;   % [mm] sample beyond the inner core
+                Type = 'radius';
                 
-                dij.ixTail{k}(offsetTail{k}+(1:nTail)) = uint32(V{1}(ixTail));
-                dij.nTailPerDepth{k}(offsetDepth{k}+(1:nDepth)) = nTailPerDepth;
-                dij.bixelDoseTail{k}(offsetDepth{k}+(1:nDepth)) = bixelDoseTail;
-                
-                dij.nCore{k}(counter) = uint16(nCore);
-                dij.nTail{k}(counter) = uint16(nTail);
-                dij.nDepth{k}(counter) = uint16(nDepth);
-                
-                offsetTail{k} = offsetTail{k}+nTail;
-                offsetDepth{k} = offsetDepth{k}+nDepth;
-                %}
-                
-            else
-                [ix,bixelDose] = matRad_DijSampling(ix,bixelDose,radDepthV(ix),rad_distancesSq,Type,r0);
-            end
-        end
-        
-        % average dose over frames into phases
-        % this is the phase index
-        ixPhase = frameInd2PhaseInd(ix);
-        % this is a normalization factor for the average
-        normFactor = accumarray(ixPhase,1,[nPatientVox*dij.numPhases 1]);
-        % this is the average dose, accumulated over all frames which
-        % share the same phase
-        % the dose is sorted into order according to the phase index
-        % (every index is included, even ones with 0 dose)
-        bixelDosePhase = accumarray(ixPhase,bixelDose,[nPatientVox*dij.numPhases 1])./normFactor;
-        bixelDosePhase(isnan(bixelDosePhase)) = 0;
-        
-        % Save dose for every bixel in cell array
-        doseTmpContainer{mod(counter-1,numOfBixelsContainer)+1,1} = sparse(V_frame1AllPhases,phaseInd2Phase,bixelDosePhase,dij.numOfVoxels,ct.tumourMotion.numPhases);
-        % Because it is V{1}(ix{k}), we are calculating the dose on the
-        % transformed CT, but bringing back to the reference CT for the
-        % Dij.  Also, this ensures that even if two different voxels on
-        % the reference map to the same voxel, we don't need to worry
-        % about accumulation.
-        
-        % save computation time and memory by sequentially filling the
-        % sparse matrix dose.dij from the cell array
-        if mod(counter,numOfBixelsContainer) == 0 || counter == dij.totalNumOfBixels
-            if calcDoseDirect
-                if isfield(stf(1).ray(1),'weight')
-                    % score physical dose
-                    dij.physicalDose{phase}(:,i) = dij.physicalDose{phase}(:,i) + stf(i).ray(j).weight * doseTmpContainer{1,k};
+                if dij.memorySaverPhoton
+                    warning('Memory saver option not tested!')
+                    [ix{k},bixelDose,ixTail,nTailPerDepth,bixelDoseTail,nTail,nDepth,nCore] = matRad_DijSampling_memorySaver(ix{k},bixelDose,radDepthV{k}(ix{k}),rad_distancesSq{k},Type,r0);
+                    
+                    dij.ixTail{k}(offsetTail{k}+(1:nTail)) = uint32(V{1}(ixTail));
+                    dij.nTailPerDepth{k}(offsetDepth{k}+(1:nDepth)) = nTailPerDepth;
+                    dij.bixelDoseTail{k}(offsetDepth{k}+(1:nDepth)) = bixelDoseTail;
+                    
+                    dij.nCore{k}(counter) = uint16(nCore);
+                    dij.nTail{k}(counter) = uint16(nTail);
+                    dij.nDepth{k}(counter) = uint16(nDepth);
+                    
+                    offsetTail{k} = offsetTail{k}+nTail;
+                    offsetDepth{k} = offsetDepth{k}+nDepth;
+                    
                 else
-                    error(['No weight available for beam ' num2str(i) ', ray ' num2str(j)]);
+                    [ix,bixelDose] = matRad_DijSampling(ix,bixelDose,radDepthV(ix),rad_distancesSq,Type,r0);
                 end
-            else
-                % fill entire dose influence matrix
-                dij.physicalDose{1}(:,(ceil(counter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:counter) = [doseTmpContainer{1:mod(counter-1,numOfBixelsContainer)+1,1}];
+            end
+            
+            % sum dose over frames into phases
+            % this is the phase index
+            ixPhase = frameInd2PhaseInd(ix);
+            % this is a normalization factor whit
+            normFactor = accumarray(ixPhase,1,[nPatientVox*dij.numPhases 1]);
+            %normFactor = nFramesPerPhase(ix);
+            bixelDosePhase = accumarray(ixPhase,bixelDose,[nPatientVox*dij.numPhases 1])./normFactor;
+            bixelDosePhase(isnan(bixelDosePhase)) = 0;
+            
+            % set up sorting into sparse
+            phase = phaseInd2Phase(ixPhase);
+            mask = logical(normFactor);
+            
+            bixelDosePhase(~mask) = [];
+            
+            % Save dose for every bixel in cell array
+            doseTmpContainer{mod(counter-1,numOfBixelsContainer)+1,1} = sparse(V_frame1All(ixPhase),phase,bixelDosePhase,dij.numOfVoxels,ct.tumourMotion.numPhases);
+            % Because it is V{1}(ix{k}), we are calculating the dose on the
+            % transformed CT, but bringing back to the reference CT for the
+            % Dij.  Also, this ensures that even if two different voxels on
+            % the reference map to the same voxel, we don't need to worry
+            % about accumulation.
+            
+            % save computation time and memory by sequentially filling the
+            % sparse matrix dose.dij from the cell array
+            if mod(counter,numOfBixelsContainer) == 0 || counter == dij.totalNumOfBixels
+                if calcDoseDirect
+                    if isfield(stf(1).ray(1),'weight')
+                        % score physical dose
+                        dij.physicalDose{phase}(:,i) = dij.physicalDose{phase}(:,i) + stf(i).ray(j).weight * doseTmpContainer{1,k};
+                    else
+                        error(['No weight available for beam ' num2str(i) ', ray ' num2str(j)]);
+                    end
+                else
+                    % fill entire dose influence matrix
+                    dij.physicalDose{1}(:,(ceil(counter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:counter) = [doseTmpContainer{1:mod(counter-1,numOfBixelsContainer)+1,1}];
+                end
             end
         end
+        
         
     end
 end

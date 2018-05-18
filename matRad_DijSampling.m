@@ -127,6 +127,10 @@ else
     % cut new vectors and add inner core values
     ixNew        = [ix(ixCore);    ixNew(1:IxCnt-1)];
     bixelDoseNew = [bixelDoseCore; bixelDoseNew(1:IxCnt-1)];
+    
+    [ixNew, ind] = sort(ixNew);
+    bixelDoseNew = bixelDoseNew(ind);
+    
 end
 
 

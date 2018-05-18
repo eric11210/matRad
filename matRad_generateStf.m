@@ -575,5 +575,8 @@ if pln.propOpt.runVMAT
     stf = matRad_StfVMATPost(stf,pln,masterRayPosBEV,masterTargetPointBEV,SAD,machine);
 end
 
+% compute SSDs
+stf = matRad_computeSSD(stf,ct);
+
 end
 

@@ -14,14 +14,14 @@ numVox = xcatLog.dim.x*xcatLog.dim.y*xcatLog.dim.z;
 
 ctList_all = ls(fullfile(dirDICOM,sprintf('%s_Phase*_Slice*.dcm',fnameXcatRoot)));
 
-xcatLog.ctList = cell(xcatLog.dim.z,xcatLog.numPhases);
+xcatLog.ctList = cell(xcatLog.dim.z,xcatLog.numFrames);
 
 
 fprintf('matRad: Converting XCAT binaries to DICOM ... \n');
 
-for phase = 1:xcatLog.numPhases
+for phase = 1:xcatLog.numFrames
     
-    if size(ctList_all,1) ~= xcatLog.numPhases*xcatLog.dim.z
+    if size(ctList_all,1) ~= xcatLog.numFrames*xcatLog.dim.z
         fnameXcatBin = fullfile(dirXCAT,sprintf('%s_atn_%d.bin',fnameXcatRoot,phase));
         
         fid = fopen(fnameXcatBin);
@@ -41,7 +41,7 @@ for phase = 1:xcatLog.numPhases
         fnameDICOM = fullfile(dirDICOM,sprintf('%s_Phase%02d_Slice%03d.dcm',fnameXcatRoot,phase,slice));
         xcatLog.ctList{slice,phase} = fnameDICOM;
         
-        if size(ctList_all,1) ~= xcatLog.numPhases*xcatLog.dim.z
+        if size(ctList_all,1) ~= xcatLog.numFrames*xcatLog.dim.z
             
             % x is R-L, y is A-P, z is I-S
             % original CT, contours:    start @ z = 1165 mm, res = [0.85
@@ -65,7 +65,7 @@ for phase = 1:xcatLog.numPhases
             image = (image-dicomInfo.RescaleIntercept)./dicomInfo.RescaleSlope;
             dicomwrite(uint16(image),fnameDICOM,dicomInfo,'CreateMode','Copy');
             
-            matRad_progress((phase-1)*xcatLog.dim.z+slice,xcatLog.numPhases*xcatLog.dim.z);
+            matRad_progress((phase-1)*xcatLog.dim.z+slice,xcatLog.numFrames*xcatLog.dim.z);
         end
     end
 end

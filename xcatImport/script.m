@@ -52,18 +52,18 @@ for i = 1:nPhases
     t_xl_XCAT(i) = interp1(x_XCAT(l_XCAT == i),tSamp(l_XCAT == i),xl_XCAT(i));
     
     tl(i) = mean(tSamp(l_XCAT == i));
-    
-    if i < nPhases
-        t_lBounds(i+1) = interp1(x_XCAT(l_XCAT == i | l_XCAT == i+1),tSamp(l_XCAT == i | l_XCAT == i+1),lBounds(i+1));
-    end
 end
 
 t_lBounds(1) = 0;
 for i = 2:numel(lBounds)
     
-    curr_l = i;
-    t_lBounds(i) = interp1();
+    prev_l = i-1;
+    next_l = i;
+    t_lBounds(i) = interp1(x_XCAT(l_XCAT == prev_l | l_XCAT == next_l),tSamp(l_XCAT == prev_l | l_XCAT == next_l),lBounds(i));
     
+    prev_l = nPhases+1-i;
+    next_l = nPhases+2-i;
+    t_lBounds(nPhases+2-i) = interp1(x_XCAT(l_XCAT == prev_l | l_XCAT == next_l),tSamp(l_XCAT == prev_l | l_XCAT == next_l),lBounds(i));
 end
 t_lBounds(end) = max(tSamp);
 

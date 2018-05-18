@@ -67,7 +67,7 @@ if strcmp(mode,'first')
                 
                 % calculate SSD
                 SSD{k,j} = double(2 * stf(i).SAD * alpha(ixSSD));
-                stf(i).ray(j).SSD = SSD{k,j};
+                stf(i).ray(j).SSD{k} = SSD{k,j};
                 %change this to stf(i).ray(j).SSD{k} later
             end
         end
