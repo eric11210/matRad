@@ -1,34 +1,58 @@
-function xcatLog = matRad_xcatBin2DICOM(fnameXcatRoot)
+function xcatLog = matRad_xcatBin2DICOM(importOptions)
 
 dirXCAT = fullfile(fileparts(mfilename('fullpath')),'XCAT',filesep);
 dirDICOM = fullfile(fileparts(mfilename('fullpath')),'DICOM',filesep);
 
-fnameXcatLog = fullfile(dirXCAT,sprintf('%s_log',fnameXcatRoot));
+fnameXcatLog = fullfile(dirXCAT,sprintf('%s_log',importOptions.fnameXcatRoot));
 xcatLog = matRad_xcatReadLog(fnameXcatLog);
 
 dicomInfo = matRad_dicomHeader(xcatLog);
-dicomInfo.PatientName.FamilyName = fnameXcatRoot;
-dicomInfo.PatientName.GivenName = fnameXcatRoot;
+dicomInfo.PatientName.FamilyName = importOptions.fnameXcatRoot;
+dicomInfo.PatientName.GivenName = importOptions.fnameXcatRoot;
 
 numVox = xcatLog.dim.x*xcatLog.dim.y*xcatLog.dim.z;
 
-ctList_all = ls(fullfile(dirDICOM,sprintf('%s_Phase*_Slice*.dcm',fnameXcatRoot)));
+ctList_all = ls(fullfile(dirDICOM,sprintf('%s_Phase*_Slice*.dcm',importOptions.fnameXcatRoot)));
 
 xcatLog.ctList = cell(xcatLog.dim.z,xcatLog.numFrames);
 
 
 fprintf('matRad: Converting XCAT binaries to DICOM ... \n');
-
 for phase = 1:xcatLog.numFrames
     
     if size(ctList_all,1) ~= xcatLog.numFrames*xcatLog.dim.z
-        fnameXcatBin = fullfile(dirXCAT,sprintf('%s_atn_%d.bin',fnameXcatRoot,phase));
+        
+        if importOptions.massConserve
+            fnameXcatBin = fullfile(dirXCAT,sprintf('%s_atnMC_%d.bin',importOptions.fnameXcatRoot,phase));
+        else
+            fnameXcatBin = fullfile(dirXCAT,sprintf('%s_atn_%d.bin',importOptions.fnameXcatRoot,phase));
+        end
         
         fid = fopen(fnameXcatBin);
-        phant = fread(fid,numVox,'single');
-        phant = reshape(phant,[xcatLog.dim.x xcatLog.dim.y xcatLog.dim.z]);
-        phant = permute(phant,[2 1 3]);
+        phantBody = fread(fid,numVox,'single');
+        phantBody = reshape(phantBody,[xcatLog.dim.x xcatLog.dim.y xcatLog.dim.z]);
+        phantBody = permute(phantBody,[2 1 3]);
         fclose(fid);
+        
+        if importOptions.addTumour
+            
+            if importOptions.massConserve
+                fnameXcatBin = fullfile(dirXCAT,sprintf('%s_tumour_atnMC_%d.bin',importOptions.fnameXcatRoot,phase));
+            else
+                fnameXcatBin = fullfile(dirXCAT,sprintf('%s_tumour_atn_%d.bin',importOptions.fnameXcatRoot,phase));
+            end
+            
+            fid = fopen(fnameXcatBin);
+            phantTumour = fread(fid,numVox,'single');
+            phantTumour = reshape(phantTumour,[xcatLog.dim.x xcatLog.dim.y xcatLog.dim.z]);
+            phantTumour = permute(phantTumour,[2 1 3]);
+            fclose(fid);
+            
+            phant = phantBody+phantTumour;
+        else
+            
+            phant = phantBody;
+        end
         
         phant = 1000*(phant-xcatLog.muWater)./xcatLog.muWater;
         
@@ -38,11 +62,9 @@ for phase = 1:xcatLog.numFrames
     
     for slice = 1:xcatLog.dim.z
         
-        fnameDICOM = fullfile(dirDICOM,sprintf('%s_Phase%02d_Slice%03d.dcm',fnameXcatRoot,phase,slice));
+        fnameDICOM = fullfile(dirDICOM,sprintf('%s_Phase%02d_Slice%03d.dcm',importOptions.fnameXcatRoot,phase,slice));
         xcatLog.ctList{slice,phase} = fnameDICOM;
-        
         if size(ctList_all,1) ~= xcatLog.numFrames*xcatLog.dim.z
-            
             % x is R-L, y is A-P, z is I-S
             % original CT, contours:    start @ z = 1165 mm, res = [0.85
             % 0.85 1] mm
@@ -71,6 +93,7 @@ for phase = 1:xcatLog.numFrames
 end
 
 fprintf('Done!\n');
+
 
 
 end

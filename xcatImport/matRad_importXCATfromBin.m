@@ -1,9 +1,9 @@
-function [ct,cst] = matRad_importXCATfromBin(fnameXcatRoot,numPhases)
+function [ct,cst] = matRad_importXCATfromBin(importOptions)
 
 %% Convert binaries from XCAT to DICOM
 dirDICOM = fullfile(fileparts(mfilename('fullpath')),'DICOM',filesep);
 
-xcatLog = matRad_xcatBin2DICOM(fnameXcatRoot);
+xcatLog = matRad_xcatBin2DICOM(importOptions);
 
 
 %% Convert DICOM to ct structure
@@ -19,6 +19,8 @@ for frame = 1:xcatLog.numFrames
     
     if ~exist('ct','var')
         ct = ctTemp;
+        ct.cube = cell(xcatLog.numFrames,1);
+        ct.cubeHU = cell(xcatLog.numFrames,1);
     end
     
     ct.cube{frame} = ctTemp.cube{1};
@@ -30,20 +32,20 @@ ct.numOfCtScen = xcatLog.numFrames;
 %% Import vector files
 fprintf('matRad: Importing motion vectors from XCAT files ... \n');
 
-ct = matRad_parseMVF(ct,xcatLog,fnameXcatRoot);
+ct = matRad_parseMVF(ct,xcatLog,importOptions.fnameXcatRoot);
 
 fprintf('Done!\n');
 
 %% Bin ct frames based on tumour motion data from XCAT
 fprintf('matRad: Binning frames into phases ... \n');
 
-ct = matRad_binFrames2Phases(ct,numPhases);
-
+ct = matRad_binFrames2Phases(ct,importOptions);
+% add field in importOptions if we don't want to bin it, i.e. frame = bin
 
 %% Import DICOM structure set
 fprintf('matRad: Importing DICOM structure set ... \n');
 
-fnameRTSS = fullfile(dirDICOM,sprintf('%s_RTSS.dcm',fnameXcatRoot));
+fnameRTSS = fullfile(dirDICOM,sprintf('%s_RTSS.dcm',importOptions.fnameXcatRoot));
 structures = matRad_importDicomRtss(fnameRTSS,ct.dicomInfo);
 
 for i = 1:numel(structures)
@@ -54,8 +56,17 @@ end
 fprintf('Done!\n');
 cst = matRad_createCst(structures);
 
+saveName = importOptions.fnameXcatRoot;
 
-save(fnameXcatRoot,'ct','cst','-v7.3');
+if ~importOptions.keepAllFrames && importOptions.averageCT
+    saveName = [saveName '_avCT'];
+end
+
+if ~importOptions.keepAllFrames && importOptions.averageMVF
+    saveName = [saveName '_avMVF'];
+end
+
+save(saveName,'ct','cst','importOptions','-v7.3');
 
 end
 

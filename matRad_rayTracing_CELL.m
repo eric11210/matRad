@@ -147,6 +147,7 @@ for i = 1:size(rayMx_world,1)
 end
 
 % only take voxel inside the patient
+radDepthV = cell(ct.numOfCtScen,1);
 for i = 1:ct.numOfCtScen
     radDepthV{i} = radDepthCube{i}(V{i});
 end

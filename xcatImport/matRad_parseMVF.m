@@ -10,20 +10,13 @@ tumourPos(1,:) = tumourPosInit;
 tumourPos(xcatLog.numFrames+1,:) = tumourPos(1,:);
 t = xcatLog.deltaT.*((1:(xcatLog.numFrames+1))-1);
 
-for phase = 2:xcatLog.numFrames
+ct.motionVecX = cell(xcatLog.numFrames,1);
+ct.motionVecY = cell(xcatLog.numFrames,1);
+ct.motionVecZ = cell(xcatLog.numFrames,1);
+
+for phase = 1:xcatLog.numFrames
     
-    fprintf('Phase %d of %d.\n',phase,xcatLog.numFrames);
-    
-    fnameXcatMVF = fullfile(dirXCAT,sprintf('%s_vec_frame1_to_frame%d.txt',fnameXcatRoot,phase));
-    
-    fid = fopen(fnameXcatMVF,'r');
-    
-    %first line is empty
-    tline = fgetl(fid);
-    %second line contains frame number
-    tline = fgetl(fid);
-    %third and subsequent lines contain vector information
-    tline = fgetl(fid);
+    fprintf('\nPhase %d of %d.\n',phase,xcatLog.numFrames);
     
     %initialize motion vectors
     ct.motionVecX{phase} = zeros(ct.cubeDim);
@@ -41,7 +34,9 @@ for phase = 2:xcatLog.numFrames
         ct.motionVecZ{phase}(:,:,i) = i;
     end
     
-    
+    if phase == 1
+        continue
+    end
     
     resRatioX = ct.resolution.x./xcatLog.resolution.x;
     resRatioY = ct.resolution.y./xcatLog.resolution.y;
@@ -50,6 +45,17 @@ for phase = 2:xcatLog.numFrames
     if ~( round(resRatioX) == resRatioX && round(resRatioY) == resRatioY && round(resRatioZ) == resRatioZ )
         error('Non-integral ratios of resolutions.  Inexact motion vector mapping may occur.');
     end
+    
+    fnameXcatMVF = fullfile(dirXCAT,sprintf('%s_vec_frame1_to_frame%d.txt',fnameXcatRoot,phase));
+    
+    fid = fopen(fnameXcatMVF,'r');
+    
+    %first line is empty
+    tline = fgetl(fid);
+    %second line contains frame number
+    tline = fgetl(fid);
+    %third and subsequent lines contain vector information
+    tline = fgetl(fid);
     
     i = 1;
     
@@ -82,11 +88,6 @@ for phase = 2:xcatLog.numFrames
             ct.motionVecY{phase}(yCoord_vox,xCoord_vox,zCoord_vox) = yCoordNewFrame_vox;
             ct.motionVecZ{phase}(yCoord_vox,xCoord_vox,zCoord_vox) = zCoordNewFrame_vox;
             
-            tumourPos(phase,1) = interp3(ct.motionVecX{phase},tumourPos(1,1),tumourPos(1,2),tumourPos(1,3));
-            tumourPos(phase,2) = interp3(ct.motionVecY{phase},tumourPos(1,1),tumourPos(1,2),tumourPos(1,3));
-            tumourPos(phase,3) = interp3(ct.motionVecZ{phase},tumourPos(1,1),tumourPos(1,2),tumourPos(1,3));
-            
-            
             matRad_progress(i,numel(ct.motionVecX{phase}));
             i = i+1;
             tline = fgetl(fid);
@@ -96,6 +97,10 @@ for phase = 2:xcatLog.numFrames
         end
         
     end
+    
+    tumourPos(phase,1) = interp3(ct.motionVecX{phase},tumourPos(1,1),tumourPos(1,2),tumourPos(1,3));
+    tumourPos(phase,2) = interp3(ct.motionVecY{phase},tumourPos(1,1),tumourPos(1,2),tumourPos(1,3));
+    tumourPos(phase,3) = interp3(ct.motionVecZ{phase},tumourPos(1,1),tumourPos(1,2),tumourPos(1,3));
     
     fclose(fid);
     

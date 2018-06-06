@@ -74,8 +74,8 @@ dij.numOfVoxels        = prod(ct.cubeDim);
 dij.resolution         = ct.resolution;
 dij.dimensions         = ct.cubeDim;
 dij.numOfScenarios     = 1;
-dij.numPhases          = ct.numPhases;
-dij.numFrames          = ct.numFrames;
+dij.numPhases          = ct.tumourMotion.numPhases;
+dij.numFrames          = ct.tumourMotion.numFrames;
 dij.weightToMU         = 100;
 dij.scaleFactor        = 1;
 dij.memorySaverPhoton  = pln.propDoseCalc.memorySaverPhoton;
@@ -158,7 +158,7 @@ zCoordsV_voxRound = cell(dij.numFrames,1);
 % ignore densities outside of contours
 eraseCtDensMask = ones(dij.numOfVoxels,1);
 eraseCtDensMask(V{1}) = 0;
-ct.cube{1}(eraseCtDensMask == 1) = 0;
+%ct.cube{1}(eraseCtDensMask == 1) = 0;
 for i = 2:dij.numFrames
     % these are probably fractional voxels
     xCoordsV_vox{i} = ct.motionVecX{i}(V{1});
@@ -183,10 +183,8 @@ for i = 2:dij.numFrames
     % ignore densities outside of contours
     eraseCtDensMask = ones(dij.numOfVoxels,1);
     eraseCtDensMask(V{i}) = 0;
-    ct.cube{i}(eraseCtDensMask == 1) = 0;
+    %ct.cube{i}(eraseCtDensMask == 1) = 0;
 end
-
-toc
 
 % set lateral cutoff value
 lateralCutoff = 50; % [mm]
@@ -321,7 +319,6 @@ for i = 1:dij.numOfBeams % loop over all beams
     fprintf('matRad: calculate radiological depth cube...');
     [radDepthV,geoDistV] = matRad_rayTracing_CELL(stf(i),ct,V,rot_coordsV,rot_coordsVRound,effectiveLateralCutoff);
     fprintf('done \n');
-    toc
     
     radDepthIx = cell(dij.numFrames,1);
     kernel1Mx = cell(dij.numFrames,1);
@@ -516,11 +513,15 @@ for i = 1:dij.numOfBeams % loop over all beams
                 else
                     % fill entire dose influence matrix
                     dij.physicalDose{phase}(:,(ceil(counter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:counter) = [doseTmpContainer{1:mod(counter-1,numOfBixelsContainer)+1,phase}];
+                    
+                    if any(k == cumsum(ct.tumourMotion.nFramesPerPhase))
+                        for l = 1:numOfBixelsContainer
+                            doseTmpContainer{l,phase} = spalloc(prod(ct.cubeDim),1,1);
+                        end
+                    end
                 end
             end
         end
-        
-        
     end
 end
 
@@ -529,7 +530,7 @@ for i = 1:dij.numPhases
     dij.nTailPerDepth{i}(dij.nTailPerDepth{i} == intmax('uint16')) = [];
     dij.bixelDoseTail{i}(dij.bixelDoseTail{i} == -1) = [];
 end
-
+toc
 try
   % wait 0.1s for closing all waitbars
   allWaitBarFigures = findall(0,'type','figure','tag','TMWWaitbar'); 

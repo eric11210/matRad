@@ -108,7 +108,7 @@ dij.bixelDoseTail = cell(dij.numOfScenarios,1);
 offsetTail = cell(dij.numOfScenarios,1);
 offsetDepth = cell(dij.numOfScenarios,1);
 
-dij.physicalDose = cell(dij.numPhases,1);
+dij.physicalDose = cell(dij.numOfScenarios,1);
 
 for k = 1:dij.numOfScenarios
     dij.nCore{k}    = zeros*ones(dij.totalNumOfRays*dij.numPhases,1,'uint16');
@@ -162,8 +162,8 @@ V(ind) = V_frame1;
 
 
 % ignore densities outside of contours
-%eraseCtDensMask = true(dij.numOfVoxels,1);
-%eraseCtDensMask(V(ind)) = false;
+eraseCtDensMask = true(dij.numOfVoxels,1);
+eraseCtDensMask(V(ind)) = false;
 %ct.cube{1}(eraseCtDensMask) = 0;
 
 for i = 2:dij.numFrames
@@ -192,8 +192,8 @@ for i = 2:dij.numFrames
     VTemp = sub2ind(ct.cubeDim,yCoordsV_voxRoundTemp,xCoordsV_voxRoundTemp,zCoordsV_voxRoundTemp);
     
     % ignore densities outside of contours
-    %eraseCtDensMask = true(dij.numOfVoxels,1);
-    %eraseCtDensMask(VTemp) = false;
+    eraseCtDensMask = true(dij.numOfVoxels,1);
+    eraseCtDensMask(VTemp) = false;
     %ct.cube{i}(eraseCtDensMask) = 0;
     
     xCoordsV_vox(ind) = xCoordsV_voxTemp;
@@ -205,13 +205,11 @@ for i = 2:dij.numFrames
     V(ind) = VTemp;
 end
 
-toc
-
 % set up conversion from frames 2 phases
 frames2Phases = repelem(ct.tumourMotion.frames2Phases,nPatientVox);
 frameInd2PhaseInd = repmat((1:nPatientVox)',ct.tumourMotion.numFrames,1)+nPatientVox.*(frames2Phases-1);
 phaseInd2Phase = repelem((1:ct.tumourMotion.numPhases)',nPatientVox);
-%nFramesPerPhase = repelem(ct.tumourMotion.nFramesPerPhase,nPatientVox);
+nFramesPerPhase = repelem(ct.tumourMotion.nFramesPerPhase,nPatientVox);
 
 % set lateral cutoff value
 lateralCutoff = 50; % [mm]
@@ -288,6 +286,7 @@ kernelConvSize = 2*kernelConvLimit;
 effectiveLateralCutoff = lateralCutoff + fieldWidth/2;
 
 counter = 0;
+sortInd = nan(numOfBixelsContainer*ct.tumourMotion.numPhases,1);
 fprintf('matRad: Photon dose calculation...\n');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 for i = 1:dij.numOfBeams % loop over all beams
@@ -344,7 +343,7 @@ for i = 1:dij.numOfBeams % loop over all beams
     % limit rotated coordinates to positions where ray tracing is availabe
     rot_coordsV = rot_coordsV(radDepthIx,:);
     
-    toc
+    
     kernel1Mx = cell(dij.numFrames,1);
     kernel2Mx = cell(dij.numFrames,1);
     kernel3Mx = cell(dij.numFrames,1);
@@ -517,16 +516,21 @@ for i = 1:dij.numOfBeams % loop over all beams
         % this is the phase index
         ixPhase = frameInd2PhaseInd(ix);
         % this is a normalization factor for the average
-        normFactor = accumarray(ixPhase,1,[nPatientVox*dij.numPhases 1]);
+        %normFactor = accumarray(ixPhase,1,[nPatientVox*dij.numPhases 1]);
         % this is the average dose, accumulated over all frames which
         % share the same phase
         % the dose is sorted into order according to the phase index
         % (every index is included, even ones with 0 dose)
-        bixelDosePhase = accumarray(ixPhase,bixelDose,[nPatientVox*dij.numPhases 1])./normFactor;
-        bixelDosePhase(isnan(bixelDosePhase)) = 0;
+        %bixelDosePhase = accumarray(ixPhase,bixelDose,[nPatientVox*dij.numPhases 1])./normFactor;
+        %bixelDosePhase(isnan(bixelDosePhase)) = 0;
+        bixelDosePhase = bixelDose./nFramesPerPhase(ixPhase);
         
         % Save dose for every bixel in cell array
-        doseTmpContainer{mod(counter-1,numOfBixelsContainer)+1,1} = sparse(V_frame1AllPhases,phaseInd2Phase,bixelDosePhase,dij.numOfVoxels,ct.tumourMotion.numPhases);
+        %doseTmpContainer{mod(counter-1,numOfBixelsContainer)+1,1} = sparse(V_frame1AllPhases,phaseInd2Phase,bixelDosePhase,dij.numOfVoxels,ct.tumourMotion.numPhases);
+        doseTmpContainer{mod(counter-1,numOfBixelsContainer)+1,1} = sparse(V_frame1AllPhases(ixPhase),phaseInd2Phase(ixPhase),bixelDosePhase,dij.numOfVoxels,ct.tumourMotion.numPhases);
+        
+        
+        sortInd((mod(counter-1,numOfBixelsContainer)*ct.tumourMotion.numPhases+1):(mod(counter-1,numOfBixelsContainer)*ct.tumourMotion.numPhases+ct.tumourMotion.numPhases)) = (1:dij.totalNumOfBixels:(dij.totalNumOfBixels*ct.tumourMotion.numPhases))+counter-1;
         % Because it is V{1}(ix{k}), we are calculating the dose on the
         % transformed CT, but bringing back to the reference CT for the
         % Dij.  Also, this ensures that even if two different voxels on
@@ -545,19 +549,21 @@ for i = 1:dij.numOfBeams % loop over all beams
                 end
             else
                 % fill entire dose influence matrix
-                dij.physicalDose{1}(:,(ceil(counter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:counter) = [doseTmpContainer{1:mod(counter-1,numOfBixelsContainer)+1,1}];
+                %dij.physicalDose{1}(:,(ceil(counter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:counter) = [doseTmpContainer{1:mod(counter-1,numOfBixelsContainer)+1,1}];
+                sortInd(isnan(sortInd)) = [];
+                dij.physicalDose{1}(:,sortInd) = [doseTmpContainer{1:mod(counter-1,numOfBixelsContainer)+1,1}];
+                sortInd = nan(numOfBixelsContainer*ct.tumourMotion.numPhases,1);
             end
         end
-        
     end
 end
 
-for i = 1:dij.numPhases
+for i = 1:dij.numOfScenarios
     dij.ixTail{i}(dij.ixTail{i} == intmax('uint32')) = [];
     dij.nTailPerDepth{i}(dij.nTailPerDepth{i} == intmax('uint16')) = [];
     dij.bixelDoseTail{i}(dij.bixelDoseTail{i} == -1) = [];
 end
-
+toc
 try
   % wait 0.1s for closing all waitbars
   allWaitBarFigures = findall(0,'type','figure','tag','TMWWaitbar'); 
