@@ -115,14 +115,27 @@ if pln.propOpt.runVMAT
     % loop through angles
     offset = 0;
     for i = 1:dij.numOfBeams
-        % if angle is not an initialization angle, do not optimize fluence
-        % in bixels
+        
+        rayIndices = offset+(1:dij.numOfRaysPerBeam(i));
         if ~stf(i).propVMAT.FMOBeam
-            rayIndices = offset+(1:dij.numOfRaysPerBeam(i));
+            % if angle is not an initialization angle, do not optimize fluence
+            % in bixels
+            
             % set upper bound to 0
             options.ub(rayIndices) = 0;
             %set wOnes to 0 (initial value)
             wOnes(rayIndices) = 0;
+        else
+            if pln.propOpt.run4D
+                % if angle an initialization angle, only optimize bixels that
+                % intersect target in the first phase (defined by
+                % phase1RayMask)
+                
+                % set upper bound to 0
+                options.ub(rayIndices) = stf(i).phase1RayMask;
+                %set wOnes to 0 (initial value)
+                wOnes(rayIndices) = stf(i).phase1RayMask;
+            end
         end
         offset = offset+dij.numOfRaysPerBeam(i);
     end
@@ -231,11 +244,11 @@ if isfield(pln,'scaleDRx') && pln.scaleDRx
     
     wOpt = wOpt*scaleFacRx;
     resultGUI = matRad_calcCubes(wOpt,dij,cst_Over);
+    
+    resultGUI.scaleFacRx_FMO = scaleFacRx;
 end
 
 resultGUI.wUnsequenced = wOpt;
-resultGUI.scaleFacRx_FMO = scaleFacRx;
-
 
 
 % unset Key Pressed Callback of Matlab command window

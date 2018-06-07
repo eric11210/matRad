@@ -178,15 +178,8 @@ for i = 1:length(pln.propStf.gantryAngles)
     end
     
     %% transformation of union of rays
-    currMasterRayPosBEV = masterRayPosBEV;
-    currMasterTargetPointBEV = masterTargetPointBEV;
     
-    currMasterRayPosBEV(isnan(currMasterRayPosBEV)) = [];
-    currMasterTargetPointBEV(isnan(currMasterTargetPointBEV)) = [];
-    currMasterRayPosBEV = reshape(currMasterRayPosBEV,[],3);
-    currMasterTargetPointBEV = reshape(currMasterTargetPointBEV,[],3);
-    
-    stf(i).numOfRays = size(currMasterRayPosBEV,1);
+    stf(i).numOfRays = size(masterRayPosBEV,1);
     stf(i).numOfBixelsPerRay = ones(1,stf(i).numOfRays);
     stf(i).totalNumOfBixels = sum(stf(i).numOfBixelsPerRay);
     
@@ -203,17 +196,17 @@ for i = 1:length(pln.propStf.gantryAngles)
     
     % Save ray and target position in lps system.
     for j = 1:stf(i).numOfRays
-        stf(i).ray(j).rayPos_bev = currMasterRayPosBEV(j,:);
-        stf(i).ray(j).targetPoint_bev = currMasterTargetPointBEV(j,:);
+        stf(i).ray(j).rayPos_bev = masterRayPosBEV(j,:);
+        stf(i).ray(j).targetPoint_bev = masterTargetPointBEV(j,:);
         
         stf(i).ray(j).rayPos      = stf(i).ray(j).rayPos_bev*rotMat_vectors_T;
         stf(i).ray(j).targetPoint = stf(i).ray(j).targetPoint_bev*rotMat_vectors_T;
         if strcmp(pln.radiationMode,'photons')
             stf(i).ray(j).rayCorners_SCD = (repmat([0, machine.meta.SCD - SAD, 0],4,1)+ (machine.meta.SCD/SAD) * ...
-                [currMasterRayPosBEV(j,:) + [+stf(i).bixelWidth/2,0,+stf(i).bixelWidth/2];...
-                currMasterRayPosBEV(j,:) + [-stf(i).bixelWidth/2,0,+stf(i).bixelWidth/2];...
-                currMasterRayPosBEV(j,:) + [-stf(i).bixelWidth/2,0,-stf(i).bixelWidth/2];...
-                currMasterRayPosBEV(j,:) + [+stf(i).bixelWidth/2,0,-stf(i).bixelWidth/2]])*rotMat_vectors_T;
+                [masterRayPosBEV(j,:) + [+stf(i).bixelWidth/2,0,+stf(i).bixelWidth/2];...
+                masterRayPosBEV(j,:) + [-stf(i).bixelWidth/2,0,+stf(i).bixelWidth/2];...
+                masterRayPosBEV(j,:) + [-stf(i).bixelWidth/2,0,-stf(i).bixelWidth/2];...
+                masterRayPosBEV(j,:) + [+stf(i).bixelWidth/2,0,-stf(i).bixelWidth/2]])*rotMat_vectors_T;
         end
     end
     

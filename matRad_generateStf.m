@@ -63,7 +63,7 @@ voiTarget    = zeros(ct.cubeDim);
 voiTarget(V) = 1;
 
 % add margin
-addmarginBool = 0;
+addmarginBool = 1;
 if addmarginBool
     voiTarget = matRad_addMargin(voiTarget,cst,ct.resolution,ct.resolution,true);
     V   = find(voiTarget>0);
@@ -95,26 +95,27 @@ if strcmp(pln.radiationMode,'protons') || strcmp(pln.radiationMode,'carbon')
 end
 
 % for 4D
-coordsX_vox = zeros(numel(V)*ct.numOfCtScen,1);
-coordsY_vox = zeros(numel(V)*ct.numOfCtScen,1);
-coordsZ_vox = zeros(numel(V)*ct.numOfCtScen,1);
+numVox = numel(V);
+coordsX_vox = zeros(numVox*ct.numOfCtScen,1);
+coordsY_vox = zeros(numVox*ct.numOfCtScen,1);
+coordsZ_vox = zeros(numVox*ct.numOfCtScen,1);
 
 offset = 0;
 [coordsY_voxTemp, coordsX_voxTemp, coordsZ_voxTemp] = ind2sub(ct.cubeDim,V);
-coordsX_vox(offset+(1:numel(V))) = coordsX_voxTemp;
-coordsY_vox(offset+(1:numel(V))) = coordsY_voxTemp;
-coordsZ_vox(offset+(1:numel(V))) = coordsZ_voxTemp;
+coordsX_vox(offset+(1:numVox)) = coordsX_voxTemp;
+coordsY_vox(offset+(1:numVox)) = coordsY_voxTemp;
+coordsZ_vox(offset+(1:numVox)) = coordsZ_voxTemp;
 for i = 2:ct.numOfCtScen
     
-    offset = offset+numel(V);
+    offset = offset+numVox;
     % these are probably fractional voxels
     coordsX_voxTemp = ct.motionVecX{i}(V);
     coordsY_voxTemp = ct.motionVecY{i}(V);
     coordsZ_voxTemp = ct.motionVecZ{i}(V);
     
-    coordsX_vox(offset+(1:numel(V))) = coordsX_voxTemp;
-    coordsY_vox(offset+(1:numel(V))) = coordsY_voxTemp;
-    coordsZ_vox(offset+(1:numel(V))) = coordsZ_voxTemp;
+    coordsX_vox(offset+(1:numVox)) = coordsX_voxTemp;
+    coordsY_vox(offset+(1:numVox)) = coordsY_voxTemp;
+    coordsZ_vox(offset+(1:numVox)) = coordsZ_voxTemp;
 end
 %{
 round2 = @(a,b) round(a*10^b)/10^b;
@@ -136,8 +137,12 @@ if pln.propOpt.runVMAT
     %arrays per gantry angle.  In order to do VMAT, it is easier to have
     %the same MLC range and dij calculation for every possible beam/gantry
     %angle.
-    masterRayPosBEV = nan(1,3);
-    masterTargetPointBEV = nan(1,3);
+    masterRayPosBEV = zeros(1,3);
+    masterTargetPointBEV = zeros(1,3);
+    
+    if pln.propOpt.run4D
+        masterRayPosBEV_phase1 = zeros(1,3);
+    end
 end
 
 
@@ -171,21 +176,58 @@ for i = 1:length(pln.propStf.gantryAngles)
     coordsAtIsoCenterPlane(:,2) = (rot_coords(:,3)*SAD)./(SAD + rot_coords(:,2));
     
     % Take unique rows values for beamlets positions. Calculate position of
-    % central ray for every bixel    
-    rayPos = unique(pln.propStf.bixelWidth*round([           coordsAtIsoCenterPlane(:,1) ... 
-                                                  zeros(size(coordsAtIsoCenterPlane,1),1) ...
-                                                             coordsAtIsoCenterPlane(:,2)]/pln.propStf.bixelWidth),'rows');
-                                                  
+    % central ray for every bixel
+    rayPos = unique(pln.propStf.bixelWidth*round([           coordsAtIsoCenterPlane(:,1) ...
+        zeros(size(coordsAtIsoCenterPlane,1),1) ...
+        coordsAtIsoCenterPlane(:,2)]/pln.propStf.bixelWidth),'rows');
+    
+    if pln.propOpt.run4D
+        % mask off the bixels corresponding to the first phase of the CT
+        % (for the FMO)
+        
+        % Take unique rows values for beamlets positions. Calculate position of
+        % central ray for every bixel
+        [rayPos_phase1,~,unique2allRay] = unique(pln.propStf.bixelWidth*round([           coordsAtIsoCenterPlane(1:numVox,1) ...
+            zeros(numVox,1) ...
+            coordsAtIsoCenterPlane(1:numVox,2)]/pln.propStf.bixelWidth),'rows');
+        
+        stf(i).DAD = cell(ct.numOfCtScen,1);
+        offset = 0;
+        normFactor = accumarray(unique2allRay,1);
+        for phase = 1:ct.numOfCtScen
+            
+            stf(i).DAD{phase} = zeros(size(rayPos_phase1));
+            rayCounter = 1;
+            for ray = unique2allRay'
+                
+                stf(i).DAD{phase}(ray,1) = stf(i).DAD{phase}(ray,1)+coordsAtIsoCenterPlane(offset+rayCounter,1)./normFactor(ray);
+                stf(i).DAD{phase}(ray,3) = stf(i).DAD{phase}(ray,3)+coordsAtIsoCenterPlane(offset+rayCounter,2)./normFactor(ray);
+                
+                rayCounter = rayCounter+1;
+            end
+            
+            offset = offset+numVox;
+        end
+        stf(i).DAD{1} = pln.propStf.bixelWidth*round(stf(i).DAD{1}./pln.propStf.bixelWidth);
+        
+    end
+    
     % pad ray position array if resolution of target voxel grid not sufficient
     maxCtResolution = max([ct.resolution.x ct.resolution.y ct.resolution.z]);
     if pln.propStf.bixelWidth < maxCtResolution
         origRayPos = rayPos;
+        if pln.propOpt.run4D
+            origRayPos_phase1 = rayPos_phase1;
+        end
         for j = -floor(maxCtResolution/pln.propStf.bixelWidth):floor(maxCtResolution/pln.propStf.bixelWidth)
             for k = -floor(maxCtResolution/pln.propStf.bixelWidth):floor(maxCtResolution/plnpropStf.bixelWidth)
                 if abs(j)+abs(k)==0
                     continue;
                 end                
                 rayPos = [rayPos; origRayPos(:,1)+j*pln.propStf.bixelWidth origRayPos(:,2) origRayPos(:,3)+k*pln.propStf.bixelWidth];
+                if pln.propOpt.run4D
+                    rayPos_phase1 = [rayPos_phase1; origRayPos_phase1(:,1)+j*pln.propStf.bixelWidth origRayPos_phase1(:,2) origRayPos_phase1(:,3)+k*pln.propStf.bixelWidth];
+                end
             end
         end
      end
@@ -207,10 +249,32 @@ for i = 1:length(pln.propStf.gantryAngles)
          end
          
          rayPos = [x,y,z];
+         
+         if pln.propOpt.run4D
+             % create single x,y,z vectors
+             x = rayPos_phase1(:,1);
+             y = rayPos_phase1(:,2);
+             z = rayPos_phase1(:,3);
+             uniZ = unique(z);
+             for j = 1:numel(uniZ)
+                 x_loc = x(z == uniZ(j));
+                 x_min = min(x_loc);
+                 x_max = max(x_loc);
+                 x = [x; [x_min:pln.propStf.bixelWidth:x_max]'];
+                 y = [y; zeros((x_max-x_min)/pln.propStf.bixelWidth+1,1)];
+                 z = [z; uniZ(j)*ones((x_max-x_min)/pln.propStf.bixelWidth+1,1)];
+             end
+             
+             rayPos_phase1 = [x,y,z];
+             
+         end
      end
     
     % remove double rays
     rayPos = unique(rayPos,'rows');
+    if pln.propOpt.run4D
+        rayPos_phase1 = unique(rayPos_phase1,'rows');
+    end
     
     % Save the number of rays
     stf(i).numOfRays = size(rayPos,1);
@@ -418,6 +482,10 @@ for i = 1:length(pln.propStf.gantryAngles)
         
         masterRayPosBEV = union(masterRayPosBEV,rayPosBEV,'rows');
         masterTargetPointBEV = union(masterTargetPointBEV,targetPointBEV,'rows');
+        
+        if pln.propOpt.run4D
+            masterRayPosBEV_phase1 = union(masterRayPosBEV_phase1,rayPos_phase1,'rows');
+        end
     end
     
     
@@ -573,7 +641,15 @@ if pln.propOpt.runVMAT
     
     % post-processing function for VMAT
     stf = matRad_StfVMATPost(stf,pln,masterRayPosBEV,masterTargetPointBEV,SAD,machine);
+    
+    if pln.propOpt.run4D
+        
+        stf = matRad_Stf4DPost(stf,masterRayPosBEV,masterRayPosBEV_phase1);
+        
+
+    end
 end
+
 
 % compute SSDs
 stf = matRad_computeSSD(stf,ct);
