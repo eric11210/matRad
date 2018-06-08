@@ -49,6 +49,7 @@ if nargin < 5
 end
 
 sequencing.runVMAT = pln.propOpt.runVMAT;
+sequencing.run4D = pln.propOpt.run4D;
 
 numOfBeams = numel(stf);
 
@@ -226,8 +227,13 @@ if pln.propOpt.runVMAT
     sequencing.weightToMU = dij.weightToMU;
     sequencing.preconditioner = pln.propOpt.preconditioner;
     sequencing.propVMAT = pln.propOpt.VMAToptions;
+    sequencing.numPhases = dij.numPhases;
     
     resultGUI.apertureInfo = matRad_sequencing2ApertureInfo(sequencing,stf);
+    
+    if pln.propOpt.run4D
+        resultGUI.apertureInfo = matRad_doDAD(resultGUI.apertureInfo,stf);
+    end
     
     %matRad_daoVec2ApertureInfo will interpolate subchildren gantry
     %segments

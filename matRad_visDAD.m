@@ -34,15 +34,17 @@ function stf = matRad_visDAD(stf)
 
 for i = 1:numel(stf)
     
-    DAD_phase1 = stf(i).DAD{1};
+    DADx_phase1 = stf(i).DADx{1};
+    DADz_phase1 = stf(i).DADz{1};
     figure
     
     for phase = 2:numel(stf(i).DAD)
         
-        vel_phaseP = stf(i).DAD{phase}-stf(i).DAD{1};
+        velx_phaseP = stf(i).DADx{phase}-DADx_phase1;
+        velz_phaseP = stf(i).DADz{phase}-DADz_phase1;
         
         subplot(2,numel(stf(i).DAD)/2,phase)
-        quiver(DAD_phase1(:,1),DAD_phase1(:,3),vel_phaseP(:,1),vel_phaseP(:,3));
+        quiver(DADx_phase1,DADz_phase1,velx_phaseP,velz_phaseP);
         title(sprintf('Phase %d',phase));
         xlabel('horiz. pos. [mm]');
         ylabel('vert. pos. [mm]');

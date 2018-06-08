@@ -14,7 +14,7 @@ function stf = matRad_Stf4DPost(stf,masterRayPosBEV,masterRayPosBEV_phase1)
 %   stf:        matRad steering information struct
 %
 % References
-%   -
+%   [1] https://doi.org/10.1118/1.2374675
 %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -35,6 +35,8 @@ fprintf('matRad: 4D optimization post-processing ... ');
 
 for i = 1:numel(stf)
     stf(i).phase1RayMask = false(size(masterRayPosBEV,1),1);
+    stf(i).DADx = cell(numel(stf(i).DAD),1);
+    stf(i).DADz = cell(numel(stf(i).DAD),1);
     
     DAD_phase1 = stf(i).DAD{1};
     
@@ -65,6 +67,39 @@ for i = 1:numel(stf)
                 stf(i).DAD{phase}(ray,:) = DAD_phaseP(DADind,:);
             else
                 stf(i).DAD{phase}(ray,:) = masterRayPosBEV(ray,:);
+            end
+        end
+        
+        % extend the domain of the DAD so that it is a rectangle covering
+        % all rays, plus one more
+        % also change the format of the DAD to be a grid
+        minX = min(stf(1).DAD{1}(:,1))-stf(i).bixelWidth;
+        maxX = max(stf(1).DAD{1}(:,1))+stf(i).bixelWidth;
+        minZ = min(stf(1).DAD{1}(:,3))-stf(i).bixelWidth;
+        maxZ = max(stf(1).DAD{1}(:,3))+stf(i).bixelWidth;
+        X = minX:stf(i).bixelWidth:maxX;
+        Z = minZ:stf(i).bixelWidth:maxZ;
+        
+        sizX = (maxX-minX)./stf(i).bixelWidth+1;
+        sizZ = (maxZ-minZ)./stf(i).bixelWidth+1;
+        
+        stf(i).DADx{phase} = zeros(sizZ,sizX);
+        stf(i).DADz{phase} = zeros(sizZ,sizX);
+        
+        for zz = 1:sizZ
+            for xx = 1:sizX
+                
+                x = X(xx);
+                z = Z(zz);
+                [DADisDefined,DADind] = ismember([x 0 z],stf(i).DAD{1},'rows');
+                if DADisDefined
+                    stf(i).DADx{phase}(zz,xx) = stf(i).DAD{phase}(DADind,1);
+                    stf(i).DADz{phase}(zz,xx) = stf(i).DAD{phase}(DADind,3);
+                else
+                    stf(i).DADx{phase}(zz,xx) = x;
+                    stf(i).DADz{phase}(zz,xx) = z;
+                end
+                
             end
         end
     end

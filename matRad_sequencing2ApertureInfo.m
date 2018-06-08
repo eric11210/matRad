@@ -277,6 +277,7 @@ end
 
 % save global data
 apertureInfo.runVMAT = sequencing.runVMAT;
+apertureInfo.run4D = sequencing.run4D;
 apertureInfo.preconditioner = sequencing.preconditioner;
 apertureInfo.bixelWidth = bixelWidth;
 apertureInfo.numOfMLCLeafPairs = numOfMLCLeafPairs;
@@ -287,6 +288,10 @@ if isfield(sequencing,'weightToMU')
     apertureInfo.weightToMU = sequencing.weightToMU;
 end
 if sequencing.runVMAT
+    if sequencing.run4D
+        apertureInfo.numPhases = sequencing.numPhases;
+    end
+    
     tempStruct = apertureInfo.propVMAT.beam;
     apertureInfo.propVMAT = sequencing.propVMAT;
     apertureInfo.propVMAT.beam = tempStruct;
