@@ -165,6 +165,10 @@ for i=1:size(stf,2)
             
         end
         
+        if sequencing.runVMAT
+            apertureInfo.beam(i).shape{1}(m).MURate = sequencing.beam(i).MURate;
+        end
+        
         apertureInfo.beam(i).shape{1}(m).jacobiScale = 1;
         apertureInfo.jacobiScale(k) = apertureInfo.beam(i).shape{1}(m).jacobiScale;
         k = k+1;
@@ -236,7 +240,6 @@ for i=1:size(stf,2)
             totalNumOfLeafPairs = totalNumOfLeafPairs+apertureInfo.beam(i).numOfShapes*apertureInfo.beam(i).numOfActiveLeafPairs;
             
             apertureInfo.beam(i).gantryRot = sequencing.beam(i).gantryRot;
-            apertureInfo.beam(i).MURate = sequencing.beam(i).MURate;
             
             apertureInfo.propVMAT.beam(i).DAOAngleBorders = stf(i).propVMAT.DAOAngleBorders;
             apertureInfo.propVMAT.beam(i).DAOAngleBorderCentreDiff = stf(i).propVMAT.DAOAngleBorderCentreDiff;
