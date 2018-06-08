@@ -143,39 +143,39 @@ for i=1:size(stf,2)
             end
             
             % save data for each shape of this beam
-            apertureInfo.beam(i).shape(m).leftLeafPos = leftLeafPos;
-            apertureInfo.beam(i).shape(m).rightLeafPos = rightLeafPos;
-            apertureInfo.beam(i).shape(m).weight = sequencing.beam(i).shapesWeight(m);
-            apertureInfo.beam(i).shape(m).shapeMap = shapeMap;
+            apertureInfo.beam(i).shape{1}(m).leftLeafPos = leftLeafPos;
+            apertureInfo.beam(i).shape{1}(m).rightLeafPos = rightLeafPos;
+            apertureInfo.beam(i).shape{1}(m).weight = sequencing.beam(i).shapesWeight(m);
+            apertureInfo.beam(i).shape{1}(m).shapeMap = shapeMap;
             
         elseif isfield(sequencing.beam(i).shape(m),'leftLeafPos')
             % leaf positions already determined
             
             % save data for each shape of this beam
-            apertureInfo.beam(i).shape(m).leftLeafPos = sequencing.beam(i).shape(m).leftLeafPos;
-            apertureInfo.beam(i).shape(m).rightLeafPos = sequencing.beam(i).shape(m).rightLeafPos;
-            apertureInfo.beam(i).shape(m).weight = sequencing.beam(i).shapesWeight(m);
+            apertureInfo.beam(i).shape{1}(m).leftLeafPos = sequencing.beam(i).shape(m).leftLeafPos;
+            apertureInfo.beam(i).shape{1}(m).rightLeafPos = sequencing.beam(i).shape(m).rightLeafPos;
+            apertureInfo.beam(i).shape{1}(m).weight = sequencing.beam(i).shapesWeight(m);
             
             if sequencing.dynamic
-                apertureInfo.beam(i).shape(m).leftLeafPos_I = sequencing.beam(i).shape(m).leftLeafPos_I;
-                apertureInfo.beam(i).shape(m).rightLeafPos_I = sequencing.beam(i).shape(m).rightLeafPos_I;
-                apertureInfo.beam(i).shape(m).leftLeafPos_F = sequencing.beam(i).shape(m).leftLeafPos_F;
-                apertureInfo.beam(i).shape(m).rightLeafPos_F = sequencing.beam(i).shape(m).rightLeafPos_F;
+                apertureInfo.beam(i).shape{1}(m).leftLeafPos_I = sequencing.beam(i).shape(m).leftLeafPos_I;
+                apertureInfo.beam(i).shape{1}(m).rightLeafPos_I = sequencing.beam(i).shape(m).rightLeafPos_I;
+                apertureInfo.beam(i).shape{1}(m).leftLeafPos_F = sequencing.beam(i).shape(m).leftLeafPos_F;
+                apertureInfo.beam(i).shape{1}(m).rightLeafPos_F = sequencing.beam(i).shape(m).rightLeafPos_F;
             end
             
         end
         
-        apertureInfo.beam(i).shape(m).jacobiScale = 1;
-        apertureInfo.jacobiScale(k) = apertureInfo.beam(i).shape(m).jacobiScale;
+        apertureInfo.beam(i).shape{1}(m).jacobiScale = 1;
+        apertureInfo.jacobiScale(k) = apertureInfo.beam(i).shape{1}(m).jacobiScale;
         k = k+1;
         
         if sequencing.propVMAT.continuousAperture
-            apertureInfo.beam(i).shape(m).vectorOffset = [vectorOffset vectorOffset+dimZ];
+            apertureInfo.beam(i).shape{1}(m).vectorOffset = [vectorOffset vectorOffset+dimZ];
             
             % update index for bookkeeping
             vectorOffset = vectorOffset + dimZ*nnz(stf(i).propVMAT.doseAngleDAO);
         else
-            apertureInfo.beam(i).shape(m).vectorOffset = vectorOffset;
+            apertureInfo.beam(i).shape{1}(m).vectorOffset = vectorOffset;
             
             % update index for bookkeeping
             vectorOffset = vectorOffset + dimZ;
@@ -277,7 +277,8 @@ end
 
 % save global data
 apertureInfo.runVMAT = sequencing.runVMAT;
-apertureInfo.run4D = sequencing.run4D;
+apertureInfo.run4D = false; % for now
+apertureInfo.numPhases = 1; % for now
 apertureInfo.preconditioner = sequencing.preconditioner;
 apertureInfo.bixelWidth = bixelWidth;
 apertureInfo.numOfMLCLeafPairs = numOfMLCLeafPairs;
@@ -288,9 +289,6 @@ if isfield(sequencing,'weightToMU')
     apertureInfo.weightToMU = sequencing.weightToMU;
 end
 if sequencing.runVMAT
-    if sequencing.run4D
-        apertureInfo.numPhases = sequencing.numPhases;
-    end
     
     tempStruct = apertureInfo.propVMAT.beam;
     apertureInfo.propVMAT = sequencing.propVMAT;
@@ -306,8 +304,8 @@ if sequencing.runVMAT
         j = 1;
         for i = 1:numel(apertureInfo.beam)
             if apertureInfo.propVMAT.beam(i).DAOBeam
-                apertureInfo.propVMAT.beam(i).initialLeftLeafInd = apertureInfo.beam(i).shape(1).vectorOffset:(apertureInfo.beam(i).shape(1).vectorOffset+dimZ-1);
-                apertureInfo.propVMAT.beam(i).finalLeftLeafInd = (apertureInfo.beam(i).shape(1).vectorOffset+dimZ):(apertureInfo.beam(i).shape(1).vectorOffset+2*dimZ-1);
+                apertureInfo.propVMAT.beam(i).initialLeftLeafInd = apertureInfo.beam(i).shape{1}(1).vectorOffset:(apertureInfo.beam(i).shape{1}(1).vectorOffset+dimZ-1);
+                apertureInfo.propVMAT.beam(i).finalLeftLeafInd = (apertureInfo.beam(i).shape{1}(1).vectorOffset+dimZ):(apertureInfo.beam(i).shape{1}(1).vectorOffset+2*dimZ-1);
                 
                 apertureInfo.propVMAT.beam(i).initialRightLeafInd = apertureInfo.propVMAT.beam(i).initialLeftLeafInd+apertureInfo.totalNumOfLeafPairs;
                 apertureInfo.propVMAT.beam(i).finalRightLeafInd = apertureInfo.propVMAT.beam(i).finalLeftLeafInd+apertureInfo.totalNumOfLeafPairs;

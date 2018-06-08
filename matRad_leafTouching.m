@@ -60,24 +60,24 @@ for k = 1:numel(apertureInfo.beam)
     end
     
     if ~isfield(apertureInfo.beam(1).shape(1),'leftLeafPos_I')
-        leftLeafPoss(:,l) = apertureInfo.beam(k).shape(1).leftLeafPos;
-        rightLeafPoss(:,l) = apertureInfo.beam(k).shape(1).rightLeafPos;
+        leftLeafPoss(:,l) = apertureInfo.beam(k).shape{1}(1).leftLeafPos;
+        rightLeafPoss(:,l) = apertureInfo.beam(k).shape{1}(1).rightLeafPos;
         %leftLeafPoss(:,l) = apertureInfoVect(vectorIx);
         %rightLeafPoss(:,l) = apertureInfoVect(vectorIx+apertureInfo.totalNumOfLeafPairs);
         gantryAngles(l) = apertureInfo.beam(k).gantryAngle;
         
         l = l+1;
     else
-        leftLeafPoss(:,l) = apertureInfo.beam(k).shape(1).leftLeafPos_I;
-        rightLeafPoss(:,l) = apertureInfo.beam(k).shape(1).rightLeafPos_I;
+        leftLeafPoss(:,l) = apertureInfo.beam(k).shape{1}(1).leftLeafPos_I;
+        rightLeafPoss(:,l) = apertureInfo.beam(k).shape{1}(1).rightLeafPos_I;
         %leftLeafPoss(:,l) = apertureInfoVect(vectorIx);
         %rightLeafPoss(:,l) = apertureInfoVect(vectorIx+apertureInfo.totalNumOfLeafPairs);
         gantryAngles(l) = apertureInfo.beam(k).doseAngleBorders(1);
         
         l = l+1;
         
-        leftLeafPoss(:,l) = apertureInfo.beam(k).shape(1).leftLeafPos_F;
-        rightLeafPoss(:,l) = apertureInfo.beam(k).shape(1).rightLeafPos_F;
+        leftLeafPoss(:,l) = apertureInfo.beam(k).shape{1}(1).leftLeafPos_F;
+        rightLeafPoss(:,l) = apertureInfo.beam(k).shape{1}(1).rightLeafPos_F;
         %leftLeafPoss(:,l) = apertureInfoVect(vectorIx);
         %rightLeafPoss(:,l) = apertureInfoVect(vectorIx+apertureInfo.totalNumOfLeafPairs);
         gantryAngles(l) = apertureInfo.beam(k).doseAngleBorders(2);
@@ -169,14 +169,14 @@ end
 
 %finally, set new leaf positions
 for i = 1:numel(apertureInfo.beam)
-    apertureInfo.beam(i).shape(1).leftLeafPos = max((interp1(gantryAngles',leftLeafPoss',apertureInfo.beam(i).gantryAngle))',apertureInfo.beam(i).lim_l);
-    apertureInfo.beam(i).shape(1).rightLeafPos = min((interp1(gantryAngles',rightLeafPoss',apertureInfo.beam(i).gantryAngle))',apertureInfo.beam(i).lim_r);
+    apertureInfo.beam(i).shape{1}(1).leftLeafPos = max((interp1(gantryAngles',leftLeafPoss',apertureInfo.beam(i).gantryAngle))',apertureInfo.beam(i).lim_l);
+    apertureInfo.beam(i).shape{1}(1).rightLeafPos = min((interp1(gantryAngles',rightLeafPoss',apertureInfo.beam(i).gantryAngle))',apertureInfo.beam(i).lim_r);
     
-    apertureInfo.beam(i).shape(1).leftLeafPos_I = max((interp1(gantryAngles',leftLeafPoss',apertureInfo.propVMAT.beam(i).doseAngleBorders(1)))',apertureInfo.beam(i).lim_l);
-    apertureInfo.beam(i).shape(1).rightLeafPos_I = min((interp1(gantryAngles',rightLeafPoss',apertureInfo.propVMAT.beam(i).doseAngleBorders(1)))',apertureInfo.beam(i).lim_r);
+    apertureInfo.beam(i).shape{1}(1).leftLeafPos_I = max((interp1(gantryAngles',leftLeafPoss',apertureInfo.propVMAT.beam(i).doseAngleBorders(1)))',apertureInfo.beam(i).lim_l);
+    apertureInfo.beam(i).shape{1}(1).rightLeafPos_I = min((interp1(gantryAngles',rightLeafPoss',apertureInfo.propVMAT.beam(i).doseAngleBorders(1)))',apertureInfo.beam(i).lim_r);
     
-    apertureInfo.beam(i).shape(1).leftLeafPos_F = max((interp1(gantryAngles',leftLeafPoss',apertureInfo.propVMAT.beam(i).doseAngleBorders(2)))',apertureInfo.beam(i).lim_l);
-    apertureInfo.beam(i).shape(1).rightLeafPos_F = min((interp1(gantryAngles',rightLeafPoss',apertureInfo.propVMAT.beam(i).doseAngleBorders(2)))',apertureInfo.beam(i).lim_r);
+    apertureInfo.beam(i).shape{1}(1).leftLeafPos_F = max((interp1(gantryAngles',leftLeafPoss',apertureInfo.propVMAT.beam(i).doseAngleBorders(2)))',apertureInfo.beam(i).lim_l);
+    apertureInfo.beam(i).shape{1}(1).rightLeafPos_F = min((interp1(gantryAngles',rightLeafPoss',apertureInfo.propVMAT.beam(i).doseAngleBorders(2)))',apertureInfo.beam(i).lim_r);
 end
 
 

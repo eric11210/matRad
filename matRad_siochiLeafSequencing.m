@@ -49,7 +49,6 @@ if nargin < 5
 end
 
 sequencing.runVMAT = pln.propOpt.runVMAT;
-sequencing.run4D = pln.propOpt.run4D;
 
 numOfBeams = numel(stf);
 
@@ -227,11 +226,16 @@ if pln.propOpt.runVMAT
     sequencing.weightToMU = dij.weightToMU;
     sequencing.preconditioner = pln.propOpt.preconditioner;
     sequencing.propVMAT = pln.propOpt.VMAToptions;
-    sequencing.numPhases = dij.numPhases;
     
     resultGUI.apertureInfo = matRad_sequencing2ApertureInfo(sequencing,stf);
+    resultGUI.apertureInfo.numPhases = dij.numPhases;
     
     if pln.propOpt.run4D
+        % before this, apertureInfo is just a regular 3D version, i.e., no
+        % cells anywhere
+        resultGUI.apertureInfo.run4D = pln.propOpt.run4D;
+        
+        % this gives cells in the shapes and the vector
         resultGUI.apertureInfo = matRad_doDAD(resultGUI.apertureInfo,stf);
     end
     

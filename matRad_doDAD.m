@@ -44,7 +44,7 @@ for i = 1:numel(apertureInfo.beam)
     DADx_phase1 = stf(i).DADx{1};
     DADz_phase1 = stf(i).DADz{1};
     
-    shape = apertureInfo.beam(i).shape;
+    shape = apertureInfo.beam(i).shape{1};
     apertureInfo.beam(i).shape = cell(apertureInfo.numPhases,1);
     apertureInfo.beam(i).shape(:) = {shape};
     
@@ -139,4 +139,6 @@ for i = 1:numel(apertureInfo.beam)
     end
 end
 
-1;
+% we have to update the apertureVector so that it contains the information
+% about all the other phases
+[apertureInfo.apertureVector, apertureInfo.mappingMx, apertureInfo.limMx] = matRad_daoApertureInfo2Vec(apertureInfo);
