@@ -52,7 +52,6 @@ if sequencing.runVMAT
     totalNumOfLeafPairs = 0;
 end
 
-apertureInfo.jacobiScale = zeros(totalNumOfShapes,1);
 k = 1;
 
 % loop over all beams
@@ -170,7 +169,6 @@ for i=1:size(stf,2)
         end
         
         apertureInfo.beam(i).shape{1}(m).jacobiScale = 1;
-        apertureInfo.jacobiScale(k) = apertureInfo.beam(i).shape{1}(m).jacobiScale;
         k = k+1;
         
         if sequencing.propVMAT.continuousAperture

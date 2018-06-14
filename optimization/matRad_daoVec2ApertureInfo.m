@@ -47,8 +47,8 @@ function updatedInfo = matRad_daoVec2ApertureInfo(apertureInfo,apertureInfoVect)
 
 % function to update the apertureInfo struct after the each iteraton of the
 % optimization
-
-w = zeros(apertureInfo.totalNumOfBixels,1);
+w = cell(apertureInfo.numPhases,1);
+w(:) = {zeros(apertureInfo.totalNumOfBixels,1)};
 
 % initializing variables
 updatedInfo = apertureInfo;
@@ -94,7 +94,8 @@ if updatedInfo.runVMAT && updatedInfo.propVMAT.continuousAperture
     % element in the apertureVector (aperture weight or leaf position)
     % store as a vector for now, convert to sparse matrix later
     bixelJApVec_sz = updatedInfo.totalNumOfOptBixels*5+(updatedInfo.totalNumOfBixels-updatedInfo.totalNumOfOptBixels)*12;
-    bixelJApVec_vec = zeros(1,bixelJApVec_sz);
+    bixelJApVec_vec = cell(apertureInfo.numPhases,1);
+    bixelJApVec_vec(:) = {zeros(1,bixelJApVec_sz)};
     % For optimized beams: 5 = (1 from weights) + (2 from left leaf positions (I and F)) + (2 from
     % right leaf positions (I and F))
     % For interpolated beams: multiply this number times 2 (influenced by the
@@ -102,9 +103,11 @@ if updatedInfo.runVMAT && updatedInfo.propVMAT.continuousAperture
     % times before and after)
     
     % vector indices
-    bixelJApVec_i = zeros(1,bixelJApVec_sz);
+    bixelJApVec_i = cell(apertureInfo.numPhases,1);
+    bixelJApVec_i(:) = {zeros(1,bixelJApVec_sz)};
     % bixel indices
-    bixelJApVec_j = zeros(1,bixelJApVec_sz);
+    bixelJApVec_j = cell(apertureInfo.numPhases,1);
+    bixelJApVec_j(:) = {zeros(1,bixelJApVec_sz)};
     % offset
     bixelJApVec_offset = 0;
 end
@@ -181,12 +184,11 @@ for phase = 1:apertureInfo.numPhases
                     rightLeafPos_F = apertureInfoVect(vectorIx_RF);
                     
                     % update information in shape structure
-                    % check the equality of these!!!
-                    all(updatedInfo.beam(i).shape{phase}(j).leftLeafPos_I  == leftLeafPos_I)
-                    all(updatedInfo.beam(i).shape{phase}(j).rightLeafPos_I == rightLeafPos_I)
+                    updatedInfo.beam(i).shape{phase}(j).leftLeafPos_I  = leftLeafPos_I;
+                    updatedInfo.beam(i).shape{phase}(j).rightLeafPos_I = rightLeafPos_I;
                     
-                    all(updatedInfo.beam(i).shape{phase}(j).leftLeafPos_F  == leftLeafPos_F)
-                    all(updatedInfo.beam(i).shape{phase}(j).rightLeafPos_F == rightLeafPos_F)
+                    updatedInfo.beam(i).shape{phase}(j).leftLeafPos_F  = leftLeafPos_F;
+                    updatedInfo.beam(i).shape{phase}(j).rightLeafPos_F = rightLeafPos_F;
                 end
                 
             else
@@ -311,7 +313,7 @@ for phase = 1:apertureInfo.numPhases
                 tempMapIx = tempMap > 0;
                 
                 currBixelIx = apertureInfo.beam(i).bixelIndMap(tempMapIx);
-                w(currBixelIx) = w(currBixelIx) + tempMap(tempMapIx)*updatedInfo.beam(i).shape(j).weight;
+                w{phase}(currBixelIx) = w{phase}(currBixelIx) + tempMap(tempMapIx)*updatedInfo.beam(i).shape{phase}(j).weight;
                 
                 % save the tempMap (we need to apply a positivity operator !)
                 updatedInfo.beam(i).shape{phase}(j).shapeMap = (tempMap  + abs(tempMap))  / 2;
@@ -455,7 +457,7 @@ for phase = 1:apertureInfo.numPhases
                 % look at bixelIndMap, probably have to add a factor to
                 % correct this; either that or make w a cell array (lean
                 % towards latter)
-                w(currBixelIx) = w(currBixelIx) + tempMap(tempMapIx)*updatedInfo.beam(i).shape{phase}(j).weight;
+                w{phase}(currBixelIx) = w{phase}(currBixelIx) + tempMap(tempMapIx)*updatedInfo.beam(i).shape{phase}(j).weight;
                 
                 % save the tempMap
                 updatedInfo.beam(i).shape{phase}(j).shapeMap = tempMap;
@@ -473,33 +475,33 @@ for phase = 1:apertureInfo.numPhases
                     vectorIx_RF = repmat(vectorIx_RF',1,numBix);
                     
                     % wrt weight
-                    bixelJApVec_vec(bixelJApVec_offset+(1:numSaveBixel)) = updatedInfo.beam(i).shape{phase}(j).shapeMap(saveBixelIx)./apertureInfo.beam(i).shape{phase}(1).jacobiScale;
-                    bixelJApVec_i(bixelJApVec_offset+(1:numSaveBixel)) = shapeInd;
-                    bixelJApVec_j(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
+                    bixelJApVec_vec{phase}(bixelJApVec_offset+(1:numSaveBixel)) = updatedInfo.beam(i).shape{phase}(j).shapeMap(saveBixelIx)./apertureInfo.beam(i).shape{phase}(1).jacobiScale;
+                    bixelJApVec_i{phase}(bixelJApVec_offset+(1:numSaveBixel)) = shapeInd;
+                    bixelJApVec_j{phase}(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
                     bixelJApVec_offset = bixelJApVec_offset+numSaveBixel;
                     
                     % wrt initial left
-                    bixelJApVec_vec(bixelJApVec_offset+(1:numSaveBixel)) = dUl_dLI(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
-                    bixelJApVec_i(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_LI(saveBixelIx);
-                    bixelJApVec_j(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
+                    bixelJApVec_vec{phase}(bixelJApVec_offset+(1:numSaveBixel)) = dUl_dLI(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
+                    bixelJApVec_i{phase}(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_LI(saveBixelIx);
+                    bixelJApVec_j{phase}(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
                     bixelJApVec_offset = bixelJApVec_offset+numSaveBixel;
                     
                     % wrt final left
-                    bixelJApVec_vec(bixelJApVec_offset+(1:numSaveBixel)) = dUl_dLF(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
-                    bixelJApVec_i(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_LF(saveBixelIx);
-                    bixelJApVec_j(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
+                    bixelJApVec_vec{phase}(bixelJApVec_offset+(1:numSaveBixel)) = dUl_dLF(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
+                    bixelJApVec_i{phase}(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_LF(saveBixelIx);
+                    bixelJApVec_j{phase}(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
                     bixelJApVec_offset = bixelJApVec_offset+numSaveBixel;
                     
                     % wrt initial right
-                    bixelJApVec_vec(bixelJApVec_offset+(1:numSaveBixel)) = -dCr_dRI(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
-                    bixelJApVec_i(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_RI(saveBixelIx);
-                    bixelJApVec_j(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
+                    bixelJApVec_vec{phase}(bixelJApVec_offset+(1:numSaveBixel)) = -dCr_dRI(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
+                    bixelJApVec_i{phase}(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_RI(saveBixelIx);
+                    bixelJApVec_j{phase}(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
                     bixelJApVec_offset = bixelJApVec_offset+numSaveBixel;
                     
                     % wrt final right
-                    bixelJApVec_vec(bixelJApVec_offset+(1:numSaveBixel)) = -dCr_dRF(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
-                    bixelJApVec_i(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_RF(saveBixelIx);
-                    bixelJApVec_j(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
+                    bixelJApVec_vec{phase}(bixelJApVec_offset+(1:numSaveBixel)) = -dCr_dRF(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
+                    bixelJApVec_i{phase}(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_RF(saveBixelIx);
+                    bixelJApVec_j{phase}(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
                     bixelJApVec_offset = bixelJApVec_offset+numSaveBixel;
                     
                     % store information for Jacobi preconditioning
@@ -523,23 +525,23 @@ for phase = 1:apertureInfo.numPhases
                     fracFromNextOptF = repmat(fracFromNextOptF,1,numBix);
                     
                     % wrt last weight
-                    bixelJApVec_vec(bixelJApVec_offset+(1:numSaveBixel)) = fracFromLastOpt*(updatedInfo.beam(i).time./updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).time)*updatedInfo.beam(i).shape{phase}(j).shapeMap(saveBixelIx) ...
+                    bixelJApVec_vec{phase}(bixelJApVec_offset+(1:numSaveBixel)) = fracFromLastOpt*(updatedInfo.beam(i).time./updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).time)*updatedInfo.beam(i).shape{phase}(j).shapeMap(saveBixelIx) ...
                         ./apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase}(1).jacobiScale;
                     %bixelJApVec_vec(bixelJApVec_offset+(1:numSaveBixel)) = (updatedInfo.beam(i).doseAngleBordersDiff*fracFromLastOpt*updatedInfo.beam(apertureInfo.beam(i).lastOptIndex).gantryRot ...
                     %/(updatedInfo.beam(apertureInfo.beam(i).lastOptIndex).doseAngleBordersDiff*updatedInfo.beam(i).gantryRot))*updatedInfo.beam(i).shape(j).shapeMap(saveBixelIx) ...
                     %./ apertureInfo.beam(apertureInfo.beam(i).lastOptIndex).shape(1).jacobiScale;
-                    bixelJApVec_i(bixelJApVec_offset+(1:numSaveBixel)) = nnz([updatedInfo.propVMAT.beam(1:updatedInfo.propVMAT.beam(i).lastDAOIndex).DAOBeam]);
-                    bixelJApVec_j(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
+                    bixelJApVec_i{phase}(bixelJApVec_offset+(1:numSaveBixel)) = nnz([updatedInfo.propVMAT.beam(1:updatedInfo.propVMAT.beam(i).lastDAOIndex).DAOBeam]);
+                    bixelJApVec_j{phase}(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
                     bixelJApVec_offset = bixelJApVec_offset+numSaveBixel;
                     
                     % wrt next weight
-                    bixelJApVec_vec(bixelJApVec_offset+(1:numSaveBixel)) = (1-fracFromLastOpt)*(updatedInfo.beam(i).time./updatedInfo.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).time)*updatedInfo.beam(i).shape{phase}(j).shapeMap(saveBixelIx) ...
+                    bixelJApVec_vec{phase}(bixelJApVec_offset+(1:numSaveBixel)) = (1-fracFromLastOpt)*(updatedInfo.beam(i).time./updatedInfo.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).time)*updatedInfo.beam(i).shape{phase}(j).shapeMap(saveBixelIx) ...
                         ./apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase}(1).jacobiScale;
                     %bixelJApVec_vec(bixelJApVec_offset+(1:numSaveBixel)) = (updatedInfo.beam(i).doseAngleBordersDiff*(1-fracFromLastOpt)*updatedInfo.beam(apertureInfo.beam(i).nextOptIndex).gantryRot ...
                     %/(updatedInfo.beam(apertureInfo.beam(i).nextOptIndex).doseAngleBordersDiff*updatedInfo.beam(i).gantryRot))*updatedInfo.beam(i).shape(j).shapeMap(saveBixelIx) ...
                     %./ apertureInfo.beam(apertureInfo.beam(i).nextOptIndex).shape(1).jacobiScale;
-                    bixelJApVec_i(bixelJApVec_offset+(1:numSaveBixel)) = nnz([updatedInfo.propVMAT.beam(1:updatedInfo.propVMAT.beam(i).nextDAOIndex).DAOBeam]);
-                    bixelJApVec_j(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
+                    bixelJApVec_i{phase}(bixelJApVec_offset+(1:numSaveBixel)) = nnz([updatedInfo.propVMAT.beam(1:updatedInfo.propVMAT.beam(i).nextDAOIndex).DAOBeam]);
+                    bixelJApVec_j{phase}(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
                     bixelJApVec_offset = bixelJApVec_offset+numSaveBixel;
                     
                     
@@ -551,81 +553,88 @@ for phase = 1:apertureInfo.numPhases
                     
                     % wrt initial left (optimization vector)
                     % initial (interpolated arc)
-                    bixelJApVec_vec(bixelJApVec_offset+(1:numSaveBixel)) = fracFromLastOptI(saveBixelIx).*dUl_dLI(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
-                    bixelJApVec_i(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_LF_last(saveBixelIx);
-                    bixelJApVec_j(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
+                    bixelJApVec_vec{phase}(bixelJApVec_offset+(1:numSaveBixel)) = fracFromLastOptI(saveBixelIx).*dUl_dLI(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
+                    bixelJApVec_i{phase}(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_LF_last(saveBixelIx);
+                    bixelJApVec_j{phase}(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
                     bixelJApVec_offset = bixelJApVec_offset+numSaveBixel;
                     % final (interpolated arc)
-                    bixelJApVec_vec(bixelJApVec_offset+(1:numSaveBixel)) = fracFromLastOptF(saveBixelIx).*dUl_dLF(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
-                    bixelJApVec_i(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_LF_last(saveBixelIx);
-                    bixelJApVec_j(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
+                    bixelJApVec_vec{phase}(bixelJApVec_offset+(1:numSaveBixel)) = fracFromLastOptF(saveBixelIx).*dUl_dLF(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
+                    bixelJApVec_i{phase}(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_LF_last(saveBixelIx);
+                    bixelJApVec_j{phase}(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
                     bixelJApVec_offset = bixelJApVec_offset+numSaveBixel;
                     
                     % wrt final left (optimization vector)
                     % initial (interpolated arc)
-                    bixelJApVec_vec(bixelJApVec_offset+(1:numSaveBixel)) = fracFromNextOptI(saveBixelIx).*dUl_dLI(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
-                    bixelJApVec_i(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_LI_next(saveBixelIx);
-                    bixelJApVec_j(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
+                    bixelJApVec_vec{phase}(bixelJApVec_offset+(1:numSaveBixel)) = fracFromNextOptI(saveBixelIx).*dUl_dLI(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
+                    bixelJApVec_i{phase}(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_LI_next(saveBixelIx);
+                    bixelJApVec_j{phase}(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
                     bixelJApVec_offset = bixelJApVec_offset+numSaveBixel;
                     % final (interpolated arc)
-                    bixelJApVec_vec(bixelJApVec_offset+(1:numSaveBixel)) = fracFromNextOptF(saveBixelIx).*dUl_dLF(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
-                    bixelJApVec_i(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_LI_next(saveBixelIx);
-                    bixelJApVec_j(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
+                    bixelJApVec_vec{phase}(bixelJApVec_offset+(1:numSaveBixel)) = fracFromNextOptF(saveBixelIx).*dUl_dLF(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
+                    bixelJApVec_i{phase}(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_LI_next(saveBixelIx);
+                    bixelJApVec_j{phase}(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
                     bixelJApVec_offset = bixelJApVec_offset+numSaveBixel;
                     
                     % wrt initial right (optimization vector)
                     % initial (interpolated arc)
-                    bixelJApVec_vec(bixelJApVec_offset+(1:numSaveBixel)) = -fracFromLastOptI(saveBixelIx).*dCr_dRI(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
-                    bixelJApVec_i(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_RF_last(saveBixelIx);
-                    bixelJApVec_j(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
+                    bixelJApVec_vec{phase}(bixelJApVec_offset+(1:numSaveBixel)) = -fracFromLastOptI(saveBixelIx).*dCr_dRI(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
+                    bixelJApVec_i{phase}(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_RF_last(saveBixelIx);
+                    bixelJApVec_j{phase}(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
                     bixelJApVec_offset = bixelJApVec_offset+numSaveBixel;
                     % final (interpolated arc)
-                    bixelJApVec_vec(bixelJApVec_offset+(1:numSaveBixel)) = -fracFromLastOptF(saveBixelIx).*dCr_dRF(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
-                    bixelJApVec_i(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_RF_last(saveBixelIx);
-                    bixelJApVec_j(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
+                    bixelJApVec_vec{phase}(bixelJApVec_offset+(1:numSaveBixel)) = -fracFromLastOptF(saveBixelIx).*dCr_dRF(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
+                    bixelJApVec_i{phase}(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_RF_last(saveBixelIx);
+                    bixelJApVec_j{phase}(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
                     bixelJApVec_offset = bixelJApVec_offset+numSaveBixel;
                     
                     % wrt final right (optimization vector)
                     % initial (interpolated arc)
-                    bixelJApVec_vec(bixelJApVec_offset+(1:numSaveBixel)) = -fracFromNextOptI(saveBixelIx).*dCr_dRI(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
-                    bixelJApVec_i(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_RI_next(saveBixelIx);
-                    bixelJApVec_j(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
+                    bixelJApVec_vec{phase}(bixelJApVec_offset+(1:numSaveBixel)) = -fracFromNextOptI(saveBixelIx).*dCr_dRI(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
+                    bixelJApVec_i{phase}(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_RI_next(saveBixelIx);
+                    bixelJApVec_j{phase}(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
                     bixelJApVec_offset = bixelJApVec_offset+numSaveBixel;
                     % final (interpolated arc)
-                    bixelJApVec_vec(bixelJApVec_offset+(1:numSaveBixel)) = -fracFromNextOptF(saveBixelIx).*dCr_dRF(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
-                    bixelJApVec_i(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_RI_next(saveBixelIx);
-                    bixelJApVec_j(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
+                    bixelJApVec_vec{phase}(bixelJApVec_offset+(1:numSaveBixel)) = -fracFromNextOptF(saveBixelIx).*dCr_dRF(saveBixelIx)*updatedInfo.beam(i).shape{phase}(j).weight;
+                    bixelJApVec_i{phase}(bixelJApVec_offset+(1:numSaveBixel)) = vectorIx_RI_next(saveBixelIx);
+                    bixelJApVec_j{phase}(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
                     bixelJApVec_offset = bixelJApVec_offset+numSaveBixel;
                     
                     % wrt last time
-                    bixelJApVec_vec(bixelJApVec_offset+(1:numSaveBixel)) = (updatedInfo.propVMAT.beam(i).doseAngleBordersDiff.*updatedInfo.propVMAT.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).timeFacCurr) ...
+                    bixelJApVec_vec{phase}(bixelJApVec_offset+(1:numSaveBixel)) = (updatedInfo.propVMAT.beam(i).doseAngleBordersDiff.*updatedInfo.propVMAT.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).timeFacCurr) ...
                         .*(-updatedInfo.propVMAT.beam(i).fracFromLastDAO.*updatedInfo.propVMAT.beam(i).timeFracFromNextDAO.*(updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).shape{phase}(j).weight./updatedInfo.propVMAT.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).doseAngleBordersDiff).*(updatedInfo.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).time./updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).time.^2) ...
                         +(1-updatedInfo.propVMAT.beam(i).fracFromLastDAO).*updatedInfo.propVMAT.beam(i).timeFracFromLastDAO.*(updatedInfo.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).shape{phase}(j).weight./updatedInfo.propVMAT.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).doseAngleBordersDiff).*(1./updatedInfo.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).time)) ...
                         * updatedInfo.beam(i).shape{phase}(j).shapeMap(saveBixelIx);
-                    bixelJApVec_i(bixelJApVec_offset+(1:numSaveBixel)) = nnz([updatedInfo.propVMAT.beam(1:updatedInfo.propVMAT.beam(i).lastDAOIndex).DAOBeam])+apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2;
-                    bixelJApVec_j(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
+                    bixelJApVec_i{phase}(bixelJApVec_offset+(1:numSaveBixel)) = nnz([updatedInfo.propVMAT.beam(1:updatedInfo.propVMAT.beam(i).lastDAOIndex).DAOBeam])+apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2;
+                    bixelJApVec_j{phase}(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
                     bixelJApVec_offset = bixelJApVec_offset+numSaveBixel;
                     
                     % wrt next time
-                    bixelJApVec_vec(bixelJApVec_offset+(1:numSaveBixel)) = (updatedInfo.propVMAT.beam(i).doseAngleBordersDiff.*updatedInfo.propVMAT.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).timeFacCurr) ...
+                    bixelJApVec_vec{phase}(bixelJApVec_offset+(1:numSaveBixel)) = (updatedInfo.propVMAT.beam(i).doseAngleBordersDiff.*updatedInfo.propVMAT.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).timeFacCurr) ...
                         .*(updatedInfo.propVMAT.beam(i).fracFromLastDAO.*updatedInfo.propVMAT.beam(i).timeFracFromNextDAO.*(updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).shape{phase}(j).weight./updatedInfo.propVMAT.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).doseAngleBordersDiff).*(1./updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).time) ...
                         -(1-updatedInfo.propVMAT.beam(i).fracFromLastDAO).*updatedInfo.propVMAT.beam(i).timeFracFromLastDAO.*(updatedInfo.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).shape{phase}(j).weight./updatedInfo.propVMAT.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).doseAngleBordersDiff).*(updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).time./updatedInfo.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).time.^2)) ...
                         * updatedInfo.beam(i).shape{phase}(j).shapeMap(saveBixelIx);
-                    bixelJApVec_i(bixelJApVec_offset+(1:numSaveBixel)) = nnz([updatedInfo.propVMAT.beam(1:updatedInfo.propVMAT.beam(i).nextDAOIndex).DAOBeam])+apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2;
-                    bixelJApVec_j(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
+                    bixelJApVec_i{phase}(bixelJApVec_offset+(1:numSaveBixel)) = nnz([updatedInfo.propVMAT.beam(1:updatedInfo.propVMAT.beam(i).nextDAOIndex).DAOBeam])+apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2;
+                    bixelJApVec_j{phase}(bixelJApVec_offset+(1:numSaveBixel)) = apertureInfo.beam(i).bixelIndMap(saveBixelIx);
                     bixelJApVec_offset = bixelJApVec_offset+numSaveBixel;
                 end
             end
         end
     end
+    if updatedInfo.runVMAT && updatedInfo.propVMAT.continuousAperture
+        bixelJApVec_offset = 0;
+    end
 end
+
 
 updatedInfo.bixelWeights = w;
 updatedInfo.apertureVector = apertureInfoVect;
 if ~updatedInfo.propVMAT.continuousAperture
     updatedInfo.bixelIndices = indVect;
 else
-    updatedInfo.bixelJApVec = sparse(bixelJApVec_i,bixelJApVec_j,bixelJApVec_vec,numel(apertureInfoVect),updatedInfo.totalNumOfBixels,bixelJApVec_sz);
+    updatedInfo.bixelJApVec = cell(apertureInfo.numPhases,1);
+    for phase = 1:apertureInfo.numPhases
+        updatedInfo.bixelJApVec{phase} = sparse(bixelJApVec_i{phase},bixelJApVec_j{phase},bixelJApVec_vec{phase},numel(apertureInfoVect),updatedInfo.totalNumOfBixels,bixelJApVec_sz);
+    end
 end
 
 end
