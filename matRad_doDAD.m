@@ -104,7 +104,7 @@ for i = 1:numel(apertureInfo.beam)
             % words, some exterior leaves have been mapped to the interior.
             % This can only happen if the target has moved out of range of
             % those leaves, so the fluence in those rows should be 0.
-            % Therefore the left and right leaves shoud be "touching".
+            % Therefore the left and right leaves should be "touching".
             % Let the touching point be in the middle of the left and right
             % leaves from phase 1.
             ind = isnan(leftLeafPos_phaseP);
@@ -151,11 +151,11 @@ end
 % loop over phases and angles to fix these instances (reset both I and F to
 % be the mean of I and F).
 for i = 1:numel(apertureInfo.beam)
-    if ~apertureInfo.propVMAT.beam(i).doseAngleDAO(2)
-        % if this is true, then the F of beam i should be equal to the I of
-        % beam i+1
-        % set them both to the mean
-        for phase = 1:apertureInfo.numPhases
+    for phase = 1:apertureInfo.numPhases
+        if ~apertureInfo.propVMAT.beam(i).doseAngleDAO(2)
+            % if this is true, then the F of beam i should be equal to the I of
+            % beam i+1
+            % set them both to the mean
             temp_leftLeafPos_F = apertureInfo.beam(i).shape{phase}(j).leftLeafPos_F;
             temp_rightLeafPos_F = apertureInfo.beam(i).shape{phase}(j).rightLeafPos_F;
             temp_leftLeafPos_I = apertureInfo.beam(i+1).shape{phase}(j).leftLeafPos_I;
@@ -164,10 +164,35 @@ for i = 1:numel(apertureInfo.beam)
             new_leftLeafPos = mean([temp_leftLeafPos_I, temp_leftLeafPos_F],2);
             new_rightLeafPos = mean([temp_rightLeafPos_I, temp_rightLeafPos_F],2);
             
-            apertureInfo.beam(i).shape{phase}(j).leftLeafPos_I = new_leftLeafPos;
             apertureInfo.beam(i).shape{phase}(j).leftLeafPos_F = new_leftLeafPos;
-            apertureInfo.beam(i).shape{phase}(j).rightLeafPos_I = new_rightLeafPos;
             apertureInfo.beam(i).shape{phase}(j).rightLeafPos_F = new_rightLeafPos;
+            apertureInfo.beam(i+1).shape{phase}(j).leftLeafPos_I = new_leftLeafPos;
+            apertureInfo.beam(i+1).shape{phase}(j).rightLeafPos_I = new_rightLeafPos;
+            
+        end
+        
+        for j = 1:numel(shape)
+            % fix any instances where the right leaf is somehow to the left
+            % of the left leaf. Set them both to be the mean
+            
+            leftLeafPos = apertureInfo.beam(i).shape{phase}(j).leftLeafPos;
+            rightLeafPos = apertureInfo.beam(i).shape{phase}(j).rightLeafPos;
+            leftLeafPos_I = apertureInfo.beam(i).shape{phase}(j).leftLeafPos_I;
+            rightLeafPos_I = apertureInfo.beam(i).shape{phase}(j).rightLeafPos_I;
+            leftLeafPos_F = apertureInfo.beam(i).shape{phase}(j).leftLeafPos_F;
+            rightLeafPos_F = apertureInfo.beam(i).shape{phase}(j).rightLeafPos_F;
+            
+            ind = rightLeafPos < leftLeafPos;
+            apertureInfo.beam(i).shape{phase}(j).leftLeafPos(ind) = mean([leftLeafPos(ind), rightLeafPos(ind)],2);
+            apertureInfo.beam(i).shape{phase}(j).rightLeafPos(ind) = mean([leftLeafPos(ind), rightLeafPos(ind)],2);
+            
+            ind = rightLeafPos_I < leftLeafPos_I;
+            apertureInfo.beam(i).shape{phase}(j).leftLeafPos_I(ind) = mean([leftLeafPos_I(ind), rightLeafPos_I(ind)],2);
+            apertureInfo.beam(i).shape{phase}(j).rightLeafPos_I(ind) = mean([leftLeafPos_I(ind), rightLeafPos_I(ind)],2);
+            
+            ind = rightLeafPos_F < leftLeafPos_F;
+            apertureInfo.beam(i).shape{phase}(j).leftLeafPos_F(ind) = mean([leftLeafPos_F(ind), rightLeafPos_F(ind)],2);
+            apertureInfo.beam(i).shape{phase}(j).rightLeafPos_F(ind) = mean([leftLeafPos_F(ind), rightLeafPos_F(ind)],2);
             
         end
     end

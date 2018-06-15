@@ -42,20 +42,29 @@ else
     matRad_global_x = w;
     
     % pre-allocation
-    d = cell(options.numOfScenarios,1);
+    %d = cell(options.numOfScenarios,1);
+    d = zeros(dij.numOfVoxels,1);
     
     % Calculate dose vector
     if isequal(options.bioOpt,'none')
         
         for i = 1:options.numOfScenarios
             if isfield(dij,'optBixel')
-                d{i} = dij.physicalDose{i}(:,dij.optBixel) * (w(dij.optBixel) * dij.scaleFactor);
+                if options.run4D
+                    d = d+dij.physicalDose{i}(:,dij.optBixel) * (w{i}(dij.optBixel) * dij.scaleFactor);
+                else
+                    d = d+dij.physicalDose{i}(:,dij.optBixel) * (w(dij.optBixel) * dij.scaleFactor);
+                end
             else
-                d{i} = dij.physicalDose{i} * (w * dij.scaleFactor);
+                if options.run4D
+                    d = d+dij.physicalDose{i} * (w{i} * dij.scaleFactor);
+                else
+                    d = d+dij.physicalDose{i} * (w * dij.scaleFactor);
+                end
             end
 
             if dij.memorySaverPhoton
-                d{i} = d{i}+matRad_memorySaverDoseAndGrad(w,dij,'dose',i);
+                d = d+matRad_memorySaverDoseAndGrad(w{i},dij,'dose',i);
             end
 
         end

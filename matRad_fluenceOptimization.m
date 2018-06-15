@@ -151,7 +151,13 @@ if  strcmp(pln.propOpt.bioOptimization,'const_RBExD') && strcmp(pln.radiationMod
     if ~isfield(dij,'RBE')
         dij.RBE = 1.1;
     end
-    bixelWeight =  (doseTarget)/(dij.RBE * mean(dij.physicalDose{1}(V,:)*wOnes)); 
+    if pln.propOpt.run4D
+        if pln.propOpt.prop4D.singlePhaseFMO
+            bixelWeight =  (doseTarget)/(dij.RBE * mean(dij.physicalDose{1}(V,:)*wOnes));
+        end
+    else
+        bixelWeight =  (doseTarget)/(dij.RBE * mean(dij.physicalDose{1}(V,:)*wOnes));
+    end
     wInit       = wOnes * bixelWeight;
         
 elseif (strcmp(pln.propOpt.bioOptimization,'LEMIV_effect') || strcmp(pln.propOpt.bioOptimization,'LEMIV_RBExD')) ... 
@@ -218,7 +224,12 @@ end
 options.radMod          = pln.radiationMode;
 options.bioOpt          = pln.propOpt.bioOptimization;
 options.ID              = [pln.radiationMode '_' pln.propOpt.bioOptimization];
-options.numOfScenarios  = dij.numOfScenarios;
+if pln.propOpt.run4D && pln.propOpt.prop4D.singlePhaseFMO
+    options.numOfScenarios = 1;
+else
+    options.numOfScenarios  = dij.numOfScenarios;
+end
+options.run4D = 0; % do this always, so that the back projection is run correctly
 
 % set callback functions.
 [options.cl,options.cu] = matRad_getConstBoundsWrapper(cst_Over,options);

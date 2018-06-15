@@ -249,7 +249,7 @@ if pln.propOpt.runVMAT
     %optimize delivery
     %resultGUI = matRad_optDelivery(resultGUI,0);
     %resultGUI.apertureInfo = matRad_maxLeafSpeed(resultGUI.apertureInfo);
-    fprintf('Leaf speed turned off for now!');
+    fprintf('\nLeaf speed turned off for now!\n');
     
     sequencing.w = resultGUI.apertureInfo.bixelWeights;
     
@@ -273,10 +273,12 @@ resultGUI.wSequenced = sequencing.w;
 resultGUI.sequencing   = sequencing;
 
 
-options.numOfScenarios = 1;
+options.numOfScenarios = dij.numOfScenarios;
 options.bioOpt = 'none';
+options.run4D = pln.propOpt.run4D;
+
 d = matRad_backProjection(sequencing.w,dij,options);
-resultGUI.physicalDose = reshape(d{1},dij.dimensions);
+resultGUI.physicalDose = reshape(d,dij.dimensions);
 
 
 % if weights exists from an former DAO remove it

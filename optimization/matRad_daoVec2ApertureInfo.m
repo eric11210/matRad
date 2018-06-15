@@ -457,6 +457,7 @@ for phase = 1:apertureInfo.numPhases
                 % look at bixelIndMap, probably have to add a factor to
                 % correct this; either that or make w a cell array (lean
                 % towards latter)
+                % do currBixelIx+(phase-1)*dij.totalNumOfBixels?
                 w{phase}(currBixelIx) = w{phase}(currBixelIx) + tempMap(tempMapIx)*updatedInfo.beam(i).shape{phase}(j).weight;
                 
                 % save the tempMap

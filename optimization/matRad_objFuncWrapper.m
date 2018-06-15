@@ -62,7 +62,7 @@ for  i = 1:size(cst,1)
                % if conventional opt: just sum objectives of nominal dose
                 if strcmp(cst{i,6}(j).robustness,'none')
 
-                    d_i = d{1}(cst{i,4}{1});
+                    d_i = d(cst{i,4}{1});
 
                     f = f + matRad_objFunc(d_i,cst{i,6}(j),d_ref);
                     
