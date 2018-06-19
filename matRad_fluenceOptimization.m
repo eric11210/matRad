@@ -126,7 +126,7 @@ if pln.propOpt.runVMAT
             %set wOnes to 0 (initial value)
             wOnes(rayIndices) = 0;
         else
-            if pln.propOpt.run4D
+            if pln.propOpt.run4D && pln.propOpt.prop4D.singlePhaseFMO
                 % if angle an initialization angle, only optimize bixels that
                 % intersect target in the first phase (defined by
                 % phase1RayMask)
@@ -154,6 +154,8 @@ if  strcmp(pln.propOpt.bioOptimization,'const_RBExD') && strcmp(pln.radiationMod
     if pln.propOpt.run4D
         if pln.propOpt.prop4D.singlePhaseFMO
             bixelWeight =  (doseTarget)/(dij.RBE * mean(dij.physicalDose{1}(V,:)*wOnes));
+        else
+            error('fix this');
         end
     else
         bixelWeight =  (doseTarget)/(dij.RBE * mean(dij.physicalDose{1}(V,:)*wOnes));
@@ -224,12 +226,12 @@ end
 options.radMod          = pln.radiationMode;
 options.bioOpt          = pln.propOpt.bioOptimization;
 options.ID              = [pln.radiationMode '_' pln.propOpt.bioOptimization];
+options.FMO             = true; % let optimizer know that this is FMO
 if pln.propOpt.run4D && pln.propOpt.prop4D.singlePhaseFMO
     options.numOfScenarios = 1;
 else
     options.numOfScenarios  = dij.numOfScenarios;
 end
-options.run4D = 0; % do this always, so that the back projection is run correctly
 
 % set callback functions.
 [options.cl,options.cu] = matRad_getConstBoundsWrapper(cst_Over,options);
@@ -237,7 +239,7 @@ funcs.objective         = @(x) matRad_objFuncWrapper(x,dij,cst_Over,options);
 funcs.constraints       = @(x) matRad_constFuncWrapper(x,dij,cst_Over,options);
 funcs.gradient          = @(x) matRad_gradFuncWrapper(x,dij,cst_Over,options);
 funcs.jacobian          = @(x) matRad_jacobFuncWrapper(x,dij,cst_Over,options);
-funcs.jacobianstructure = @( ) matRad_getJacobStruct(dij,cst_Over);
+funcs.jacobianstructure = @( ) matRad_getJacobStruct(dij,cst_Over,options);
 
 % Run IPOPT.
 [wOpt, info]            = ipopt(wInit,funcs,options);

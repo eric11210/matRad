@@ -49,17 +49,24 @@ else
     if isequal(options.bioOpt,'none')
         
         for i = 1:options.numOfScenarios
+            
             if isfield(dij,'optBixel')
-                if options.run4D
-                    d = d+dij.physicalDose{i}(:,dij.optBixel) * (w{i}(dij.optBixel) * dij.scaleFactor);
+                if options.FMO
+                    offset = (i-1)*dij.totalNumOfBixels;
+                    wPhase = w(offset+(1:dij.totalNumOfBixels));
+                    
+                    d = d+dij.physicalDose{i}(:,dij.optBixel) * (wPhase(dij.optBixel) * dij.scaleFactor);
                 else
-                    d = d+dij.physicalDose{i}(:,dij.optBixel) * (w(dij.optBixel) * dij.scaleFactor);
+                    d = d+dij.physicalDose{i}(:,dij.optBixel) * (w{i}(dij.optBixel) * dij.scaleFactor);
                 end
             else
-                if options.run4D
-                    d = d+dij.physicalDose{i} * (w{i} * dij.scaleFactor);
+                if options.FMO
+                    offset = (i-1)*dij.totalNumOfBixels;
+                    wPhase = w(offset+(1:dij.totalNumOfBixels));
+                    
+                    d = d+dij.physicalDose{i} * (wPhase * dij.scaleFactor);
                 else
-                    d = d+dij.physicalDose{i} * (w * dij.scaleFactor);
+                    d = d+dij.physicalDose{i} * (w{i} * dij.scaleFactor);
                 end
             end
 

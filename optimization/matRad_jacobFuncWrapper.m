@@ -36,8 +36,6 @@ function jacob = matRad_jacobFuncWrapper(w,dij,cst,options)
 % get current dose / effect / RBExDose vector
 d = matRad_backProjection(w,dij,options);
 
-
-
 % initialize projection matrices and id containers
 physicalDoseProjection  = sparse([]);
 mAlphaDoseProjection    = sparse([]);
@@ -47,62 +45,65 @@ constraintID            = 0;
 scenID                  = [];
 scenID2                 = [];
 
-% compute objective function for every VOI.
-for i = 1:size(cst,1)
-    
-    % Only take OAR or target VOI.
-    if ~isempty(cst{i,4}{1}) && ( isequal(cst{i,3},'OAR') || isequal(cst{i,3},'TARGET') )
+for scen = 1:options.numOfScenarios
+    % compute objective function for every VOI.
+    for i = 1:size(cst,1)
         
-        % loop over the number of constraints for the current VOI
-        for j = 1:numel(cst{i,6})
+        % Only take OAR or target VOI.
+        if ~isempty(cst{i,4}{1}) && ( isequal(cst{i,3},'OAR') || isequal(cst{i,3},'TARGET') )
             
-            % only perform computations for constraints
-            if ~isempty(strfind(cst{i,6}(j).type,'constraint'))
+            % loop over the number of constraints for the current VOI
+            for j = 1:numel(cst{i,6})
                 
-                % compute reference
-                if (~isequal(cst{i,6}(j).type, 'max dose constraint')      && ~isequal(cst{i,6}(j).type, 'min dose constraint')          &&...
-                        ~isequal(cst{i,6}(j).type, 'max mean dose constraint') && ~isequal(cst{i,6}(j).type, 'min mean dose constraint') && ...
-                        ~isequal(cst{i,6}(j).type, 'min EUD constraint')       && ~isequal(cst{i,6}(j).type, 'max EUD constraint'))           && ...
-                        isequal(options.bioOpt,'LEMIV_effect')
+                % only perform computations for constraints
+                if ~isempty(strfind(cst{i,6}(j).type,'constraint'))
                     
-                    d_ref = cst{i,5}.alphaX*cst{i,6}(j).dose + cst{i,5}.betaX*cst{i,6}(j).dose^2;
-                else
-                    d_ref = cst{i,6}(j).dose;
-                end
-                
-                % if conventional opt: just add constraints of nominal dose
-                if strcmp(cst{i,6}(j).robustness,'none')
+                    % compute reference
+                    if (~isequal(cst{i,6}(j).type, 'max dose constraint')      && ~isequal(cst{i,6}(j).type, 'min dose constraint')          &&...
+                            ~isequal(cst{i,6}(j).type, 'max mean dose constraint') && ~isequal(cst{i,6}(j).type, 'min mean dose constraint') && ...
+                            ~isequal(cst{i,6}(j).type, 'min EUD constraint')       && ~isequal(cst{i,6}(j).type, 'max EUD constraint'))           && ...
+                            isequal(options.bioOpt,'LEMIV_effect')
+                        
+                        d_ref = cst{i,5}.alphaX*cst{i,6}(j).dose + cst{i,5}.betaX*cst{i,6}(j).dose^2;
+                    else
+                        d_ref = cst{i,6}(j).dose;
+                    end
                     
-                    d_i = d(cst{i,4}{1});
-                    
-                    jacobVec =  matRad_jacobFunc(d_i,cst{i,6}(j),d_ref);
-                    
-                    scenID  = [scenID;1];
-                    scenID2 = [scenID2;ones(numel(cst{i,4}{1}),1)];
-                    
-                    if isequal(options.bioOpt,'none') && ~isempty(jacobVec) || isequal(options.ID,'protons_const_RBExD')
+                    % if conventional opt: just add constraints of nominal dose
+                    if strcmp(cst{i,6}(j).robustness,'none')
                         
-                        physicalDoseProjection = [physicalDoseProjection,sparse(cst{i,4}{1},1,jacobVec,dij.numOfVoxels,1)];
+                        d_i = d(cst{i,4}{1});
                         
-                    elseif isequal(options.bioOpt,'LEMIV_effect') && ~isempty(jacobVec)
+                        jacobVec =  matRad_jacobFunc(d_i,cst{i,6}(j),d_ref);
                         
-                        mAlphaDoseProjection    = [mAlphaDoseProjection,sparse(cst{i,4}{1},1,jacobVec,dij.numOfVoxels,1)];
-                        mSqrtBetaDoseProjection = [mSqrtBetaDoseProjection,...
-                            sparse(cst{i,4}{1},1:numel(cst{i,4}{1}),2*jacobVec,dij.numOfVoxels,numel(cst{i,4}{1}))];
-                        voxelID                 = [voxelID ;cst{i,4}{1}];
-                        constraintID            = [constraintID, repmat(1 + constraintID(end),1,numel(cst{i,4}{1}))];
+                        scenID  = [scenID;scen];
+                        scenID2 = [scenID2;ones(numel(cst{i,4}{1}),1)];
                         
-                    elseif isequal(options.bioOpt,'LEMIV_RBExD') && ~isempty(jacobVec)
-                        
-                        scaledEffect = (dij.gamma(cst{i,4}{1}) + d_i);
-                        
-                        delta = jacobVec./(2*dij.bx(cst{i,4}{1}).*scaledEffect);
-                        
-                        mAlphaDoseProjection    = [mAlphaDoseProjection,sparse(cst{i,4}{1},1,delta,dij.numOfVoxels,1)];
-                        mSqrtBetaDoseProjection = [mSqrtBetaDoseProjection,...
-                            sparse(cst{i,4}{1},1:numel(cst{i,4}{1}),2*delta,dij.numOfVoxels,numel(cst{i,4}{1}))];
-                        voxelID                 = [voxelID ;cst{i,4}{1}];
-                        constraintID            = [constraintID, repmat(1 + constraintID(end),1,numel(cst{i,4}{1}))];
+                        if isequal(options.bioOpt,'none') && ~isempty(jacobVec) || isequal(options.ID,'protons_const_RBExD')
+                            
+                            physicalDoseProjection = [physicalDoseProjection,sparse(cst{i,4}{1},1,jacobVec,dij.numOfVoxels,1)];
+                            
+                        elseif isequal(options.bioOpt,'LEMIV_effect') && ~isempty(jacobVec)
+                            
+                            mAlphaDoseProjection    = [mAlphaDoseProjection,sparse(cst{i,4}{1},1,jacobVec,dij.numOfVoxels,1)];
+                            mSqrtBetaDoseProjection = [mSqrtBetaDoseProjection,...
+                                sparse(cst{i,4}{1},1:numel(cst{i,4}{1}),2*jacobVec,dij.numOfVoxels,numel(cst{i,4}{1}))];
+                            voxelID                 = [voxelID ;cst{i,4}{1}];
+                            constraintID            = [constraintID, repmat(1 + constraintID(end),1,numel(cst{i,4}{1}))];
+                            
+                        elseif isequal(options.bioOpt,'LEMIV_RBExD') && ~isempty(jacobVec)
+                            
+                            scaledEffect = (dij.gamma(cst{i,4}{1}) + d_i);
+                            
+                            delta = jacobVec./(2*dij.bx(cst{i,4}{1}).*scaledEffect);
+                            
+                            mAlphaDoseProjection    = [mAlphaDoseProjection,sparse(cst{i,4}{1},1,delta,dij.numOfVoxels,1)];
+                            mSqrtBetaDoseProjection = [mSqrtBetaDoseProjection,...
+                                sparse(cst{i,4}{1},1:numel(cst{i,4}{1}),2*delta,dij.numOfVoxels,numel(cst{i,4}{1}))];
+                            voxelID                 = [voxelID ;cst{i,4}{1}];
+                            constraintID            = [constraintID, repmat(1 + constraintID(end),1,numel(cst{i,4}{1}))];
+                            
+                        end
                         
                     end
                     
@@ -143,12 +144,17 @@ if isfield(dij,'optBixel')
 end
 j_sparse = repmat(j_sparse,1,numOfConstraints);
 
-jacobSparseVec = zeros(1,numOfConstraints*numOptBixel);
+if options.FMO
+    jacobSparseVec = zeros(1,numOfConstraints*numOptBixel*options.numOfScenarios);
+else
+    jacobSparseVec = cell(options.numOfScenarios,1);
+    jacobSparseVec{:} = {zeros(1,numOfConstraints*numOptBixel)};
+end
 
 setOfConstraints = 1:numOfConstraints;
 
 % Calculate jacobian with dij projections
-for i = 1:dij.numOfScenarios
+for i = 1:options.numOfScenarios
     % enter if statement also for protons using a constant RBE
     if isequal(options.bioOpt,'none') ||  isequal(options.ID,'protons_const_RBExD')
         
@@ -160,12 +166,23 @@ for i = 1:dij.numOfScenarios
             
             indInSparseVec = repmat(1:numOptBixel,1,numel(currConstraints))...
                 +kron((currConstraints-1)*numOptBixel,ones(1,numOptBixel));
+            
+            offset = (i-1)*numOfConstraints*numOptBixel;
+            
             if isfield(dij,'optBixel')
                 
-                jacobSparseVec(indInSparseVec) = transpose(physicalDoseProjection(:,jacobLogical)' * dij.scaleFactor * dij.physicalDose{i}(:,dij.optBixel));
+                if options.FMO
+                    jacobSparseVec(offset+indInSparseVec) = transpose(physicalDoseProjection(:,jacobLogical)' * dij.scaleFactor * dij.physicalDose{i}(:,dij.optBixel));
+                else
+                    jacobSparseVec{i}(indInSparseVec) = transpose(physicalDoseProjection(:,jacobLogical)' * dij.scaleFactor * dij.physicalDose{i}(:,dij.optBixel));
+                end
             else
                 
-                jacobSparseVec(indInSparseVec) = transpose(physicalDoseProjection(:,jacobLogical)' * dij.scaleFactor * dij.physicalDose{i});
+                if options.FMO
+                    jacobSparseVec(offset+indInSparseVec) = transpose(physicalDoseProjection(:,jacobLogical)' * dij.scaleFactor * dij.physicalDose{i});
+                else
+                    jacobSparseVec{i}(indInSparseVec) = transpose(physicalDoseProjection(:,jacobLogical)' * dij.scaleFactor * dij.physicalDose{i});
+                end
             end
             
             if dij.memorySaverPhoton
@@ -195,7 +212,14 @@ for i = 1:dij.numOfScenarios
 end
 
 if isequal(options.bioOpt,'none') ||  isequal(options.ID,'protons_const_RBExD')
-    jacob = sparse(i_sparse,j_sparse,jacobSparseVec,numOfConstraints,dij.totalNumOfBixels);
+    if options.FMO
+        jacob = sparse(i_sparse,j_sparse,jacobSparseVec,numOfConstraints,dij.totalNumOfBixels);
+    else
+        jacob = cell(options.numOfScenarios,1);
+        for i = 1:options.numOfScenarios
+            jacob{i} = sparse(i_sparse,j_sparse,jacobSparseVec{i},numOfConstraints,dij.totalNumOfBixels);
+        end
+    end
 end
 
 end
