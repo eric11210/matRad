@@ -127,22 +127,12 @@ end
 
 
 
-numOfConstraints = numel(scenID);
+numOfConstraints = numel(scenID)/options.numOfScenarios;
 if isfield(dij,'optBixel')
     numOptBixel = nnz(dij.optBixel);
 else
     numOptBixel = dij.totalNumOfBixels;
 end
-
-
-i_sparse = 1:numOfConstraints;
-i_sparse = kron(i_sparse,ones(1,numOptBixel));
-
-j_sparse = 1:dij.totalNumOfBixels;
-if isfield(dij,'optBixel')
-    j_sparse(~dij.optBixel) = [];
-end
-j_sparse = repmat(j_sparse,1,numOfConstraints);
 
 if options.FMO
     jacobSparseVec = zeros(1,numOfConstraints*numOptBixel*options.numOfScenarios);
@@ -151,7 +141,7 @@ else
     jacobSparseVec{:} = {zeros(1,numOfConstraints*numOptBixel)};
 end
 
-setOfConstraints = 1:numOfConstraints;
+setOfConstraints = repmat(1:numOfConstraints,1,options.numOfScenarios);
 
 % Calculate jacobian with dij projections
 for i = 1:options.numOfScenarios
@@ -211,9 +201,26 @@ for i = 1:options.numOfScenarios
     end
 end
 
+i_sparse = 1:numOfConstraints;
+i_sparse = kron(i_sparse,ones(1,numOptBixel));
+
+j_sparse = 1:dij.totalNumOfBixels;
+if isfield(dij,'optBixel')
+    j_sparse(~dij.optBixel) = [];
+end
+j_sparse = repmat(j_sparse,1,numOfConstraints);
+
+i_sparse = repmat(i_sparse,1,options.numOfScenarios);
+
+j_sparse = repmat(j_sparse,1,options.numOfScenarios);
+
+jOffset = repelem(((1:options.numOfScenarios)-1)*dij.totalNumOfBixels,numOptBixel);
+jOffset = repelem(jOffset,1,numOfConstraints);
+j_sparse = j_sparse+jOffset;
+
 if isequal(options.bioOpt,'none') ||  isequal(options.ID,'protons_const_RBExD')
     if options.FMO
-        jacob = sparse(i_sparse,j_sparse,jacobSparseVec,numOfConstraints,dij.totalNumOfBixels);
+        jacob = sparse(i_sparse,j_sparse,jacobSparseVec,numOfConstraints,options.numOfScenarios*dij.totalNumOfBixels);
     else
         jacob = cell(options.numOfScenarios,1);
         for i = 1:options.numOfScenarios

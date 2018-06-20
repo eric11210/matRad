@@ -107,9 +107,16 @@ if pln.propOpt.runDAO && strcmp(pln.radiationMode,'photons')
 %    options.ipopt.acceptable_obj_change_tol     = 7e-3; % (Acc6), Solved To Acceptable Level if (Acc1),...,(Acc6) fullfiled
 end
 
-% set bounds on optimization variables
-options.lb              = zeros(1,dij.totalNumOfBixels);        % Lower bound on the variables.
-options.ub              = inf * wOnes;   % Upper bound on the variables.
+% set optimization options
+options.radMod          = pln.radiationMode;
+options.bioOpt          = pln.propOpt.bioOptimization;
+options.ID              = [pln.radiationMode '_' pln.propOpt.bioOptimization];
+options.FMO             = true; % let optimizer know that this is FMO
+if pln.propOpt.run4D && pln.propOpt.prop4D.singlePhaseFMO
+    options.numOfScenarios = 1;
+else
+    options.numOfScenarios  = dij.numOfScenarios;
+end
 
 if pln.propOpt.runVMAT
     % loop through angles
@@ -121,8 +128,6 @@ if pln.propOpt.runVMAT
             % if angle is not an initialization angle, do not optimize fluence
             % in bixels
             
-            % set upper bound to 0
-            options.ub(rayIndices) = 0;
             %set wOnes to 0 (initial value)
             wOnes(rayIndices) = 0;
         else
@@ -131,8 +136,6 @@ if pln.propOpt.runVMAT
                 % intersect target in the first phase (defined by
                 % phase1RayMask)
                 
-                % set upper bound to 0
-                options.ub(rayIndices) = stf(i).phase1RayMask;
                 %set wOnes to 0 (initial value)
                 wOnes(rayIndices) = stf(i).phase1RayMask;
             end
@@ -142,26 +145,27 @@ if pln.propOpt.runVMAT
 end
 dij.optBixel = logical(wOnes);
 
+if ~pln.propOpt.prop4D.singlePhaseFMO
+    wOnes = repmat(wOnes,dij.numOfScenarios,1);
+end
 
-funcs.iterfunc          = @(iter,objective,paramter) matRad_IpoptIterFunc(iter,objective,paramter,options.ipopt.max_iter);
-    
+% set bounds on optimization variables
+options.lb              = 0 * wOnes;        % Lower bound on the variables.
+options.ub              = inf * wOnes;   % Upper bound on the variables.
+
+% set bounds on constraints
+[options.cl,options.cu] = matRad_getConstBoundsWrapper(cst_Over,options);
+
 % calculate initial beam intensities wInit
 if  strcmp(pln.propOpt.bioOptimization,'const_RBExD') && strcmp(pln.radiationMode,'protons')
     % check if a constant RBE is defined - if not use 1.1
     if ~isfield(dij,'RBE')
         dij.RBE = 1.1;
     end
-    if pln.propOpt.run4D
-        if pln.propOpt.prop4D.singlePhaseFMO
-            bixelWeight =  (doseTarget)/(dij.RBE * mean(dij.physicalDose{1}(V,:)*wOnes));
-        else
-            error('fix this');
-        end
-    else
-        bixelWeight =  (doseTarget)/(dij.RBE * mean(dij.physicalDose{1}(V,:)*wOnes));
-    end
+    
+    bixelWeight =  (doseTarget)/(dij.RBE * mean(dij.physicalDose{1}(V,:)*wOnes));
     wInit       = wOnes * bixelWeight;
-        
+    
 elseif (strcmp(pln.propOpt.bioOptimization,'LEMIV_effect') || strcmp(pln.propOpt.bioOptimization,'LEMIV_RBExD')) ... 
                                 && strcmp(pln.radiationMode,'carbon')
     % set optimization options
@@ -216,25 +220,17 @@ elseif (strcmp(pln.propOpt.bioOptimization,'LEMIV_effect') || strcmp(pln.propOpt
            wInit    =  ((doseTarget)/(TolEstBio*maxCurrRBE*max(dij.physicalDose{1}(V,:)*wOnes)))* wOnes;
     end
     
-else 
-    bixelWeight =  (doseTarget)/(mean(dij.physicalDose{1}(V,dij.optBixel)*wOnes(dij.optBixel))); 
+else
+    dOnes = matRad_backProjection(wOnes,dij,options);
+    
+    %bixelWeight1 =  (doseTarget)/(mean(dij.physicalDose{1}(V,dij.optBixel)*wOnes(dij.optBixel))); 
+    bixelWeight = (doseTarget)/mean(dOnes(V));
     wInit       = wOnes * bixelWeight;
     pln.propOpt.bioOptimization = 'none';
 end
 
-% set optimization options
-options.radMod          = pln.radiationMode;
-options.bioOpt          = pln.propOpt.bioOptimization;
-options.ID              = [pln.radiationMode '_' pln.propOpt.bioOptimization];
-options.FMO             = true; % let optimizer know that this is FMO
-if pln.propOpt.run4D && pln.propOpt.prop4D.singlePhaseFMO
-    options.numOfScenarios = 1;
-else
-    options.numOfScenarios  = dij.numOfScenarios;
-end
-
 % set callback functions.
-[options.cl,options.cu] = matRad_getConstBoundsWrapper(cst_Over,options);
+funcs.iterfunc          = @(iter,objective,paramter) matRad_IpoptIterFunc(iter,objective,paramter,options.ipopt.max_iter);
 funcs.objective         = @(x) matRad_objFuncWrapper(x,dij,cst_Over,options);
 funcs.constraints       = @(x) matRad_constFuncWrapper(x,dij,cst_Over,options);
 funcs.gradient          = @(x) matRad_gradFuncWrapper(x,dij,cst_Over,options);

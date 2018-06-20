@@ -169,6 +169,13 @@ if isfield(dij,'optBixel')
 end
 j = repmat(j,1,numOfConstraints);
 
+i = repmat(i,1,options.numOfScenarios);
+j = repmat(j,1,options.numOfScenarios);
+
+jOffset = repelem(((1:options.numOfScenarios)-1)*dij.totalNumOfBixels,numOptBixel);
+jOffset = repelem(jOffset,1,numOfConstraints);
+j = j+jOffset;
+
 jacobStructVec(jacobStructVec ~= 0) = 1;
 
-jacobStruct = sparse(i,j,jacobStructVec,numOfConstraints,dij.totalNumOfBixels);
+jacobStruct = sparse(i,j,jacobStructVec,numOfConstraints,options.numOfScenarios*dij.totalNumOfBixels);
