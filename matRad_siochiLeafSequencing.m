@@ -237,6 +237,9 @@ if pln.propOpt.runVMAT
         
         % this gives cells in the shapes and the vector
         resultGUI.apertureInfo = matRad_doDAD(resultGUI.apertureInfo,stf);
+        
+        % store transition probabilities in apertureInfo
+        resultGUI.apertureInfo.prop4D.transitionMask = ones(resultGUI.apertureInfo.numPhases,numel(resultGUI.apertureInfo.beam));
     end
     
     %matRad_daoVec2ApertureInfo will interpolate subchildren gantry
@@ -276,6 +279,7 @@ resultGUI.sequencing   = sequencing;
 options.numOfScenarios = dij.numOfScenarios;
 options.bioOpt = 'none';
 options.run4D = pln.propOpt.run4D;
+options.FMO = false;
 
 d = matRad_backProjection(sequencing.w,dij,options);
 resultGUI.physicalDose = reshape(d,dij.dimensions);

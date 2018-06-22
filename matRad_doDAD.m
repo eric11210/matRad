@@ -48,7 +48,7 @@ for i = 1:numel(apertureInfo.beam)
     apertureInfo.beam(i).shape = cell(apertureInfo.numPhases,1);
     apertureInfo.beam(i).shape(:) = {shape};
     
-    for j = 1:numel(shape)
+    for j = 1:apertureInfo.beam(i).numOfShapes
         
         % these are the x-positions of the various leaves in phase 1
         % we will be querying the DAD at these positions to get the leaf
@@ -140,7 +140,6 @@ for i = 1:numel(apertureInfo.beam)
             % there are two shifts: one to make room for the weights, and
             % another to make room for the new leaf positions at each
             % phase
-            
             apertureInfo.beam(i).shape{phase}(j).vectorOffset = apertureInfo.beam(i).shape{phase}(j).vectorOffset + (apertureInfo.numPhases-1)*apertureInfo.totalNumOfShapes + (phase-1)*apertureInfo.totalNumOfLeafPairs;
         end
     end
@@ -152,7 +151,7 @@ end
 % be the mean of I and F).
 for i = 1:numel(apertureInfo.beam)
     for phase = 1:apertureInfo.numPhases
-        if ~apertureInfo.propVMAT.beam(i).doseAngleDAO(2)
+        if apertureInfo.propVMAT.beam(i).DAOBeam && ~apertureInfo.propVMAT.beam(i).doseAngleDAO(2)
             % if this is true, then the F of beam i should be equal to the I of
             % beam i+1
             % set them both to the mean
@@ -171,7 +170,7 @@ for i = 1:numel(apertureInfo.beam)
             
         end
         
-        for j = 1:numel(shape)
+        for j = 1:apertureInfo.beam(i).numOfShapes
             % fix any instances where the right leaf is somehow to the left
             % of the left leaf. Set them both to be the mean
             

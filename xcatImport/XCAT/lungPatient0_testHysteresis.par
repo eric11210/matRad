@@ -33,7 +33,7 @@ resp_period = 5                 # resp_period (SECS) (length of respiratory cycl
 resp_start_ph_index = 0.0	# resp_start_phase_index (range=0 to 1, full exhale= 0.0, full inhale=0.4) see NOTE 3
 max_diaphragm_motion = 2.0	# max_diaphragm_motion  (extent in cm's of diaphragm motion; normal breathing = 2 cm) see NOTE 4
 max_AP_exp = 1.2		# max_AP_expansion  (extent in cm's of the AP expansion of the chest; normal breathing = 1.2 cm) see NOTE 4, started at 0.5 ERIC
-dia_filename = diaphragm_curve_testHysteresis.dat	#name of curve defining diaphragm motion during respiration
+dia_filename = diaphragm_curve.dat	#name of curve defining diaphragm motion during respiration
 ap_filename = ap_curve.dat     		#name of curve defining chest anterior-posterior motion during respiration
 
 hrt_motion_x = 0.0		#hrt_motion_x (extent in cm's of the heart's lateral motion during breathing; default = 0.0 cm)
@@ -365,7 +365,7 @@ x_location = 54.892		# x coordinate (pixels) to place lesion, ERIC 0 is the firs
 y_location = 88.325			# y coordinate (pixels) to place lesion 							inc	ANT-POST	equals 313 @ 0.85 mm
 z_location = 44			# z coordinate (pixels) to place lesion 							inc INF-SUP		equals 133 @ 1 mm
 lesn_diameter = 40.0		# Diameter of lesion (mm)
-tumor_motion_flag = 0		# Sets tumor motion (0 = default motion based on lungs, 1 = motion defined by user curve below)
+tumor_motion_flag = 1		# Sets tumor motion (0 = default motion based on lungs, 1 = motion defined by user curve below)
 tumor_motion_filename = tumor_curve.dat		# Name of user defined motion curve for tumor
 #--------------------------------------------------------------------------
 
