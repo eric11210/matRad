@@ -36,8 +36,6 @@ function dij = matRad_calcPhotonDose(ct,stf,pln,cst,calcDoseDirect)
 %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-tic
-
 % set consistent random seed (enables reproducibility)
 matRadRootDir = fileparts(mfilename('fullpath'));
 addpath(fullfile(matRadRootDir,'tools'))
@@ -73,9 +71,15 @@ dij.numOfBeams         = pln.propStf.numOfBeams;
 dij.numOfVoxels        = prod(ct.cubeDim);
 dij.resolution         = ct.resolution;
 dij.dimensions         = ct.cubeDim;
-dij.numOfScenarios     = 1;
-dij.numPhases          = ct.tumourMotion.numPhases;
-dij.numFrames          = ct.tumourMotion.numFrames;
+if pln.propOpt.run4D
+    dij.numOfScenarios     = ct.tumourMotion.numPhases;
+    dij.numPhases          = ct.tumourMotion.numPhases;
+    dij.numFrames          = ct.tumourMotion.numFrames;
+else
+    dij.numOfScenarios     = 1;
+    dij.numPhases          = 1;
+    dij.numFrames          = 1;
+end
 dij.weightToMU         = 100;
 dij.scaleFactor        = 1;
 dij.memorySaverPhoton  = pln.propDoseCalc.memorySaverPhoton;
@@ -88,7 +92,7 @@ if calcDoseDirect
     numOfColumnsDij           = length(stf);
     numOfBixelsContainer = 1;
 else
-    numOfColumnsDij           = dij.totalNumOfBixels*dij.numPhases;
+    numOfColumnsDij           = dij.totalNumOfBixels;
     numOfBixelsContainer = ceil(dij.totalNumOfBixels/10);
 end
 
@@ -97,119 +101,94 @@ dij.bixelNum = NaN*ones(numOfColumnsDij,1);
 dij.rayNum   = NaN*ones(numOfColumnsDij,1);
 dij.beamNum  = NaN*ones(numOfColumnsDij,1);
 
-dij.nCore = cell(dij.numOfScenarios,1);
-dij.nTail = cell(dij.numOfScenarios,1);
-dij.nDepth = cell(dij.numOfScenarios,1);
+dij.nCore = cell(dij.numPhases,1);
+dij.nTail = cell(dij.numPhases,1);
+dij.nDepth = cell(dij.numPhases,1);
 
-dij.ixTail = cell(dij.numOfScenarios,1);
-dij.nTailPerDepth = cell(dij.numOfScenarios,1);
-dij.bixelDoseTail = cell(dij.numOfScenarios,1);
+dij.ixTail = cell(dij.numPhases,1);
+dij.nTailPerDepth = cell(dij.numPhases,1);
+dij.bixelDoseTail = cell(dij.numPhases,1);
 
-offsetTail = cell(dij.numOfScenarios,1);
-offsetDepth = cell(dij.numOfScenarios,1);
+offsetTail = cell(dij.numPhases,1);
+offsetDepth = cell(dij.numPhases,1);
 
-dij.physicalDose = cell(dij.numOfScenarios,1);
+dij.physicalDose = cell(dij.numPhases,1);
 
-for k = 1:dij.numOfScenarios
-    dij.nCore{k}    = zeros*ones(dij.totalNumOfRays*dij.numPhases,1,'uint16');
-    dij.nTail{k}    = zeros*ones(dij.totalNumOfRays*dij.numPhases,1,'uint16');
-    dij.nDepth{k}   = zeros*ones(dij.totalNumOfRays*dij.numPhases,1,'uint16');
+for k = 1:dij.numPhases
+    dij.nCore{k}    = zeros*ones(dij.totalNumOfRays,1,'uint16');
+    dij.nTail{k}    = zeros*ones(dij.totalNumOfRays,1,'uint16');
+    dij.nDepth{k}   = zeros*ones(dij.totalNumOfRays,1,'uint16');
     
-    dij.ixTail{k}          = intmax('uint32')*ones(1000*dij.totalNumOfRays*dij.numPhases,1,'uint32');
-    dij.nTailPerDepth{k}   = intmax('uint16')*ones(100*dij.totalNumOfRays*dij.numPhases,1,'uint16');
-    dij.bixelDoseTail{k}   = -1*ones(100*dij.totalNumOfRays*dij.numPhases,1,'double');
+    dij.ixTail{k}          = intmax('uint32')*ones(1000*dij.totalNumOfRays,1,'uint32');
+    dij.nTailPerDepth{k}   = intmax('uint16')*ones(100*dij.totalNumOfRays,1,'uint16');
+    dij.bixelDoseTail{k}   = -1*ones(100*dij.totalNumOfRays,1,'double');
     
     offsetTail{k} = 0;
     offsetDepth{k} = 0;
 end
 
+% Allocate memory for dose_temp cell array
+doseTmpContainer     = cell(numOfBixelsContainer,dij.numPhases);
 
 % Allocate space for dij.physicalDose sparse matrix
-for k = 1:dij.numOfScenarios
+for k = 1:dij.numPhases
     dij.physicalDose{k} = spalloc(prod(ct.cubeDim),numOfColumnsDij,1);
+    for l = 1:numOfBixelsContainer
+        doseTmpContainer{l,k} = spalloc(prod(ct.cubeDim),1,1);
+    end
 end
 
-% Allocate memory for dose_temp cell array
-doseTmpContainer     = cell(numOfBixelsContainer,dij.numOfScenarios);
 
 % take only voxels inside patient
-V_frame1 = [cst{:,4}];
-V_frame1 = unique(vertcat(V_frame1{:}));
-V_frame1AllPhases = repmat(V_frame1,dij.numPhases,1);
-nPatientVox = numel(V_frame1);
+V = cell(dij.numFrames,1);
+V{1} = [cst{:,4}];
+V{1} = unique(vertcat(V{1}{:}));
 
 % Convert CT subscripts to linear indices.
-[yCoordsV_vox_frame1, xCoordsV_vox_frame1, zCoordsV_vox_frame1] = ind2sub(ct.cubeDim,V_frame1);
 
 % these are the actual coordinates of the transformed voxel (in voxel
 % coordinate system, not physical)
-xCoordsV_vox = zeros(nPatientVox*dij.numFrames,1);
-yCoordsV_vox = zeros(nPatientVox*dij.numFrames,1);
-zCoordsV_vox = zeros(nPatientVox*dij.numFrames,1);
-xCoordsV_voxRound = zeros(nPatientVox*dij.numFrames,1);
-yCoordsV_voxRound = zeros(nPatientVox*dij.numFrames,1);
-zCoordsV_voxRound = zeros(nPatientVox*dij.numFrames,1);
-V = zeros(nPatientVox*dij.numFrames,1);
+xCoordsV_vox = cell(dij.numFrames,1);
+yCoordsV_vox = cell(dij.numFrames,1);
+zCoordsV_vox = cell(dij.numFrames,1);
 
-ind = (1:nPatientVox);
-xCoordsV_vox(ind) = xCoordsV_vox_frame1;
-yCoordsV_vox(ind) = yCoordsV_vox_frame1;
-zCoordsV_vox(ind) = zCoordsV_vox_frame1;
-xCoordsV_voxRound(ind) = xCoordsV_vox(ind);
-yCoordsV_voxRound(ind) = yCoordsV_vox(ind);
-zCoordsV_voxRound(ind) = zCoordsV_vox(ind);
-V(ind) = V_frame1;
+% these are the coordinates rounded to the nearest voxel
+xCoordsV_voxRound = cell(dij.numFrames,1);
+yCoordsV_voxRound = cell(dij.numFrames,1);
+zCoordsV_voxRound = cell(dij.numFrames,1);
 
+[yCoordsV_vox{1}, xCoordsV_vox{1}, zCoordsV_vox{1}] = ind2sub(ct.cubeDim,V{1});
 
 % ignore densities outside of contours
-eraseCtDensMask = true(dij.numOfVoxels,1);
-eraseCtDensMask(V(ind)) = false;
-%ct.cube{1}(eraseCtDensMask) = 0;
-
+eraseCtDensMask = ones(dij.numOfVoxels,1);
+eraseCtDensMask(V{1}) = 0;
+%ct.cube{1}(eraseCtDensMask == 1) = 0;
 for i = 2:dij.numFrames
-    
-    offset = (i-1)*nPatientVox;
-    ind = offset+(1:nPatientVox);
-    
     % these are probably fractional voxels
-    xCoordsV_voxTemp = ct.motionVecX{i}(V_frame1);
-    yCoordsV_voxTemp = ct.motionVecY{i}(V_frame1);
-    zCoordsV_voxTemp = ct.motionVecZ{i}(V_frame1);
+    xCoordsV_vox{i} = ct.motionVecX{i}(V{1});
+    yCoordsV_vox{i} = ct.motionVecY{i}(V{1});
+    zCoordsV_vox{i} = ct.motionVecZ{i}(V{1});
     
     % to get the voxel index to which each point belongs, round to the
     % nearest integer
-    xCoordsV_voxRoundTemp = round(xCoordsV_voxTemp);
-    yCoordsV_voxRoundTemp = round(yCoordsV_voxTemp);
-    zCoordsV_voxRoundTemp = round(zCoordsV_voxTemp);
+    xCoordsV_voxRound{i} = round(xCoordsV_vox{i});
+    yCoordsV_voxRound{i} = round(yCoordsV_vox{i});
+    zCoordsV_voxRound{i} = round(zCoordsV_vox{i});
     % round up or down at boundaries
-    xCoordsV_voxRoundTemp(xCoordsV_voxRoundTemp < 1) = 1;
-    xCoordsV_voxRoundTemp(xCoordsV_voxRoundTemp > ct.cubeDim(2)) = ct.cubeDim(2);
-    yCoordsV_voxRoundTemp(yCoordsV_voxRoundTemp < 1) = 1;
-    yCoordsV_voxRoundTemp(yCoordsV_voxRoundTemp > ct.cubeDim(1)) = ct.cubeDim(1);
-    zCoordsV_voxRoundTemp(zCoordsV_voxRoundTemp < 1) = 1;
-    zCoordsV_voxRoundTemp(zCoordsV_voxRoundTemp > ct.cubeDim(3)) = ct.cubeDim(3);
+    xCoordsV_voxRound{i}(xCoordsV_voxRound{i} < 1) = 1;
+    xCoordsV_voxRound{i}(xCoordsV_voxRound{i} > ct.cubeDim(2)) = ct.cubeDim(2);
+    yCoordsV_voxRound{i}(yCoordsV_voxRound{i} < 1) = 1;
+    yCoordsV_voxRound{i}(yCoordsV_voxRound{i} > ct.cubeDim(1)) = ct.cubeDim(1);
+    zCoordsV_voxRound{i}(zCoordsV_voxRound{i} < 1) = 1;
+    zCoordsV_voxRound{i}(zCoordsV_voxRound{i} > ct.cubeDim(3)) = ct.cubeDim(3);
     
-    VTemp = sub2ind(ct.cubeDim,yCoordsV_voxRoundTemp,xCoordsV_voxRoundTemp,zCoordsV_voxRoundTemp);
+    V{i} = sub2ind(ct.cubeDim,yCoordsV_voxRound{i},xCoordsV_voxRound{i},zCoordsV_voxRound{i});
     
     % ignore densities outside of contours
-    eraseCtDensMask = true(dij.numOfVoxels,1);
-    eraseCtDensMask(VTemp) = false;
-    %ct.cube{i}(eraseCtDensMask) = 0;
-    
-    xCoordsV_vox(ind) = xCoordsV_voxTemp;
-    yCoordsV_vox(ind) = yCoordsV_voxTemp;
-    zCoordsV_vox(ind) = zCoordsV_voxTemp;
-    xCoordsV_voxRound(ind) = xCoordsV_voxRoundTemp;
-    yCoordsV_voxRound(ind) = yCoordsV_voxRoundTemp;
-    zCoordsV_voxRound(ind) = zCoordsV_voxRoundTemp;
-    V(ind) = VTemp;
+    eraseCtDensMask = ones(dij.numOfVoxels,1);
+    eraseCtDensMask(V{i}) = 0;
+    %ct.cube{i}(eraseCtDensMask == 1) = 0;
 end
-
-% set up conversion from frames 2 phases
-frames2Phases = repelem(ct.tumourMotion.frames2Phases,nPatientVox);
-frameInd2PhaseInd = repmat((1:nPatientVox)',ct.tumourMotion.numFrames,1)+nPatientVox.*(frames2Phases-1);
-phaseInd2Phase = repelem((1:ct.tumourMotion.numPhases)',nPatientVox);
-nFramesPerPhase = repelem(ct.tumourMotion.nFramesPerPhase,nPatientVox);
 
 % set lateral cutoff value
 lateralCutoff = 50; % [mm]
@@ -286,7 +265,6 @@ kernelConvSize = 2*kernelConvLimit;
 effectiveLateralCutoff = lateralCutoff + fieldWidth/2;
 
 counter = 0;
-sortInd = nan(numOfBixelsContainer*ct.tumourMotion.numPhases,1);
 fprintf('matRad: Photon dose calculation...\n');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 for i = 1:dij.numOfBeams % loop over all beams
@@ -302,48 +280,51 @@ for i = 1:dij.numOfBeams % loop over all beams
     
     bixelsPerBeam = 0;
     
-    % convert voxel indices to real coordinates using iso center of beam i
-    xCoordsV = xCoordsV_vox(:)*ct.resolution.x-stf(i).isoCenter(1);
-    yCoordsV = yCoordsV_vox(:)*ct.resolution.y-stf(i).isoCenter(2);
-    zCoordsV = zCoordsV_vox(:)*ct.resolution.z-stf(i).isoCenter(3);
-    coordsV  = [xCoordsV yCoordsV zCoordsV];
-    % now rounded to neareast voxel centre
-    xCoordsVRound = xCoordsV_voxRound(:)*ct.resolution.x-stf(i).isoCenter(1);
-    yCoordsVRound = yCoordsV_voxRound(:)*ct.resolution.y-stf(i).isoCenter(2);
-    zCoordsVRound = zCoordsV_voxRound(:)*ct.resolution.z-stf(i).isoCenter(3);
-    coordsVRound  = [xCoordsVRound yCoordsVRound zCoordsVRound];
-    
-    % Get Rotation Matrix
-    % Do not transpose matrix since we usage of row vectors &
-    % transformation of the coordinate system need double transpose
-    
-    rotMat_system_T = matRad_getRotationMatrix(pln.propStf.gantryAngles(i),pln.propStf.couchAngles(i));
-    
-    % Rotate coordinates (1st couch around Y axis, 2nd gantry movement)
-    rot_coordsV = coordsV*rotMat_system_T;
-    % now rounded to nearest voxel centre
-    rot_coordsVRound = coordsVRound*rotMat_system_T;
-    
-    rot_coordsV(:,1) = rot_coordsV(:,1)-stf(i).sourcePoint_bev(1);
-    rot_coordsV(:,2) = rot_coordsV(:,2)-stf(i).sourcePoint_bev(2);
-    rot_coordsV(:,3) = rot_coordsV(:,3)-stf(i).sourcePoint_bev(3);
-    % now rounded to nearest voxel centre
-    rot_coordsVRound(:,1) = rot_coordsVRound(:,1)-stf(i).sourcePoint_bev(1);
-    rot_coordsVRound(:,2) = rot_coordsVRound(:,2)-stf(i).sourcePoint_bev(2);
-    rot_coordsVRound(:,3) = rot_coordsVRound(:,3)-stf(i).sourcePoint_bev(3);
+    coordsV = cell(dij.numFrames,1);
+    rot_coordsV = cell(dij.numFrames,1);
+    coordsVRound = cell(dij.numFrames,1);
+    rot_coordsVRound = cell(dij.numFrames,1);
+    for j = 1:dij.numFrames
+        % convert voxel indices to real coordinates using iso center of beam i
+        xCoordsV = xCoordsV_vox{j}(:)*ct.resolution.x-stf(i).isoCenter(1);
+        yCoordsV = yCoordsV_vox{j}(:)*ct.resolution.y-stf(i).isoCenter(2);
+        zCoordsV = zCoordsV_vox{j}(:)*ct.resolution.z-stf(i).isoCenter(3);
+        coordsV{j}  = [xCoordsV yCoordsV zCoordsV];
+        % now rounded to neareast voxel centre
+        xCoordsVRound = xCoordsV_voxRound{j}(:)*ct.resolution.x-stf(i).isoCenter(1);
+        yCoordsVRound = yCoordsV_voxRound{j}(:)*ct.resolution.y-stf(i).isoCenter(2);
+        zCoordsVRound = zCoordsV_voxRound{j}(:)*ct.resolution.z-stf(i).isoCenter(3);
+        coordsVRound{j}  = [xCoordsVRound yCoordsVRound zCoordsVRound];
+        
+        % Get Rotation Matrix
+        % Do not transpose matrix since we usage of row vectors &
+        % transformation of the coordinate system need double transpose
+        
+        rotMat_system_T = matRad_getRotationMatrix(pln.propStf.gantryAngles(i),pln.propStf.couchAngles(i));
+        
+        % Rotate coordinates (1st couch around Y axis, 2nd gantry movement)
+        rot_coordsV{j} = coordsV{j}*rotMat_system_T;
+        % now rounded to nearest voxel centre
+        rot_coordsVRound{j} = coordsVRound{j}*rotMat_system_T;
+        
+        rot_coordsV{j}(:,1) = rot_coordsV{j}(:,1)-stf(i).sourcePoint_bev(1);
+        rot_coordsV{j}(:,2) = rot_coordsV{j}(:,2)-stf(i).sourcePoint_bev(2);
+        rot_coordsV{j}(:,3) = rot_coordsV{j}(:,3)-stf(i).sourcePoint_bev(3);
+        % now rounded to nearest voxel centre
+        rot_coordsVRound{j}(:,1) = rot_coordsVRound{j}(:,1)-stf(i).sourcePoint_bev(1);
+        rot_coordsVRound{j}(:,2) = rot_coordsVRound{j}(:,2)-stf(i).sourcePoint_bev(2);
+        rot_coordsVRound{j}(:,3) = rot_coordsVRound{j}(:,3)-stf(i).sourcePoint_bev(3);
+    end
+    % xCoordsV_voxRound{1}, etc. are empty
+    coordsVRound{1} = coordsV{1};
+    rot_coordsVRound{1} = rot_coordsV{1};
     
     % ray tracing
     fprintf('matRad: calculate radiological depth cube...');
     [radDepthV,geoDistV] = matRad_rayTracing(stf(i),ct,V,rot_coordsV,rot_coordsVRound,effectiveLateralCutoff);
     fprintf('done \n');
     
-    % get indices of voxels where ray tracing results are available
-    radDepthIx = find(~isnan(radDepthV));
-    
-    % limit rotated coordinates to positions where ray tracing is availabe
-    rot_coordsV = rot_coordsV(radDepthIx,:);
-    
-    
+    radDepthIx = cell(dij.numFrames,1);
     kernel1Mx = cell(dij.numFrames,1);
     kernel2Mx = cell(dij.numFrames,1);
     kernel3Mx = cell(dij.numFrames,1);
@@ -352,6 +333,11 @@ for i = 1:dij.numOfBeams % loop over all beams
     Interp_kernel3 = cell(dij.numFrames,1);
     
     for j = 1:dij.numFrames
+        % get indices of voxels where ray tracing results are available
+        radDepthIx{j} = find(~isnan(radDepthV{j}));
+        
+        % limit rotated coordinates to positions where ray tracing is availabe
+        rot_coordsV{j} = rot_coordsV{j}(radDepthIx{j},:);
         
         % get index of central ray or closest to the central ray
         [~,center] = min(sum(reshape([stf(i).ray.rayPos_bev],3,[]).^2));
@@ -471,99 +457,84 @@ for i = 1:dij.numOfBeams % loop over all beams
             continue;
         end
         
-        % calculate photon dose for beam i and bixel j
-        bixelDose = matRad_calcPhotonDoseBixel(machine.meta.SAD,machine.data.m,...
-            machine.data.betas, ...
-            Interp_kernel1,...
-            Interp_kernel2,...
-            Interp_kernel3,...
-            radDepthV(ix),...
-            geoDistV(ix),...
-            isoLatDistsX,...
-            isoLatDistsZ,...
-            ix,...
-            nPatientVox);
-        
-        
-        % sample dose only for bixel based dose calculation
-        if ~isFieldBasedDoseCalc && ~calcDoseDirect
-            r0   = 25;   % [mm] sample beyond the inner core
-            Type = 'radius';
+        for k = 1:dij.numFrames
+            % calculate photon dose for beam i and bixel j
+            bixelDose = matRad_calcPhotonDoseBixel(machine.meta.SAD,machine.data.m,...
+                machine.data.betas, ...
+                Interp_kernel1{k},...
+                Interp_kernel2{k},...
+                Interp_kernel3{k},...
+                radDepthV{k}(ix{k}),...
+                geoDistV{k}(ix{k}),...
+                isoLatDistsX{k},...
+                isoLatDistsZ{k});
             
-            if dij.memorySaverPhoton
-                warning('Memory saver option not tested!')
-                %{
-                [ix{k},bixelDose,ixTail,nTailPerDepth,bixelDoseTail,nTail,nDepth,nCore] = matRad_DijSampling_memorySaver(ix{k},bixelDose,radDepthV{k}(ix{k}),rad_distancesSq{k},Type,r0);
+            
+            % sample dose only for bixel based dose calculation
+            if ~isFieldBasedDoseCalc && ~calcDoseDirect
+                r0   = 25;   % [mm] sample beyond the inner core
+                Type = 'radius';
                 
-                dij.ixTail{k}(offsetTail{k}+(1:nTail)) = uint32(V{1}(ixTail));
-                dij.nTailPerDepth{k}(offsetDepth{k}+(1:nDepth)) = nTailPerDepth;
-                dij.bixelDoseTail{k}(offsetDepth{k}+(1:nDepth)) = bixelDoseTail;
-                
-                dij.nCore{k}(counter) = uint16(nCore);
-                dij.nTail{k}(counter) = uint16(nTail);
-                dij.nDepth{k}(counter) = uint16(nDepth);
-                
-                offsetTail{k} = offsetTail{k}+nTail;
-                offsetDepth{k} = offsetDepth{k}+nDepth;
-                %}
-                
-            else
-                [ix,bixelDose] = matRad_DijSampling(ix,bixelDose,radDepthV(ix),rad_distancesSq,Type,r0);
-            end
-        end
-        
-        % average dose over frames into phases
-        % this is the phase index
-        ixPhase = frameInd2PhaseInd(ix);
-        % this is a normalization factor for the average
-        %normFactor = accumarray(ixPhase,1,[nPatientVox*dij.numPhases 1]);
-        % this is the average dose, accumulated over all frames which
-        % share the same phase
-        % the dose is sorted into order according to the phase index
-        % (every index is included, even ones with 0 dose)
-        %bixelDosePhase = accumarray(ixPhase,bixelDose,[nPatientVox*dij.numPhases 1])./normFactor;
-        %bixelDosePhase(isnan(bixelDosePhase)) = 0;
-        bixelDosePhase = bixelDose./nFramesPerPhase(ixPhase);
-        
-        % Save dose for every bixel in cell array
-        %doseTmpContainer{mod(counter-1,numOfBixelsContainer)+1,1} = sparse(V_frame1AllPhases,phaseInd2Phase,bixelDosePhase,dij.numOfVoxels,ct.tumourMotion.numPhases);
-        doseTmpContainer{mod(counter-1,numOfBixelsContainer)+1,1} = sparse(V_frame1AllPhases(ixPhase),phaseInd2Phase(ixPhase),bixelDosePhase,dij.numOfVoxels,ct.tumourMotion.numPhases);
-        
-        
-        sortInd((mod(counter-1,numOfBixelsContainer)*ct.tumourMotion.numPhases+1):(mod(counter-1,numOfBixelsContainer)*ct.tumourMotion.numPhases+ct.tumourMotion.numPhases)) = (1:dij.totalNumOfBixels:(dij.totalNumOfBixels*ct.tumourMotion.numPhases))+counter-1;
-        % Because it is V{1}(ix{k}), we are calculating the dose on the
-        % transformed CT, but bringing back to the reference CT for the
-        % Dij.  Also, this ensures that even if two different voxels on
-        % the reference map to the same voxel, we don't need to worry
-        % about accumulation.
-        
-        % save computation time and memory by sequentially filling the
-        % sparse matrix dose.dij from the cell array
-        if mod(counter,numOfBixelsContainer) == 0 || counter == dij.totalNumOfBixels
-            if calcDoseDirect
-                if isfield(stf(1).ray(1),'weight')
-                    % score physical dose
-                    dij.physicalDose{phase}(:,i) = dij.physicalDose{phase}(:,i) + stf(i).ray(j).weight * doseTmpContainer{1,k};
+                if dij.memorySaverPhoton
+                    [ix{k},bixelDose,ixTail,nTailPerDepth,bixelDoseTail,nTail,nDepth,nCore] = matRad_DijSampling_memorySaver(ix{k},bixelDose,radDepthV{k}(ix{k}),rad_distancesSq{k},Type,r0);
+                    
+                    dij.ixTail{k}(offsetTail{k}+(1:nTail)) = uint32(V{1}(ixTail));
+                    dij.nTailPerDepth{k}(offsetDepth{k}+(1:nDepth)) = nTailPerDepth;
+                    dij.bixelDoseTail{k}(offsetDepth{k}+(1:nDepth)) = bixelDoseTail;
+                    
+                    dij.nCore{k}(counter) = uint16(nCore);
+                    dij.nTail{k}(counter) = uint16(nTail);
+                    dij.nDepth{k}(counter) = uint16(nDepth);
+                    
+                    offsetTail{k} = offsetTail{k}+nTail;
+                    offsetDepth{k} = offsetDepth{k}+nDepth;
+                    
                 else
-                    error(['No weight available for beam ' num2str(i) ', ray ' num2str(j)]);
+                    [ix{k},bixelDose] = matRad_DijSampling(ix{k},bixelDose,radDepthV{k}(ix{k}),rad_distancesSq{k},Type,r0);
                 end
-            else
-                % fill entire dose influence matrix
-                %dij.physicalDose{1}(:,(ceil(counter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:counter) = [doseTmpContainer{1:mod(counter-1,numOfBixelsContainer)+1,1}];
-                sortInd(isnan(sortInd)) = [];
-                dij.physicalDose{1}(:,sortInd) = [doseTmpContainer{1:mod(counter-1,numOfBixelsContainer)+1,1}];
-                sortInd = nan(numOfBixelsContainer*ct.tumourMotion.numPhases,1);
+            end
+            
+            % Save dose for every bixel in cell array
+            phase = ct.tumourMotion.frames2Phases(k);
+            %doseTmpContainer{mod(counter-1,numOfBixelsContainer)+1,phase} = sparse(V{1}(ix{k}),1,bixelDose,dij.numOfVoxels,1)./ct.tumourMotion.nFramesPerPhase(phase);
+            doseTmpContainer{mod(counter-1,numOfBixelsContainer)+1,phase} = doseTmpContainer{mod(counter-1,numOfBixelsContainer)+1,phase}+sparse(V{1}(ix{k}),1,bixelDose,dij.numOfVoxels,1)./ct.tumourMotion.nFramesPerPhase(phase);
+            % Because it is V{1}(ix{k}), we are calculating the dose on the
+            % transformed CT, but bringing back to the reference CT for the
+            % Dij.  Also, this ensures that even if two different voxels on
+            % the reference map to the same voxel, we don't need to worry
+            % about accumulation.
+            
+            % save computation time and memory by sequentially filling the
+            % sparse matrix dose.dij from the cell array
+            if mod(counter,numOfBixelsContainer) == 0 || counter == dij.totalNumOfBixels
+                if calcDoseDirect
+                    if isfield(stf(1).ray(1),'weight')
+                        % score physical dose
+                        dij.physicalDose{phase}(:,i) = dij.physicalDose{phase}(:,i) + stf(i).ray(j).weight * doseTmpContainer{1,k};
+                    else
+                        error(['No weight available for beam ' num2str(i) ', ray ' num2str(j)]);
+                    end
+                else
+                    % fill entire dose influence matrix
+                    dij.physicalDose{phase}(:,(ceil(counter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:counter) = [doseTmpContainer{1:mod(counter-1,numOfBixelsContainer)+1,phase}];
+                    
+                    if any(k == cumsum(ct.tumourMotion.nFramesPerPhase))
+                        for l = 1:numOfBixelsContainer
+                            doseTmpContainer{l,phase} = spalloc(prod(ct.cubeDim),1,1);
+                        end
+                    end
+                end
             end
         end
     end
 end
 
-for i = 1:dij.numOfScenarios
+for i = 1:dij.numPhases
     dij.ixTail{i}(dij.ixTail{i} == intmax('uint32')) = [];
     dij.nTailPerDepth{i}(dij.nTailPerDepth{i} == intmax('uint16')) = [];
     dij.bixelDoseTail{i}(dij.bixelDoseTail{i} == -1) = [];
 end
-toc
+
 try
   % wait 0.1s for closing all waitbars
   allWaitBarFigures = findall(0,'type','figure','tag','TMWWaitbar'); 
