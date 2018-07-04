@@ -169,14 +169,21 @@ if isfield(dij,'optBixel')
 end
 j = repmat(j,1,numOfConstraints);
 
-i = repmat(i,1,options.numOfScenarios);
-j = repmat(j,1,options.numOfScenarios);
+if options.FMO
+    i = repmat(i,1,options.numOfScenarios);
+    j = repmat(j,1,options.numOfScenarios);
+    
+    jOffset = repelem(((1:options.numOfScenarios)-1)*dij.totalNumOfBixels,numOptBixel);
+    jOffset = repelem(jOffset,1,numOfConstraints);
+    j = j+jOffset;
+    
+    jacobStructVec(jacobStructVec ~= 0) = 1;
+    jacobStruct = sparse(i,j,jacobStructVec,numOfConstraints,options.numOfScenarios*dij.totalNumOfBixels);
+else
+    
+    jacobStruct = cell(options.numOfScenarios,1);
+    for i = 1:options.numOfScenarios
+        jacobStruct{i} = sparse(i_sparse,j_sparse,jacobStructVec{i},numOfConstraints,dij.totalNumOfBixels);
+    end
+end
 
-jOffset = repelem(((1:options.numOfScenarios)-1)*dij.totalNumOfBixels,numOptBixel);
-jOffset = repelem(jOffset,1,numOfConstraints);
-j = j+jOffset;
-
-% must fix later
-jacobStructVec{1}(jacobStructVec{1} ~= 0) = 1;
-
-jacobStruct{1} = sparse(i,j,jacobStructVec{1},numOfConstraints,options.numOfScenarios*dij.totalNumOfBixels);

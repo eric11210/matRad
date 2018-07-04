@@ -83,13 +83,8 @@ for  i = 1:size(cst,1)
 end
 
 % Calculate gradient
-if options.FMO
-    g = zeros(dij.totalNumOfBixels*options.numOfScenarios,1);
-else
-    g = cell(options.numOfScenarios,1);
-    g{:} = zeros(dij.totalNumOfBixels,1);
-end
-% make g a cell array?  would be useful for DAO
+g = cell(options.numOfScenarios,1);
+g{:} = zeros(dij.totalNumOfBixels,1);
 
 
 for i = 1:options.numOfScenarios
@@ -99,27 +94,9 @@ for i = 1:options.numOfScenarios
     if isequal(options.bioOpt,'none')
         
         if isfield(dij,'optBixel')
-            if options.FMO
-                offset = (i-1)*dij.totalNumOfBixels;
-                gPhase = g(offset+(1:dij.totalNumOfBixels));
-                
-                gPhase(dij.optBixel) = gPhase(dij.optBixel) + dij.scaleFactor * (delta' * dij.physicalDose{i}(:,dij.optBixel))';
-                
-                g(offset+(1:dij.totalNumOfBixels)) = gPhase;
-            else
-                g{i}(dij.optBixel) = g{i}(dij.optBixel) + dij.scaleFactor * (delta' * dij.physicalDose{i}(:,dij.optBixel))';
-            end
+            g{i}(dij.optBixel) = g{i}(dij.optBixel) + dij.scaleFactor * (delta' * dij.physicalDose{i}(:,dij.optBixel))';
         else
-            if options.FMO
-                offset = (i-1)*dij.totalNumOfBixels;
-                gPhase = g(offset+(1:dij.totalNumOfBixels));
-                
-                gPhase = gPhase + dij.scaleFactor * (delta' * dij.physicalDose{i})';
-                
-                g(offset+(1:dij.totalNumOfBixels)) = gPhase;
-            else
-                g{i} = g{i} + dij.scaleFactor * (delta' * dij.physicalDose{i})';
-            end
+            g{i} = g{i} + dij.scaleFactor * (delta' * dij.physicalDose{i})';
         end
         
         if dij.memorySaverPhoton

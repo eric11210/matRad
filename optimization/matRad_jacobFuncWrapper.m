@@ -210,18 +210,19 @@ if isfield(dij,'optBixel')
 end
 j_sparse = repmat(j_sparse,1,numOfConstraints);
 
-i_sparse = repmat(i_sparse,1,options.numOfScenarios);
-
-j_sparse = repmat(j_sparse,1,options.numOfScenarios);
-
-jOffset = repelem(((1:options.numOfScenarios)-1)*dij.totalNumOfBixels,numOptBixel);
-jOffset = repelem(jOffset,1,numOfConstraints);
-j_sparse = j_sparse+jOffset;
-
 if isequal(options.bioOpt,'none') ||  isequal(options.ID,'protons_const_RBExD')
     if options.FMO
+        
+        i_sparse = repmat(i_sparse,1,options.numOfScenarios);
+        j_sparse = repmat(j_sparse,1,options.numOfScenarios);
+        
+        jOffset = repelem(((1:options.numOfScenarios)-1)*dij.totalNumOfBixels,numOptBixel);
+        jOffset = repelem(jOffset,1,numOfConstraints);
+        j_sparse = j_sparse+jOffset;
+        
         jacob = sparse(i_sparse,j_sparse,jacobSparseVec,numOfConstraints,options.numOfScenarios*dij.totalNumOfBixels);
     else
+        
         jacob = cell(options.numOfScenarios,1);
         for i = 1:options.numOfScenarios
             jacob{i} = sparse(i_sparse,j_sparse,jacobSparseVec{i},numOfConstraints,dij.totalNumOfBixels);

@@ -1,4 +1,4 @@
-function resultGUI = matRad_calcCubes(w,dij,cst,scenNum)
+function resultGUI = matRad_calcCubes(w,dij,cst,options,scenNum)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % matRad computation of all cubes for the resultGUI struct which is used
 % as result container and for visualization in matRad's GUI
@@ -42,7 +42,7 @@ beamInfo(1).logIx  = true(size(w));
 % compute beam dose individually for particles
 if ~strcmp(dij.radiationMode,'photons')
     % get bixel - beam correspondence
-    for i = 2:dij.numOfBeams+1
+    for i = 1:dij.numOfBeams
         beamInfo(i).suffix = ['_beam', num2str(i)];
         beamInfo(i).logIx  = (dij.beamNum == i);
     end
@@ -50,17 +50,8 @@ end
 
 % compute physical dose for all beams individually and together
 for i = 1:length(beamInfo)
-    
-    if isfield(dij,'optBixel')
-        d = dij.physicalDose{scenNum}(:,dij.optBixel) * (w(dij.optBixel) * dij.scaleFactor);
-    else
-        d = dij.physicalDose{scenNum} * (w * dij.scaleFactor);
-    end
-    
-    if dij.memorySaverPhoton
-        % don't worry about computing individual dose for photons
-        d = d+matRad_memorySaverDoseAndGrad(w,dij,'dose',i);
-    end
+    % has to be fixed a lot for 4D
+    d = matRad_backProjection(w,dij,options);
     
     resultGUI.(['physicalDose', beamInfo(i).suffix]) = reshape(d,dij.dimensions);
 end

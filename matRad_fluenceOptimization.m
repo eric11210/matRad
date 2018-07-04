@@ -96,7 +96,7 @@ for i=1:size(cst_Over,1)
 end
 [doseTarget,i] = max(doseTarget);
 ixTarget       = ixTarget(i);
-wOnes          = ones(dij.totalNumOfBixels,1);
+wOnesArray     = ones(dij.totalNumOfBixels,1);
 
 % set the IPOPT options.
 matRad_ipoptOptions;
@@ -129,7 +129,7 @@ if pln.propOpt.runVMAT
             % in bixels
             
             %set wOnes to 0 (initial value)
-            wOnes(rayIndices) = 0;
+            wOnesArray(rayIndices) = 0;
         else
             if pln.propOpt.run4D && pln.propOpt.prop4D.singlePhaseFMO
                 % if angle an initialization angle, only optimize bixels that
@@ -137,22 +137,24 @@ if pln.propOpt.runVMAT
                 % phase1RayMask)
                 
                 %set wOnes to 0 (initial value)
-                wOnes(rayIndices) = stf(i).phase1RayMask;
+                wOnesArray(rayIndices) = stf(i).phase1RayMask;
             end
         end
         offset = offset+dij.numOfRaysPerBeam(i);
     end
 end
-dij.optBixel = logical(wOnes);
+dij.optBixel = logical(wOnesArray);
 
-if ~pln.propOpt.prop4D.singlePhaseFMO
-    wOnes = repmat(wOnes,dij.numOfScenarios,1);
-end
+wOnes = cell(options.numOfScenarios,1);
+wOnes{:} = wOnesArray;
 
-% set bounds on optimization variables
-options.lb              = 0 * wOnes;        % Lower bound on the variables.
-options.ub              = wOnes;            % Upper bound on the variables.
-options.ub(wOnes == 1)  = inf;
+% set bounds on optimization variables - put in separate function?
+options.lb = cell(options.numOfScenarios,1);
+options.ub = cell(options.numOfScenarios,1);
+
+options.lb{:}               = 0 * wOnesArray;        % Lower bound on the variables.
+options.ub{:}               = wOnesArray;            % Upper bound on the variables.
+options.ub{:}(wOnesArray == 1)   = inf;
 
 % set bounds on constraints
 [options.cl,options.cu] = matRad_getConstBoundsWrapper(cst_Over,options);
@@ -223,10 +225,9 @@ elseif (strcmp(pln.propOpt.bioOptimization,'LEMIV_effect') || strcmp(pln.propOpt
     
 else
     dOnes = matRad_backProjection(wOnes,dij,options);
-    
-    %bixelWeight1 =  (doseTarget)/(mean(dij.physicalDose{1}(V,dij.optBixel)*wOnes(dij.optBixel))); 
     bixelWeight = (doseTarget)/mean(dOnes(V));
-    wInit       = wOnes * bixelWeight;
+    wInit = cell(options.numOfScenarios,1);
+    wInit{:} = wOnesArray* bixelWeight;
     pln.propOpt.bioOptimization = 'none';
 end
 
@@ -244,16 +245,17 @@ funcs.jacobianstructure = @( ) matRad_getJacobStruct(dij,cst_Over,options);
 % calc dose and reshape from 1D vector to 2D array
 fprintf('Calculating final cubes...\n');
 
-resultGUI = matRad_calcCubes(wOpt,dij,cst_Over);
+resultGUI = matRad_calcCubes(wOpt,dij,cst_Over,options);
 
 if isfield(pln,'scaleDRx') && pln.scaleDRx
     %Scale D95 in target to RXDose
     resultGUI.QI = matRad_calcQualityIndicators(cst,pln,resultGUI.physicalDose);
     
     scaleFacRx = max((pln.DRx/pln.numOfFractions)./[resultGUI.QI(pln.RxStruct).D_95]');
-    
-    wOpt = wOpt*scaleFacRx;
-    resultGUI = matRad_calcCubes(wOpt,dij,cst_Over);
+    for i = 1:options.numOfScenarios
+        wOpt{i} = wOpt{i}*scaleFacRx;
+    end
+    resultGUI = matRad_calcCubes(wOpt,dij,cst_Over,options);
     
     resultGUI.scaleFacRx_FMO = scaleFacRx;
 end

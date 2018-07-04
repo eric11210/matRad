@@ -51,25 +51,11 @@ else
         for i = 1:options.numOfScenarios
             
             if isfield(dij,'optBixel')
-                if options.FMO
-                    offset = (i-1)*dij.totalNumOfBixels;
-                    wPhase = w(offset+(1:dij.totalNumOfBixels));
-                    
-                    d = d+dij.physicalDose{i}(:,dij.optBixel) * (wPhase(dij.optBixel) * dij.scaleFactor);
-                else
-                    d = d+dij.physicalDose{i}(:,dij.optBixel) * (w{i}(dij.optBixel) * dij.scaleFactor);
-                end
+                d = d+dij.physicalDose{i}(:,dij.optBixel) * (w{i}(dij.optBixel) * dij.scaleFactor);
             else
-                if options.FMO
-                    offset = (i-1)*dij.totalNumOfBixels;
-                    wPhase = w(offset+(1:dij.totalNumOfBixels));
-                    
-                    d = d+dij.physicalDose{i} * (wPhase * dij.scaleFactor);
-                else
-                    d = d+dij.physicalDose{i} * (w{i} * dij.scaleFactor);
-                end
+                d = d+dij.physicalDose{i} * (w{i} * dij.scaleFactor);
             end
-
+            
             if dij.memorySaverPhoton
                 d = d+matRad_memorySaverDoseAndGrad(w{i},dij,'dose',i);
             end
