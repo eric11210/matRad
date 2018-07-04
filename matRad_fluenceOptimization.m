@@ -151,7 +151,8 @@ end
 
 % set bounds on optimization variables
 options.lb              = 0 * wOnes;        % Lower bound on the variables.
-options.ub              = inf * wOnes;   % Upper bound on the variables.
+options.ub              = wOnes;            % Upper bound on the variables.
+options.ub(wOnes == 1)  = inf;
 
 % set bounds on constraints
 [options.cl,options.cu] = matRad_getConstBoundsWrapper(cst_Over,options);

@@ -247,10 +247,10 @@ if pln.propOpt.runVMAT
     resultGUI.apertureInfo = matRad_daoVec2ApertureInfo(resultGUI.apertureInfo,resultGUI.apertureInfo.apertureVector);
     
     %calculate max leaf speed
-    %resultGUI.apertureInfo = matRad_maxLeafSpeed(resultGUI.apertureInfo);
+    resultGUI.apertureInfo = matRad_maxLeafSpeed(resultGUI.apertureInfo);
     
     %optimize delivery
-    %resultGUI = matRad_optDelivery(resultGUI,0);
+    resultGUI = matRad_optDelivery(resultGUI,0);
     %resultGUI.apertureInfo = matRad_maxLeafSpeed(resultGUI.apertureInfo);
     fprintf('\nLeaf speed turned off for now!\n');
     

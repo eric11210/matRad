@@ -36,8 +36,6 @@ function dij = matRad_calcPhotonDose_CELL(ct,stf,pln,cst,calcDoseDirect)
 %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-tic
-
 % set consistent random seed (enables reproducibility)
 matRadRootDir = fileparts(mfilename('fullpath'));
 addpath(fullfile(matRadRootDir,'tools'))
@@ -73,9 +71,15 @@ dij.numOfBeams         = pln.propStf.numOfBeams;
 dij.numOfVoxels        = prod(ct.cubeDim);
 dij.resolution         = ct.resolution;
 dij.dimensions         = ct.cubeDim;
-dij.numOfScenarios     = ct.tumourMotion.numPhases;
-dij.numPhases          = ct.tumourMotion.numPhases;
-dij.numFrames          = ct.tumourMotion.numFrames;
+if pln.propOpt.run4D
+    dij.numOfScenarios     = ct.tumourMotion.numPhases;
+    dij.numPhases          = ct.tumourMotion.numPhases;
+    dij.numFrames          = ct.tumourMotion.numFrames;
+else
+    dij.numOfScenarios     = 1;
+    dij.numPhases          = 1;
+    dij.numFrames          = 1;
+end
 dij.weightToMU         = 100;
 dij.scaleFactor        = 1;
 dij.memorySaverPhoton  = pln.propDoseCalc.memorySaverPhoton;
@@ -530,7 +534,7 @@ for i = 1:dij.numPhases
     dij.nTailPerDepth{i}(dij.nTailPerDepth{i} == intmax('uint16')) = [];
     dij.bixelDoseTail{i}(dij.bixelDoseTail{i} == -1) = [];
 end
-toc
+
 try
   % wait 0.1s for closing all waitbars
   allWaitBarFigures = findall(0,'type','figure','tag','TMWWaitbar'); 

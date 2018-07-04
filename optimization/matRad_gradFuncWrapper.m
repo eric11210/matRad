@@ -87,7 +87,7 @@ if options.FMO
     g = zeros(dij.totalNumOfBixels*options.numOfScenarios,1);
 else
     g = cell(options.numOfScenarios,1);
-    g{:} = {zeros(dij.totalNumOfBixels,1)};
+    g{:} = zeros(dij.totalNumOfBixels,1);
 end
 % make g a cell array?  would be useful for DAO
 

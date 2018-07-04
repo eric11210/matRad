@@ -90,7 +90,7 @@ if options.FMO
     jacobStructVec = zeros(1,numOfConstraints*numOptBixel*options.numOfScenarios);
 else
     jacobStructVec = cell(options.numOfScenarios,1);
-    jacobStructVec{:} = {zeros(1,numOfConstraints*numOptBixel)};
+    jacobStructVec{:} = zeros(1,numOfConstraints*numOptBixel);
 end
 
 for scen = 1:options.numOfScenarios
@@ -176,6 +176,7 @@ jOffset = repelem(((1:options.numOfScenarios)-1)*dij.totalNumOfBixels,numOptBixe
 jOffset = repelem(jOffset,1,numOfConstraints);
 j = j+jOffset;
 
-jacobStructVec(jacobStructVec ~= 0) = 1;
+% must fix later
+jacobStructVec{1}(jacobStructVec{1} ~= 0) = 1;
 
-jacobStruct = sparse(i,j,jacobStructVec,numOfConstraints,options.numOfScenarios*dij.totalNumOfBixels);
+jacobStruct{1} = sparse(i,j,jacobStructVec{1},numOfConstraints,options.numOfScenarios*dij.totalNumOfBixels);

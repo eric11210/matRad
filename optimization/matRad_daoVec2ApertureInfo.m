@@ -169,8 +169,8 @@ for phase = 1:apertureInfo.numPhases
                     rightLeafPos = apertureInfoVect(vectorIx_R);
                     
                     % update information in shape structure
-                    updatedInfo.beam(i).shape(j).leftLeafPos  = leftLeafPos;
-                    updatedInfo.beam(i).shape(j).rightLeafPos = rightLeafPos;
+                    updatedInfo.beam(i).shape{phase}(j).leftLeafPos  = leftLeafPos;
+                    updatedInfo.beam(i).shape{phase}(j).rightLeafPos = rightLeafPos;
                 else
                     % extract left and right leaf positions from shape vector
                     vectorIx_LI = updatedInfo.beam(i).shape{phase}(j).vectorOffset(1) + ([1:n]-1);

@@ -119,7 +119,12 @@ matRad_ipoptOptions;
 options.radMod          = pln.radiationMode;
 options.bioOpt          = pln.propOpt.bioOptimization;
 options.ID              = [pln.radiationMode '_' pln.propOpt.bioOptimization];
-options.numOfScenarios  = dij.numOfScenarios;
+options.FMO             = false; % let optimizer know that this is FMO
+if pln.propOpt.run4D && pln.propOpt.prop4D.singlePhaseFMO
+    options.numOfScenarios = 1;
+else
+    options.numOfScenarios  = dij.numOfScenarios;
+end
 
 % set bounds on optimization variables
 options.lb              = apertureInfo.limMx(:,1);                                          % Lower bound on the variables.
@@ -133,7 +138,7 @@ funcs.iterfunc          = @(iter,objective,parameter) matRad_IpoptIterFunc(iter,
 funcs.gradient          = @(x) matRad_daoGradFunc(x,dij,cst_Over,options);
 funcs.constraints       = @(x) matRad_daoConstFunc(x,dij,cst_Over,options);
 funcs.jacobian          = @(x) matRad_daoJacobFunc(x,dij,cst_Over,options);
-funcs.jacobianstructure = @( ) matRad_daoGetJacobStruct(apertureInfo,dij,cst_Over);
+funcs.jacobianstructure = @( ) matRad_daoGetJacobStruct(apertureInfo,dij,cst_Over,options);
 
 % Run IPOPT.
 [optApertureInfoVec, info] = ipopt(apertureInfo.apertureVector,funcs,options);
@@ -160,7 +165,7 @@ resultGUI.wDao = resultGUI.apertureInfo.bixelWeights;
 
 % calc dose and reshape from 1D vector to 3D array
 d = matRad_backProjection(resultGUI.w,dij,options);
-resultGUI.physicalDose = reshape(d{1},dij.dimensions);
+resultGUI.physicalDose = reshape(d,dij.dimensions);
 
 if isfield(pln,'scaleDRx') && pln.scaleDRx
     %Scale D95 in target to RXDose
