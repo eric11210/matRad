@@ -46,13 +46,13 @@ tDij = toc(t0);
 t0 = tic;
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
 tFMO = toc(t0);
-
+%}
 % DAO
 fname = 'Results';
 t0 = tic;
 resultGUI = matRad_siochiLeafSequencing(resultGUI,stf,dij,pln,0);
 tSeq = toc(t0);
-%}
+
 t0 = tic;
 resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,resultGUI,pln,stf);
 tDAO = toc(t0);

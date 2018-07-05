@@ -64,7 +64,9 @@ end
 offset = 0;
 
 if isfield(resultGUI,'scaleFacRx_FMO')
-     resultGUI.wUnsequenced = resultGUI.wUnsequenced/resultGUI.scaleFacRx_FMO;
+    for i = 1:numel(resultGUI.wUnsequenced)
+        resultGUI.wUnsequenced{i} = resultGUI.wUnsequenced{i}/resultGUI.scaleFacRx_FMO;
+    end
 end
 
 for i = 1:numOfBeams
@@ -92,7 +94,8 @@ for i = 1:numOfBeams
     end
     
     % get relevant weights for current beam
-    wOfCurrBeams = resultGUI.wUnsequenced(1+offset:numOfRaysPerBeam+offset);%REVIEW OFFSET
+    % probably have to fix the resultGUI.wUnsequenced{1}
+    wOfCurrBeams = resultGUI.wUnsequenced{1}(1+offset:numOfRaysPerBeam+offset);%REVIEW OFFSET
     
     X = ones(numOfRaysPerBeam,1)*NaN;
     Z = ones(numOfRaysPerBeam,1)*NaN;

@@ -183,7 +183,7 @@ else
     
     jacobStruct = cell(options.numOfScenarios,1);
     for i = 1:options.numOfScenarios
-        jacobStruct{i} = sparse(i_sparse,j_sparse,jacobStructVec{i},numOfConstraints,dij.totalNumOfBixels);
+        jacobStruct{i} = sparse(i,j,jacobStructVec{i},numOfConstraints,dij.totalNumOfBixels);
     end
 end
 

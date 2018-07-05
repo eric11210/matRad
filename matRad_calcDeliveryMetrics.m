@@ -42,7 +42,7 @@ apertureInfo.planMU = 0;
 if pln.propOpt.runVMAT
     
     for i = 1:numel(apertureInfo.beam)
-        apertureInfo.planMU = apertureInfo.planMU+apertureInfo.beam(i).MU;
+        apertureInfo.planMU = apertureInfo.planMU+apertureInfo.beam(i).shape{1}(1).MU;
     end
     
     %initInd = find([apertureInfo.beam.initializeBeam]);
@@ -149,7 +149,7 @@ if pln.propOpt.runVMAT
         if apertureInfo.beam(i).numOfShapes %only optimized beams have their time in the data struct
             l = l+1;
             gantryRot(l) = apertureInfo.beam(i).gantryRot;
-            MURate(l) = apertureInfo.beam(i).MURate*60;
+            MURate(l) = apertureInfo.beam(i).shape{1}(1).MURate*60;
             times(l) = apertureInfo.beam(i).time;
             maxLeafSpeed(l) = apertureInfo.beam(i).maxLeafSpeed/10;
             angles(l) = apertureInfo.beam(i).gantryAngle;
