@@ -138,7 +138,7 @@ if options.FMO
     jacobSparseVec = zeros(1,numOfConstraints*numOptBixel*options.numOfScenarios);
 else
     jacobSparseVec = cell(options.numOfScenarios,1);
-    jacobSparseVec{:} = zeros(1,numOfConstraints*numOptBixel);
+    jacobSparseVec(:) = {zeros(1,numOfConstraints*numOptBixel)};
 end
 
 setOfConstraints = repmat(1:numOfConstraints,1,options.numOfScenarios);

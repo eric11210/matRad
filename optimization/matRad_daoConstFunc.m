@@ -62,7 +62,9 @@ else
     if apertureInfo.propVMAT.continuousAperture
         % values of times spent in an arc surrounding the optimized angles (full
         % arc/dose influence arc)
-        timeOptBorderAngles = apertureInfoVec((1+apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2):end);
+        
+        
+        timeOptBorderAngles = apertureInfoVec((apertureInfo.numPhases*(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)+1):end);
         timeDoseBorderAngles = timeOptBorderAngles.*[apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).timeFacCurr]';
         
         leftLeafDiff = diff(reshape(leftLeafPos,apertureInfo.beam(1).numOfActiveLeafPairs,[]),1,2);
@@ -76,7 +78,7 @@ else
             repmat(timeDoseBorderAngles',apertureInfo.beam(1).numOfActiveLeafPairs,2),2*apertureInfo.beam(1).numOfActiveLeafPairs*numel(timeDoseBorderAngles),1);
         
         % values of doserate (MU/sec) in an arc surrounding the optimized angles
-        weights = apertureInfoVec(1:apertureInfo.totalNumOfShapes)./apertureInfo.jacobiScale;
+        weights = apertureInfoVec(1:apertureInfo.totalNumOfShapes)./apertureInfo.jacobiScale(1:apertureInfo.totalNumOfShapes);
         c_dosrt = apertureInfo.weightToMU.*weights./timeDoseBorderAngles;
         
     else

@@ -61,6 +61,16 @@ if ~isdeployed % only if _not_ running as standalone
 
 end
 
+% Set the IPOPT options.
+matRad_ipoptOptions;
+
+% set optimization options
+options.radMod          = pln.radiationMode;
+options.bioOpt          = pln.propOpt.bioOptimization;
+options.ID              = [pln.radiationMode '_' pln.propOpt.bioOptimization];
+options.FMO             = false; % let optimizer know that this is FMO
+options.numOfScenarios  = dij.numOfScenarios;
+
 % initialize global variables for optimizer
 global matRad_global_x;
 global matRad_global_d;
@@ -68,7 +78,8 @@ global matRad_STRG_C_Pressed;
 global matRad_objective_function_value;
 global matRad_global_apertureInfo;
 
-matRad_global_x                 = NaN * ones(dij.totalNumOfBixels,1); % works with bixel weights even though we do dao!
+matRad_global_x                 = cell(options.numOfScenarios,1);
+matRad_global_x(:)              = {NaN * ones(dij.totalNumOfBixels,1)};
 matRad_global_d                 = NaN * ones(dij.numOfVoxels,1);
 matRad_STRG_C_Pressed           = false;
 matRad_objective_function_value = [];
@@ -89,7 +100,7 @@ end
 if isfield(apertureInfo,'scaleFacRx')
     %weights were scaled to acheive 95% PTV coverage
     %scale back to "optimal" weights
-    apertureInfo.apertureVector(1:apertureInfo.totalNumOfShapes) = apertureInfo.apertureVector(1:apertureInfo.totalNumOfShapes)/apertureInfo.scaleFacRx;
+    apertureInfo.apertureVector(1:apertureInfo.totalNumOfShapes*apertureInfo.numPhases) = apertureInfo.apertureVector(1:apertureInfo.totalNumOfShapes*apertureInfo.numPhases)/apertureInfo.scaleFacRx;
 end
 
 if pln.propOpt.preconditioner
@@ -99,11 +110,11 @@ if pln.propOpt.preconditioner
     
     % need to get the actual weights, so use the jacobiScale vector to
     % convert from the variables
-    dij.scaleFactor = mean(apertureInfo.apertureVector(1:apertureInfo.totalNumOfShapes)./apertureInfo.jacobiScale)/(apertureInfo.bixelWidth);
+    dij.scaleFactor = mean(apertureInfo.apertureVector(1:apertureInfo.totalNumOfShapes*apertureInfo.numPhases)./apertureInfo.jacobiScale)/(apertureInfo.bixelWidth);
     
     dij.weightToMU = dij.weightToMU*dij.scaleFactor;
     apertureInfo.weightToMU = apertureInfo.weightToMU*dij.scaleFactor;
-    apertureInfo.apertureVector(1:apertureInfo.totalNumOfShapes) = apertureInfo.apertureVector(1:apertureInfo.totalNumOfShapes)/dij.scaleFactor;
+    apertureInfo.apertureVector(1:apertureInfo.totalNumOfShapes*apertureInfo.numPhases) = apertureInfo.apertureVector(1:apertureInfo.totalNumOfShapes*apertureInfo.numPhases)/dij.scaleFactor;
 end
 
 % update aperture info vector
@@ -111,20 +122,6 @@ apertureInfo = matRad_daoVec2ApertureInfo(apertureInfo,apertureInfo.apertureVect
 apertureInfo.newIteration = true;
 % define apertureInfo as a global vector to be updated once each iteration
 matRad_global_apertureInfo = apertureInfo;
-
-% Set the IPOPT options.
-matRad_ipoptOptions;
-
-% set optimization options
-options.radMod          = pln.radiationMode;
-options.bioOpt          = pln.propOpt.bioOptimization;
-options.ID              = [pln.radiationMode '_' pln.propOpt.bioOptimization];
-options.FMO             = false; % let optimizer know that this is FMO
-if pln.propOpt.run4D && pln.propOpt.prop4D.singlePhaseFMO
-    options.numOfScenarios = 1;
-else
-    options.numOfScenarios  = dij.numOfScenarios;
-end
 
 % set bounds on optimization variables
 options.lb              = apertureInfo.limMx(:,1);                                          % Lower bound on the variables.

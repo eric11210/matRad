@@ -90,10 +90,10 @@ if options.FMO
     jacobStructVec = zeros(1,numOfConstraints*numOptBixel*options.numOfScenarios);
 else
     jacobStructVec = cell(options.numOfScenarios,1);
-    jacobStructVec{:} = zeros(1,numOfConstraints*numOptBixel);
+    jacobStructVec(:) = {zeros(1,numOfConstraints*numOptBixel)};
 end
 
-for scen = 1:options.numOfScenarios
+for phase = 1:options.numOfScenarios
     
     offset = 0;
     
@@ -121,19 +121,19 @@ for scen = 1:options.numOfScenarios
                                 isequal(cst{i,6}(j).type, 'max DVH constraint') || ...
                                 isequal(cst{i,6}(j).type, 'min DVH constraint')
                             
-                            FMOoffset = offset+(scen-1)*numOfConstraints*numOptBixel;
+                            FMOoffset = offset+(phase-1)*numOfConstraints*numOptBixel;
                             
                             if isfield(dij,'optBixel')
                                 if options.FMO
                                     jacobStructVec(FMOoffset+(1:nnz(dij.optBixel))) = mean(dij.physicalDose{1}(cst{i,4}{1},dij.optBixel));
                                 else
-                                    jacobStructVec{scen}(offset+(1:nnz(dij.optBixel))) = mean(dij.physicalDose{1}(cst{i,4}{1},dij.optBixel));
+                                    jacobStructVec{phase}(offset+(1:nnz(dij.optBixel))) = mean(dij.physicalDose{1}(cst{i,4}{1},dij.optBixel));
                                 end
                             else
                                 if options.FMO
                                     jacobStructVec(FMOoffset+(1:numOptBixel)) = mean(dij.physicalDose{1}(cst{i,4}{1},:));
                                 else
-                                    jacobStructVec{scen}(offset+(1:numOptBixel)) = mean(dij.physicalDose{1}(cst{i,4}{1},:));
+                                    jacobStructVec{phase}(offset+(1:numOptBixel)) = mean(dij.physicalDose{1}(cst{i,4}{1},:));
                                 end
                             end
                             

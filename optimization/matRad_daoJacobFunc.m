@@ -275,13 +275,13 @@ else
         
         % jacobian of the doserate constraint
         % values of doserate (MU/sec) between optimized gantry angles
-        weights = apertureInfoVec(1:apertureInfo.totalNumOfShapes)./apertureInfo.jacobiScale;
+        weights = apertureInfoVec(1:apertureInfo.totalNumOfShapes)./apertureInfo.jacobiScale(1:apertureInfo.totalNumOfShapes);
         
         i = repmat(1:apertureInfo.totalNumOfShapes,1,2);
         j = [1:apertureInfo.totalNumOfShapes (apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2+1):(apertureInfo.totalNumOfShapes*2+apertureInfo.totalNumOfLeafPairs*2)];
         % first do jacob wrt weights, then wrt times
         
-        s = [apertureInfo.weightToMU./(timeDoseBorderAngles.*apertureInfo.jacobiScale); -apertureInfo.weightToMU.*weights.*timeFacCurr./(timeDoseBorderAngles.^2)];
+        s = [apertureInfo.weightToMU./(timeDoseBorderAngles.*apertureInfo.jacobiScale(1:apertureInfo.totalNumOfShapes)); -apertureInfo.weightToMU.*weights.*timeFacCurr./(timeDoseBorderAngles.^2)];
         
         jacob_dosrt = sparse(i,j,s,apertureInfo.totalNumOfShapes,numel(apertureInfoVec),2*(apertureInfo.totalNumOfShapes));
     else

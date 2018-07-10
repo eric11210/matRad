@@ -84,7 +84,7 @@ end
 
 % Calculate gradient
 g = cell(options.numOfScenarios,1);
-g{:} = zeros(dij.totalNumOfBixels,1);
+g(:) = {zeros(dij.totalNumOfBixels,1)};
 
 
 for i = 1:options.numOfScenarios

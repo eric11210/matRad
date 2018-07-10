@@ -61,13 +61,34 @@ if ~isdeployed % only if _not_ running as standalone
 
 end
 
+% set the IPOPT options.
+matRad_ipoptOptions;
+
+% modified settings for photon dao
+if pln.propOpt.runDAO && strcmp(pln.radiationMode,'photons')
+%    options.ipopt.max_iter = 50;
+%    options.ipopt.acceptable_obj_change_tol     = 7e-3; % (Acc6), Solved To Acceptable Level if (Acc1),...,(Acc6) fullfiled
+end
+
+% set optimization options
+options.radMod          = pln.radiationMode;
+options.bioOpt          = pln.propOpt.bioOptimization;
+options.ID              = [pln.radiationMode '_' pln.propOpt.bioOptimization];
+options.FMO             = true; % let optimizer know that this is FMO
+if pln.propOpt.run4D && pln.propOpt.prop4D.singlePhaseFMO
+    options.numOfScenarios = 1;
+else
+    options.numOfScenarios  = dij.numOfScenarios;
+end
+
 % initialize global variables for optimizer
 global matRad_global_x;
 global matRad_global_d;
 global matRad_STRG_C_Pressed;
 global matRad_objective_function_value;
 
-matRad_global_x                 = NaN * ones(dij.totalNumOfBixels,1);
+matRad_global_x                 = cell(options.numOfScenarios,1);
+matRad_global_x(:)              = {NaN * ones(dij.totalNumOfBixels,1)};
 matRad_global_d                 = NaN * ones(dij.numOfVoxels,1);
 matRad_STRG_C_Pressed           = false;
 matRad_objective_function_value = [];
@@ -98,26 +119,7 @@ end
 ixTarget       = ixTarget(i);
 wOnesArray     = ones(dij.totalNumOfBixels,1);
 
-% set the IPOPT options.
-matRad_ipoptOptions;
-
-% modified settings for photon dao
-if pln.propOpt.runDAO && strcmp(pln.radiationMode,'photons')
-%    options.ipopt.max_iter = 50;
-%    options.ipopt.acceptable_obj_change_tol     = 7e-3; % (Acc6), Solved To Acceptable Level if (Acc1),...,(Acc6) fullfiled
-end
-
-% set optimization options
-options.radMod          = pln.radiationMode;
-options.bioOpt          = pln.propOpt.bioOptimization;
-options.ID              = [pln.radiationMode '_' pln.propOpt.bioOptimization];
-options.FMO             = true; % let optimizer know that this is FMO
-if pln.propOpt.run4D && pln.propOpt.prop4D.singlePhaseFMO
-    options.numOfScenarios = 1;
-else
-    options.numOfScenarios  = dij.numOfScenarios;
-end
-
+% determine wOnes
 if pln.propOpt.runVMAT
     % loop through angles
     offset = 0;
@@ -146,15 +148,15 @@ end
 dij.optBixel = logical(wOnesArray);
 
 wOnes = cell(options.numOfScenarios,1);
-wOnes{:} = wOnesArray;
+wOnes(:) = {wOnesArray};
 
 % set bounds on optimization variables - put in separate function?
 options.lb = cell(options.numOfScenarios,1);
 options.ub = cell(options.numOfScenarios,1);
 
-options.lb{:}               = 0 * wOnesArray;        % Lower bound on the variables.
-options.ub{:}               = wOnesArray;            % Upper bound on the variables.
-options.ub{:}(wOnesArray == 1)   = inf;
+options.lb(:)               = {0 * wOnesArray};        % Lower bound on the variables.
+options.ub(:)               = {wOnesArray};            % Upper bound on the variables.
+options.ub(:)(wOnesArray == 1)   = {inf};
 
 % set bounds on constraints
 [options.cl,options.cu] = matRad_getConstBoundsWrapper(cst_Over,options);
@@ -227,7 +229,7 @@ else
     dOnes = matRad_backProjection(wOnes,dij,options);
     bixelWeight = (doseTarget)/mean(dOnes(V));
     wInit = cell(options.numOfScenarios,1);
-    wInit{:} = wOnesArray* bixelWeight;
+    wInit(:) = {wOnesArray * bixelWeight};
     pln.propOpt.bioOptimization = 'none';
 end
 
