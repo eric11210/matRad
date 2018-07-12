@@ -156,7 +156,7 @@ options.ub = cell(options.numOfScenarios,1);
 
 options.lb(:)               = {0 * wOnesArray};        % Lower bound on the variables.
 options.ub(:)               = {wOnesArray};            % Upper bound on the variables.
-options.ub(:)(wOnesArray == 1)   = {inf};
+options.ub{:}(repmat(wOnesArray == 1,options.numOfScenarios,1))   = inf;
 
 % set bounds on constraints
 [options.cl,options.cu] = matRad_getConstBoundsWrapper(cst_Over,options);

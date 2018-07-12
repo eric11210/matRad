@@ -294,7 +294,7 @@ else
         
         % values of time differences of optimized gantry angles
         DAOInd = [apertureInfo.propVMAT.beam.DAOBeam];
-        timeDAOBorderAngles = apertureInfoVec((1+apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2):end);
+        timeDAOBorderAngles = apertureInfoVec((apertureInfo.numPhases*(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)+1):end);
         
         i = sort(repmat(1:(apertureInfo.totalNumOfShapes-1),1,2));
         j = sort(repmat(1:apertureInfo.totalNumOfShapes,1,2));
@@ -346,7 +346,7 @@ else
         
         % jacobian of the doserate constraint
         % values of doserate (MU/sec) between optimized gantry angles
-        weights = apertureInfoVec(1:apertureInfo.totalNumOfShapes)./apertureInfo.jacobiScale;
+        weights = apertureInfoVec(1:apertureInfo.totalNumOfShapes)./apertureInfo.jacobiScale(1:apertureInfo.totalNumOfShapes);
         timeFacCurr = [apertureInfo.propVMAT.beam(DAOInd).timeFacCurr]';
         timeOptDoseBorderAngles = timeDAOBorderAngles.*timeFacCurr;
         
@@ -354,7 +354,7 @@ else
         j = [1:apertureInfo.totalNumOfShapes (apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2+1):(apertureInfo.totalNumOfShapes*2+apertureInfo.totalNumOfLeafPairs*2)];
         % first do jacob wrt weights, then wrt times
         
-        s = [apertureInfo.weightToMU./(timeOptDoseBorderAngles.*apertureInfo.jacobiScale); -apertureInfo.weightToMU.*weights.*timeFacCurr./(timeOptDoseBorderAngles.^2)];
+        s = [apertureInfo.weightToMU./(timeOptDoseBorderAngles.*apertureInfo.jacobiScale(1:apertureInfo.totalNumOfShapes)); -apertureInfo.weightToMU.*weights.*timeFacCurr./(timeOptDoseBorderAngles.^2)];
         
         jacob_dosrt = sparse(i,j,s,apertureInfo.totalNumOfShapes,numel(apertureInfoVec),2*(apertureInfo.totalNumOfShapes));
     end

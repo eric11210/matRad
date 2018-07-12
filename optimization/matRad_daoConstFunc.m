@@ -84,7 +84,7 @@ else
     else
         % values of time differences of optimized gantry angles
         DAOInd = [apertureInfo.propVMAT.beam.DAOBeam];
-        timeDAOBorderAngles = apertureInfoVec((1+apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2):end);
+        timeDAOBorderAngles = apertureInfoVec((apertureInfo.numPhases*(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)+1):end);
         
         i = sort(repmat(1:(apertureInfo.totalNumOfShapes-1),1,2));
         j = sort(repmat(1:apertureInfo.totalNumOfShapes,1,2));
@@ -104,7 +104,7 @@ else
         
         
         % values of doserate (MU/sec) between optimized gantry angles
-        weights = apertureInfoVec(1:apertureInfo.totalNumOfShapes)./apertureInfo.jacobiScale;
+        weights = apertureInfoVec(1:apertureInfo.totalNumOfShapes)./apertureInfo.jacobiScale(1:apertureInfo.totalNumOfShapes);
         timeFacCurr = [apertureInfo.propVMAT.beam(DAOInd).timeFacCurr]';
         timeOptDoseBorderAngles = timeDAOBorderAngles.*timeFacCurr;
         c_dosrt = apertureInfo.weightToMU.*weights./timeOptDoseBorderAngles;

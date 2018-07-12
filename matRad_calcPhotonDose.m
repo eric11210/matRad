@@ -191,11 +191,11 @@ for i = 2:dij.numFrames
 end
 
 % set lateral cutoff value
-lateralCutoff = 50; % [mm]
+lateralCutoff = 1; % [mm]
 
 % toggle custom primary fluence on/off. if 0 we assume a homogeneous
 % primary fluence, if 1 we use measured radially symmetric data
-useCustomPrimFluenceBool = 1;
+useCustomPrimFluenceBool = 50;
 
 % 0 if field calc is bixel based, 1 if dose calc is field based
 isFieldBasedDoseCalc = strcmp(num2str(pln.propStf.bixelWidth),'field');

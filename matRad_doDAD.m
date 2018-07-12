@@ -151,23 +151,25 @@ end
 % be the mean of I and F).
 for i = 1:numel(apertureInfo.beam)
     for phase = 1:apertureInfo.numPhases
-        if apertureInfo.propVMAT.beam(i).DAOBeam && ~apertureInfo.propVMAT.beam(i).doseAngleDAO(2)
-            % if this is true, then the F of beam i should be equal to the I of
-            % beam i+1
-            % set them both to the mean
-            temp_leftLeafPos_F = apertureInfo.beam(i).shape{phase}(j).leftLeafPos_F;
-            temp_rightLeafPos_F = apertureInfo.beam(i).shape{phase}(j).rightLeafPos_F;
-            temp_leftLeafPos_I = apertureInfo.beam(i+1).shape{phase}(j).leftLeafPos_I;
-            temp_rightLeafPos_I = apertureInfo.beam(i+1).shape{phase}(j).rightLeafPos_I;
-            
-            new_leftLeafPos = mean([temp_leftLeafPos_I, temp_leftLeafPos_F],2);
-            new_rightLeafPos = mean([temp_rightLeafPos_I, temp_rightLeafPos_F],2);
-            
-            apertureInfo.beam(i).shape{phase}(j).leftLeafPos_F = new_leftLeafPos;
-            apertureInfo.beam(i).shape{phase}(j).rightLeafPos_F = new_rightLeafPos;
-            apertureInfo.beam(i+1).shape{phase}(j).leftLeafPos_I = new_leftLeafPos;
-            apertureInfo.beam(i+1).shape{phase}(j).rightLeafPos_I = new_rightLeafPos;
-            
+        if apertureInfo.propVMAT.continuousAperture
+            if apertureInfo.propVMAT.beam(i).DAOBeam && ~apertureInfo.propVMAT.beam(i).doseAngleDAO(2)
+                % if this is true, then the F of beam i should be equal to the I of
+                % beam i+1
+                % set them both to the mean
+                temp_leftLeafPos_F = apertureInfo.beam(i).shape{phase}(j).leftLeafPos_F;
+                temp_rightLeafPos_F = apertureInfo.beam(i).shape{phase}(j).rightLeafPos_F;
+                temp_leftLeafPos_I = apertureInfo.beam(i+1).shape{phase}(j).leftLeafPos_I;
+                temp_rightLeafPos_I = apertureInfo.beam(i+1).shape{phase}(j).rightLeafPos_I;
+                
+                new_leftLeafPos = mean([temp_leftLeafPos_I, temp_leftLeafPos_F],2);
+                new_rightLeafPos = mean([temp_rightLeafPos_I, temp_rightLeafPos_F],2);
+                
+                apertureInfo.beam(i).shape{phase}(j).leftLeafPos_F = new_leftLeafPos;
+                apertureInfo.beam(i).shape{phase}(j).rightLeafPos_F = new_rightLeafPos;
+                apertureInfo.beam(i+1).shape{phase}(j).leftLeafPos_I = new_leftLeafPos;
+                apertureInfo.beam(i+1).shape{phase}(j).rightLeafPos_I = new_rightLeafPos;
+                
+            end
         end
         
         for j = 1:apertureInfo.beam(i).numOfShapes
