@@ -55,9 +55,6 @@ updatedInfo.apertureVector = apertureInfoVect;
 
 shapeInd = 1;
 
-indVect = NaN*ones(2*apertureInfo.doseTotalNumOfLeafPairs*apertureInfo.numPhases,1);
-offset = 0;
-
 % options for bixel and Jacobian calculation
 mlcOptions.bixelWidth = apertureInfo.bixelWidth;
 calcOptions.continuousAperture = updatedInfo.propVMAT.continuousAperture;
@@ -66,9 +63,6 @@ vectorIndices.timeOffset = (apertureInfo.totalNumOfShapes+apertureInfo.totalNumO
 
 w = cell(apertureInfo.numPhases,1);
 w(:) = {zeros(apertureInfo.totalNumOfBixels,1)};
-
-% helper function to cope with numerical instabilities through rounding
-round2 = @(a,b) round(a*10^b)/10^b;
 
 if updatedInfo.runVMAT && ~all([updatedInfo.propVMAT.beam.DAOBeam])
     j = 1;
@@ -150,9 +144,9 @@ for phase = 1:apertureInfo.numPhases
         
         % pre compute left and right bixel edges
         edges_l = updatedInfo.beam(i).posOfCornerBixel(1)...
-            + ([1:size(apertureInfo.beam(i).bixelIndMap,2)]-1-1/2)*updatedInfo.bixelWidth;
+            + ((1:size(apertureInfo.beam(i).bixelIndMap,2))-1-1/2)*updatedInfo.bixelWidth;
         edges_r = updatedInfo.beam(i).posOfCornerBixel(1)...
-            + ([1:size(apertureInfo.beam(i).bixelIndMap,2)]-1+1/2)*updatedInfo.bixelWidth;
+            + ((1:size(apertureInfo.beam(i).bixelIndMap,2))-1+1/2)*updatedInfo.bixelWidth;
         
         % get dimensions of 2d matrices that store shape/bixel information
         n = apertureInfo.beam(i).numOfActiveLeafPairs;
@@ -194,7 +188,7 @@ for phase = 1:apertureInfo.numPhases
                 
                 if ~updatedInfo.propVMAT.continuousAperture
                     % extract left and right leaf positions from shape vector
-                    vectorIx_L = updatedInfo.beam(i).shape{phase}(j).vectorOffset + ([1:n]-1);
+                    vectorIx_L = updatedInfo.beam(i).shape{phase}(j).vectorOffset + ((1:n)-1);
                     vectorIx_LI = vectorIx_L;
                     vectorIx_LF = vectorIx_L;
                     vectorIx_R = vectorIx_L+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
@@ -212,12 +206,12 @@ for phase = 1:apertureInfo.numPhases
                     updatedInfo.beam(i).shape{phase}(j).rightLeafPos_F = rightLeafPos;
                 else
                     % extract left and right leaf positions from shape vector
-                    vectorIx_LI = updatedInfo.beam(i).shape{phase}(j).vectorOffset(1) + ([1:n]-1);
+                    vectorIx_LI = updatedInfo.beam(i).shape{phase}(j).vectorOffset(1) + ((1:n)-1);
                     vectorIx_RI = vectorIx_LI+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
                     leftLeafPos_I = apertureInfoVect(vectorIx_LI);
                     rightLeafPos_I = apertureInfoVect(vectorIx_RI);
                     
-                    vectorIx_LF = updatedInfo.beam(i).shape{phase}(j).vectorOffset(2) + ([1:n]-1);
+                    vectorIx_LF = updatedInfo.beam(i).shape{phase}(j).vectorOffset(2) + ((1:n)-1);
                     vectorIx_RF = vectorIx_LF+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
                     leftLeafPos_F = apertureInfoVect(vectorIx_LF);
                     rightLeafPos_F = apertureInfoVect(vectorIx_RF);
@@ -253,13 +247,13 @@ for phase = 1:apertureInfo.numPhases
                     fracFromNextOptF = (1-updatedInfo.propVMAT.beam(i).fracFromLastDAO)*ones(n,1);
                     
                     % obtain leaf positions at last DAO beam
-                    vectorIx_LF_last = updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).shape{phase}(j).vectorOffset + ([1:n]-1);
+                    vectorIx_LF_last = updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).shape{phase}(j).vectorOffset + ((1:n)-1);
                     vectorIx_RF_last = vectorIx_LF_last+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
                     leftLeafPos_last = apertureInfoVect(vectorIx_LF_last);
                     rightLeafPos_last = apertureInfoVect(vectorIx_RF_last);
                     
                     % obtain leaf positions at next DAO beam
-                    vectorIx_LI_next = updatedInfo.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).shape{phase}(j).vectorOffset + ([1:n]-1);
+                    vectorIx_LI_next = updatedInfo.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).shape{phase}(j).vectorOffset + ((1:n)-1);
                     vectorIx_RI_next = vectorIx_LI_next+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
                     leftLeafPos_next = apertureInfoVect(vectorIx_LI_next);
                     rightLeafPos_next = apertureInfoVect(vectorIx_RI_next);
@@ -284,13 +278,13 @@ for phase = 1:apertureInfo.numPhases
                     fracFromNextOptF = updatedInfo.propVMAT.beam(i).fracFromNextDAO_F*ones(n,1);
                     
                     % obtain leaf positions at last DAO beam
-                    vectorIx_LF_last = updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).shape{phase}(j).vectorOffset(2) + ([1:n]-1);
+                    vectorIx_LF_last = updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).shape{phase}(j).vectorOffset(2) + ((1:n)-1);
                     vectorIx_RF_last = vectorIx_LF_last+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
                     leftLeafPos_F_last = apertureInfoVect(vectorIx_LF_last);
                     rightLeafPos_F_last = apertureInfoVect(vectorIx_RF_last);
                     
                     % obtain leaf positions at next DAO beam
-                    vectorIx_LI_next = updatedInfo.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).shape{phase}(j).vectorOffset(1) + ([1:n]-1);
+                    vectorIx_LI_next = updatedInfo.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).shape{phase}(j).vectorOffset(1) + ((1:n)-1);
                     vectorIx_RI_next = vectorIx_LI_next+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
                     leftLeafPos_I_next = apertureInfoVect(vectorIx_LI_next);
                     rightLeafPos_I_next = apertureInfoVect(vectorIx_RI_next);
@@ -302,74 +296,6 @@ for phase = 1:apertureInfo.numPhases
                     updatedInfo.beam(i).shape{phase}(j).leftLeafPos_F = fracFromLastOptF.*leftLeafPos_F_last+fracFromNextOptF.*leftLeafPos_I_next;
                     updatedInfo.beam(i).shape{phase}(j).rightLeafPos_F = fracFromLastOptF.*rightLeafPos_F_last+fracFromNextOptF.*rightLeafPos_I_next;
                 end
-            end
-            
-            if ~updatedInfo.propVMAT.continuousAperture
-                %% discrete aperture approximation
-                
-                % rounding for numerical stability
-                leftLeafPos  = round2(leftLeafPos,10);
-                rightLeafPos = round2(rightLeafPos,10);
-                
-                % check overshoot of leaf positions
-                leftLeafPos(leftLeafPos <= apertureInfo.beam(i).lim_l) = apertureInfo.beam(i).lim_l(leftLeafPos <= apertureInfo.beam(i).lim_l);
-                rightLeafPos(rightLeafPos <= apertureInfo.beam(i).lim_l) = apertureInfo.beam(i).lim_l(rightLeafPos <= apertureInfo.beam(i).lim_l);
-                leftLeafPos(leftLeafPos >= apertureInfo.beam(i).lim_r) = apertureInfo.beam(i).lim_r(leftLeafPos >= apertureInfo.beam(i).lim_r);
-                rightLeafPos(rightLeafPos >= apertureInfo.beam(i).lim_r) = apertureInfo.beam(i).lim_r(rightLeafPos >= apertureInfo.beam(i).lim_r);
-                
-                xPosIndLeftLeaf  = round((leftLeafPos - apertureInfo.beam(i).posOfCornerBixel(1))/apertureInfo.bixelWidth + 1);
-                xPosIndRightLeaf = round((rightLeafPos - apertureInfo.beam(i).posOfCornerBixel(1))/apertureInfo.bixelWidth + 1);
-                
-                %
-                xPosIndLeftLeaf_lim  = floor((apertureInfo.beam(i).lim_l - apertureInfo.beam(i).posOfCornerBixel(1))/apertureInfo.bixelWidth+1);
-                xPosIndRightLeaf_lim = ceil((apertureInfo.beam(i).lim_r - apertureInfo.beam(i).posOfCornerBixel(1))/apertureInfo.bixelWidth + 1);
-                
-                xPosIndLeftLeaf(xPosIndLeftLeaf <= xPosIndLeftLeaf_lim) = xPosIndLeftLeaf_lim(xPosIndLeftLeaf <= xPosIndLeftLeaf_lim)+1;
-                xPosIndRightLeaf(xPosIndRightLeaf >= xPosIndRightLeaf_lim) = xPosIndRightLeaf_lim(xPosIndRightLeaf >= xPosIndRightLeaf_lim)-1;
-                
-                % check limits because of rounding off issues at maximum, i.e.,
-                % enforce round(X.5) -> X
-                % LeafPos can occasionally go slightly beyond lim_r, so changed
-                % == check to >=
-                xPosIndLeftLeaf(leftLeafPos >= apertureInfo.beam(i).lim_r) = round(...
-                    .5 + (leftLeafPos(leftLeafPos >= apertureInfo.beam(i).lim_r) ...
-                    - apertureInfo.beam(i).posOfCornerBixel(1))/apertureInfo.bixelWidth);
-                
-                xPosIndRightLeaf(rightLeafPos >= apertureInfo.beam(i).lim_r) = round(...
-                    .5 + (rightLeafPos(rightLeafPos >= apertureInfo.beam(i).lim_r) ...
-                    - apertureInfo.beam(i).posOfCornerBixel(1))/apertureInfo.bixelWidth);
-                
-                % find the bixel index that the leaves currently touch
-                bixelIndLeftLeaf  = apertureInfo.beam(i).bixelIndMap((xPosIndLeftLeaf-1)*n+[1:n]');
-                bixelIndRightLeaf = apertureInfo.beam(i).bixelIndMap((xPosIndRightLeaf-1)*n+[1:n]');
-                
-                if any(isnan(bixelIndLeftLeaf)) || any(isnan(bixelIndRightLeaf))
-                    error('cannot map leaf position to bixel index');
-                end
-                
-                % store information in index vector for gradient calculation
-                indVect(offset+(1:n)) = bixelIndLeftLeaf;
-                indVect(offset+apertureInfo.doseTotalNumOfLeafPairs+(1:n)) = bixelIndRightLeaf;
-                offset = offset+n;
-                
-                % calculate opening fraction for every bixel in shape to construct
-                % bixel weight vector
-                
-                coveredByLeftLeaf  = bsxfun(@minus,leftLeafPos,edges_l)  / updatedInfo.bixelWidth;
-                coveredByRightLeaf = bsxfun(@minus,edges_r,rightLeafPos) / updatedInfo.bixelWidth;
-                
-                tempMap = 1 - (coveredByLeftLeaf  + abs(coveredByLeftLeaf))  / 2 ...
-                    - (coveredByRightLeaf + abs(coveredByRightLeaf)) / 2;
-                
-                % find open bixels
-                tempMapIx = tempMap > 0;
-                
-                currBixelIx = apertureInfo.beam(i).bixelIndMap(tempMapIx);
-                %w{phase}(currBixelIx) = w{phase}(currBixelIx) + tempMap(tempMapIx)*updatedInfo.beam(i).shape{phase}(j).weight;
-                
-                % save the tempMap (we need to apply a positivity operator !)
-                updatedInfo.beam(i).shape{phase}(j).shapeMap = (tempMap  + abs(tempMap))  / 2;
-                
             end
             
             %% enter in variables and options
@@ -397,7 +323,6 @@ for phase = 1:apertureInfo.numPhases
                 vectorIndices.vectorIx_RI = vectorIx_RI;
                 vectorIndices.vectorIx_RF = vectorIx_RF;
             else
-                
                 
                 variables.weight_last = updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).shape{phase}(j).weight;
                 variables.weight_next = updatedInfo.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).shape{phase}(j).weight;

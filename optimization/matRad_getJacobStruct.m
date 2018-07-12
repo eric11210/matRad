@@ -125,15 +125,15 @@ for phase = 1:options.numOfScenarios
                             
                             if isfield(dij,'optBixel')
                                 if options.FMO
-                                    jacobStructVec(FMOoffset+(1:nnz(dij.optBixel))) = mean(dij.physicalDose{1}(cst{i,4}{1},dij.optBixel));
+                                    jacobStructVec(FMOoffset+(1:nnz(dij.optBixel))) = mean(dij.physicalDose{phase}(cst{i,4}{1},dij.optBixel));
                                 else
-                                    jacobStructVec{phase}(offset+(1:nnz(dij.optBixel))) = mean(dij.physicalDose{1}(cst{i,4}{1},dij.optBixel));
+                                    jacobStructVec{phase}(offset+(1:nnz(dij.optBixel))) = mean(dij.physicalDose{phase}(cst{i,4}{1},dij.optBixel));
                                 end
                             else
                                 if options.FMO
-                                    jacobStructVec(FMOoffset+(1:numOptBixel)) = mean(dij.physicalDose{1}(cst{i,4}{1},:));
+                                    jacobStructVec(FMOoffset+(1:numOptBixel)) = mean(dij.physicalDose{phase}(cst{i,4}{1},:));
                                 else
-                                    jacobStructVec{phase}(offset+(1:numOptBixel)) = mean(dij.physicalDose{1}(cst{i,4}{1},:));
+                                    jacobStructVec{phase}(offset+(1:numOptBixel)) = mean(dij.physicalDose{phase}(cst{i,4}{1},:));
                                 end
                             end
                             
@@ -182,8 +182,10 @@ if options.FMO
 else
     
     jacobStruct = cell(options.numOfScenarios,1);
-    for i = 1:options.numOfScenarios
-        jacobStruct{i} = sparse(i,j,jacobStructVec{i},numOfConstraints,dij.totalNumOfBixels);
+    for phase = 1:options.numOfScenarios
+        
+        jacobStructVec{phase}(jacobStructVec{phase} ~= 0) = 1;
+        jacobStruct{phase} = sparse(i,j,jacobStructVec{phase},numOfConstraints,dij.totalNumOfBixels);
     end
 end
 

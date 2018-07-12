@@ -142,6 +142,11 @@ else
     vectorIx_RI_next(rightMinInd == 2) = tempR(rightMinInd == 2);
 end
 
+leftLeafPosI = round2(leftLeafPosI,10);
+leftLeafPosF = round2(leftLeafPosF,10);
+rightLeafPosI = round2(rightLeafPosI,10);
+rightLeafPosF = round2(rightLeafPosF,10);
+
 leftLeafPosI(leftLeafPosI <= lim_l) = lim_l(leftLeafPosI <= lim_l);
 leftLeafPosF(leftLeafPosF <= lim_l) = lim_l(leftLeafPosF <= lim_l);
 rightLeafPosI(rightLeafPosI <= lim_l) = lim_l(rightLeafPosI <= lim_l);
@@ -173,7 +178,6 @@ uncoveredByLeftLeaf(xPosLinearIndLeftLeafF) = uncoveredByLeftLeaf(xPosLinearIndL
 %round <0 to 0, >1 to 1
 uncoveredByLeftLeaf(uncoveredByLeftLeaf < 0) = 0;
 uncoveredByLeftLeaf(uncoveredByLeftLeaf > 1) = 1;
-uncoveredByLeftLeaf(isnan(uncoveredByLeftLeaf)) = 0;
 
 %calculate fraction of fluence covered by right leaf
 %initial computation
@@ -184,7 +188,6 @@ coveredByRightLeaf(xPosLinearIndRightLeafF) = coveredByRightLeaf(xPosLinearIndRi
 %round <0 to 0, >1 to 1
 coveredByRightLeaf(coveredByRightLeaf < 0) = 0;
 coveredByRightLeaf(coveredByRightLeaf > 1) = 1;
-coveredByRightLeaf(isnan(coveredByRightLeaf)) = 0;
 
 %% gradient calculation
 

@@ -34,8 +34,8 @@ function [cl,cu] = matRad_daoGetConstBounds(cst,apertureInfo,options)
 
 
 % Initialize bounds
-cl_dao = zeros(apertureInfo.totalNumOfLeafPairs,1);
-cu_dao = inf*ones(apertureInfo.totalNumOfLeafPairs,1);
+cl_dao = zeros(apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases,1);
+cu_dao = inf*ones(apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases,1);
 
 % get dosimetric bounds from cst (just like for conv opt)
 [cl_dos,cu_dos] = matRad_getConstBoundsWrapper(cst,options);

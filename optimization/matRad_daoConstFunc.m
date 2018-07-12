@@ -46,8 +46,8 @@ if ~isequal(apertureInfoVec,apertureInfo.apertureVector)
 end
 
 % value of constraints for leaves
-leftLeafPos  = apertureInfoVec((1:apertureInfo.totalNumOfLeafPairs)+apertureInfo.totalNumOfShapes);
-rightLeafPos = apertureInfoVec(1+apertureInfo.totalNumOfLeafPairs+apertureInfo.totalNumOfShapes:apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2);
+leftLeafPos  = apertureInfoVec((1:apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases)+apertureInfo.totalNumOfShapes*apertureInfo.numPhases);
+rightLeafPos = apertureInfoVec((1+(apertureInfo.totalNumOfLeafPairs+apertureInfo.totalNumOfShapes)*apertureInfo.numPhases):(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases);
 c_dao        = rightLeafPos - leftLeafPos;
 
 % bixel based objective function calculation
