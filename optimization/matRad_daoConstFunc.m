@@ -59,13 +59,13 @@ if ~apertureInfo.runVMAT
     c = [c_dao; c_dos];
 else
     
+    % values of times spent in an arc surrounding the optimized angles (full
+    % arc/dose influence arc)
+    timeDAOBorderAngles = apertureInfoVec((apertureInfo.numPhases*(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)+1):end);
+    timeDoseBorderAngles = timeDAOBorderAngles.*[apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).timeFacCurr]';
+    timeDoseBorderAngles_rep = repmat(timeDoseBorderAngles,apertureInfo.numPhases,1);
+    
     if apertureInfo.propVMAT.continuousAperture
-        % values of times spent in an arc surrounding the optimized angles (full
-        % arc/dose influence arc)
-        
-        
-        timeOptBorderAngles = apertureInfoVec((apertureInfo.numPhases*(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)+1):end);
-        timeDoseBorderAngles = timeOptBorderAngles.*[apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).timeFacCurr]';
         
         leftLeafDiff = diff(reshape(leftLeafPos,apertureInfo.beam(1).numOfActiveLeafPairs,[]),1,2);
         rightLeafDiff = diff(reshape(rightLeafPos,apertureInfo.beam(1).numOfActiveLeafPairs,[]),1,2);
@@ -76,22 +76,14 @@ else
         % values of leaf speeds in an arc surrounding the optimized angles
         c_lfspd = reshape(abs([leftLeafDiff rightLeafDiff])./ ...
             repmat(timeDoseBorderAngles',apertureInfo.beam(1).numOfActiveLeafPairs,2),2*apertureInfo.beam(1).numOfActiveLeafPairs*numel(timeDoseBorderAngles),1);
-        
-        % values of doserate (MU/sec) in an arc surrounding the optimized angles
-        weights = apertureInfoVec(1:apertureInfo.totalNumOfShapes)./apertureInfo.jacobiScale(1:apertureInfo.totalNumOfShapes);
-        c_dosrt = apertureInfo.weightToMU.*weights./timeDoseBorderAngles;
-        
     else
-        % values of time differences of optimized gantry angles
-        DAOInd = [apertureInfo.propVMAT.beam.DAOBeam];
-        timeDAOBorderAngles = apertureInfoVec((apertureInfo.numPhases*(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)+1):end);
         
         i = sort(repmat(1:(apertureInfo.totalNumOfShapes-1),1,2));
         j = sort(repmat(1:apertureInfo.totalNumOfShapes,1,2));
         j(1) = [];
         j(end) = [];
         
-        timeFac = [apertureInfo.propVMAT.beam(DAOInd).timeFac]';
+        timeFac = [apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).timeFac]';
         timeFac(timeFac == 0) = [];
         
         timeFacMatrix = sparse(i,j,timeFac,(apertureInfo.totalNumOfShapes-1),apertureInfo.totalNumOfShapes);
@@ -101,14 +93,11 @@ else
         c_lfspd = reshape([abs(diff(reshape(leftLeafPos,apertureInfo.beam(1).numOfActiveLeafPairs,apertureInfo.totalNumOfShapes),1,2)) ...
             abs(diff(reshape(rightLeafPos,apertureInfo.beam(1).numOfActiveLeafPairs,apertureInfo.totalNumOfShapes),1,2))]./ ...
             repmat(timeBNOptAngles',apertureInfo.beam(1).numOfActiveLeafPairs,2),2*apertureInfo.beam(1).numOfActiveLeafPairs*numel(timeBNOptAngles),1);
-        
-        
-        % values of doserate (MU/sec) between optimized gantry angles
-        weights = apertureInfoVec(1:apertureInfo.totalNumOfShapes)./apertureInfo.jacobiScale(1:apertureInfo.totalNumOfShapes);
-        timeFacCurr = [apertureInfo.propVMAT.beam(DAOInd).timeFacCurr]';
-        timeOptDoseBorderAngles = timeDAOBorderAngles.*timeFacCurr;
-        c_dosrt = apertureInfo.weightToMU.*weights./timeOptDoseBorderAngles;
     end
+    
+    % values of doserate (MU/sec) in an arc surrounding the optimized angles
+    weights = apertureInfoVec(1:(apertureInfo.totalNumOfShapes*apertureInfo.numPhases))./apertureInfo.jacobiScale;
+    c_dosrt = apertureInfo.weightToMU.*weights./timeDoseBorderAngles_rep;
     
     % concatenate
     c = [c_dao; c_lfspd; c_dosrt; c_dos];

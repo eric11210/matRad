@@ -229,16 +229,6 @@ else
         s = ones(1,6*apertureInfo.beam(1).numOfActiveLeafPairs*apertureInfo.totalNumOfShapes);
         
         jacobStruct_lfspd = sparse(i,j,s,2*apertureInfo.beam(1).numOfActiveLeafPairs*apertureInfo.totalNumOfShapes,numel(apertureInfo.apertureVector),6*apertureInfo.beam(1).numOfActiveLeafPairs*apertureInfo.totalNumOfShapes);
-        
-        
-        % jacobian of the doserate constraint
-        i = repmat(1:(apertureInfo.totalNumOfShapes),1,2);
-        j = [1:(apertureInfo.totalNumOfShapes) (apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2+1):(apertureInfo.totalNumOfShapes*2+apertureInfo.totalNumOfLeafPairs*2)];
-        % first do jacob wrt weights, then wrt times
-        
-        s = ones(1,2*(apertureInfo.totalNumOfShapes));
-        
-        jacobStruct_dosrt = sparse(i,j,s,apertureInfo.totalNumOfShapes,numel(apertureInfo.apertureVector),2*(apertureInfo.totalNumOfShapes));
     else
         
         i = sort(repmat(1:(apertureInfo.totalNumOfShapes-1),1,2));
@@ -272,17 +262,17 @@ else
         s = ones(1,numel(j));
         
         jacobStruct_lfspd = sparse(i,j,s,2*apertureInfo.beam(1).numOfActiveLeafPairs*(apertureInfo.totalNumOfShapes-1),numel(apertureInfo.apertureVector),numel(s));
-        
-        
-        % jacobian of the doserate constraint
-        i = repmat(1:apertureInfo.totalNumOfShapes,1,2);
-        j = [1:apertureInfo.totalNumOfShapes (apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2+1):(apertureInfo.totalNumOfShapes*2+apertureInfo.totalNumOfLeafPairs*2)];
-        % first do jacob wrt weights, then wrt times
-        
-        s = ones(1,2*(apertureInfo.totalNumOfShapes));
-        
-        jacobStruct_dosrt = sparse(i,j,s,apertureInfo.totalNumOfShapes,numel(apertureInfo.apertureVector),2*apertureInfo.totalNumOfShapes);
     end
+    
+    % jacobian of the doserate constraint
+    i = repmat(1:(apertureInfo.totalNumOfShapes*apertureInfo.numPhases),1,2);
+    j = [1:(apertureInfo.totalNumOfShapes*apertureInfo.numPhases) ...
+        repmat(((apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+1):((apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+apertureInfo.totalNumOfShapes),1,apertureInfo.numPhases)];
+    % first do jacob wrt weights, then wrt times
+    
+    s = ones(1,2*apertureInfo.totalNumOfShapes*apertureInfo.numPhases);
+    
+    jacobStruct_dosrt = sparse(i,j,s,apertureInfo.totalNumOfShapes*apertureInfo.numPhases,numel(apertureInfo.apertureVector),2*apertureInfo.totalNumOfShapes*apertureInfo.numPhases);
     
     
     % concatenate
