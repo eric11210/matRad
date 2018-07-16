@@ -3,3 +3,5 @@
 lungPatient0*.mat
 *log
 *Slice*.dcm
+p*_f*_m*.csv
+*.zip
