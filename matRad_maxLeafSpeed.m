@@ -40,17 +40,6 @@ rightLeafPos = apertureInfoVec(1+apertureInfo.totalNumOfLeafPairs+apertureInfo.t
 timeOptBorderAngles = apertureInfoVec((1+(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases):end);
 timeDoseBorderAngles = timeOptBorderAngles.*[apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).timeFacCurr]';
 
-i = sort(repmat(1:(apertureInfo.totalNumOfShapes-1),1,2));
-j = sort(repmat(1:apertureInfo.totalNumOfShapes,1,2));
-j(1) = [];
-j(end) = [];
-
-timeFac = [apertureInfo.propVMAT.beam.timeFac]';
-timeFac(timeFac == 0) = [];
-
-timeFacMatrix = sparse(i,j,timeFac,(apertureInfo.totalNumOfShapes-1),apertureInfo.totalNumOfShapes);
-timeBNOptAngles = timeFacMatrix*timeOptBorderAngles;
-
 % find values of leaf speeds of optimized gantry angles
 if apertureInfo.propVMAT.continuousAperture
     % Using the dynamic fluence calculation, we have the leaf positions in
@@ -70,6 +59,17 @@ else
     % Using the static fluence calculation, we have the leaf positions in
     % the vector be the leaf positions at the centre of the Dij arcs (for optimized angles only).
     % Therefore we must use the times between the centres of the Dij arcs (for optimized angles only).
+    i = sort(repmat(1:(apertureInfo.totalNumOfShapes-1),1,2));
+    j = sort(repmat(1:apertureInfo.totalNumOfShapes,1,2));
+    j(1) = [];
+    j(end) = [];
+    
+    timeFac = [apertureInfo.propVMAT.beam.timeFac]';
+    timeFac(timeFac == 0) = [];
+    
+    timeFacMatrix = sparse(i,j,timeFac,(apertureInfo.totalNumOfShapes-1),apertureInfo.totalNumOfShapes);
+    timeBNOptAngles = timeFacMatrix*timeOptBorderAngles;
+    
     leftLeafSpeed = abs(diff(reshape(leftLeafPos,apertureInfo.beam(1).numOfActiveLeafPairs,[]),1,2))./repmat(timeBNOptAngles',apertureInfo.beam(1).numOfActiveLeafPairs,1);
     rightLeafSpeed = abs(diff(reshape(rightLeafPos,apertureInfo.beam(1).numOfActiveLeafPairs,[]),1,2))./repmat(timeBNOptAngles',apertureInfo.beam(1).numOfActiveLeafPairs,1);
 end

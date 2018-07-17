@@ -62,10 +62,10 @@ for i = 1:length(pln.propStf.gantryAngles)
     % doseAngleBorders are the angular borders over which dose is deposited
     if i == 1
         
-        stf(i).propVMAT.doseAngleBorders = ([pln.propStf.gantryAngles(i) pln.propStf.gantryAngles(i+1)]+pln.propStf.gantryAngles(i))/2;
+        stf(i).propVMAT.doseAngleBorders = [pln.propOpt.VMAToptions.startingAngle (pln.propStf.gantryAngles(i+1)+pln.propStf.gantryAngles(i))/2];
     elseif i == length(pln.propStf.gantryAngles)
         
-        stf(i).propVMAT.doseAngleBorders = ([pln.propStf.gantryAngles(i-1) pln.propStf.gantryAngles(i)]+pln.propStf.gantryAngles(i))/2;
+        stf(i).propVMAT.doseAngleBorders = [(pln.propStf.gantryAngles(i-1)+pln.propStf.gantryAngles(i))/2 pln.propOpt.VMAToptions.finishingAngle];
     else
         
         stf(i).propVMAT.doseAngleBorders = ([pln.propStf.gantryAngles(i-1) pln.propStf.gantryAngles(i+1)]+pln.propStf.gantryAngles(i))/2;
@@ -95,7 +95,7 @@ for i = 1:length(pln.propStf.gantryAngles)
         DAOIndex = find(pln.propStf.DAOGantryAngles == pln.propStf.gantryAngles(i));
         
         if DAOIndex == 1
-            stf(i).propVMAT.DAOAngleBorders = ([pln.propStf.DAOGantryAngles(DAOIndex) pln.propStf.DAOGantryAngles(DAOIndex+1)]+pln.propStf.DAOGantryAngles(DAOIndex))/2;
+            stf(i).propVMAT.DAOAngleBorders = [pln.propOpt.VMAToptions.startingAngle (pln.propStf.DAOGantryAngles(DAOIndex+1)+pln.propStf.DAOGantryAngles(DAOIndex))/2];
             
             lastDAOIndex = i;
             nextDAOIndex = find(pln.propStf.gantryAngles == pln.propStf.DAOGantryAngles(DAOIndex+1));
@@ -103,7 +103,7 @@ for i = 1:length(pln.propStf.gantryAngles)
             stf(i).propVMAT.lastDAOIndex = i;
             stf(i).propVMAT.nextDAOIndex = find(pln.propStf.gantryAngles == pln.propStf.DAOGantryAngles(DAOIndex+1));
         elseif DAOIndex == length(pln.propStf.DAOGantryAngles)
-            stf(i).propVMAT.DAOAngleBorders = ([pln.propStf.DAOGantryAngles(DAOIndex-1) pln.propStf.DAOGantryAngles(DAOIndex)]+pln.propStf.DAOGantryAngles(DAOIndex))/2;
+            stf(i).propVMAT.DAOAngleBorders = [(pln.propStf.DAOGantryAngles(DAOIndex-1)+pln.propStf.DAOGantryAngles(DAOIndex))/2 pln.propOpt.VMAToptions.finishingAngle];
             
             stf(i).propVMAT.lastDAOIndex = find(pln.propStf.gantryAngles == pln.propStf.DAOGantryAngles(DAOIndex-1));
             stf(i).propVMAT.nextDAOIndex = i;
@@ -130,16 +130,8 @@ for i = 1:length(pln.propStf.gantryAngles)
         %next dose sectors
         stf(i).propVMAT.timeFac = zeros(1,2);
         
-        if i == 1
-            stf(i).propVMAT.timeFac(1) = 0;
-            stf(i).propVMAT.timeFac(2) = stf(i).propVMAT.DAOAngleBorderCentreDiff(2)/stf(i).propVMAT.DAOAngleBordersDiff;
-        elseif i == length(pln.propStf.gantryAngles)
-            stf(i).propVMAT.timeFac(1) = stf(i).propVMAT.DAOAngleBorderCentreDiff(1)/stf(i).propVMAT.DAOAngleBordersDiff;
-            stf(i).propVMAT.timeFac(2) = 0;
-        else
-            stf(i).propVMAT.timeFac(1) = stf(i).propVMAT.DAOAngleBorderCentreDiff(1)/stf(i).propVMAT.DAOAngleBordersDiff;
-            stf(i).propVMAT.timeFac(2) = stf(i).propVMAT.DAOAngleBorderCentreDiff(2)/stf(i).propVMAT.DAOAngleBordersDiff;
-        end
+        stf(i).propVMAT.timeFac(1) = stf(i).propVMAT.DAOAngleBorderCentreDiff(1)/stf(i).propVMAT.DAOAngleBordersDiff;
+        stf(i).propVMAT.timeFac(2) = stf(i).propVMAT.DAOAngleBorderCentreDiff(2)/stf(i).propVMAT.DAOAngleBordersDiff;
         
     else
         if ~isfield(stf(stf(i).propVMAT.beamParentIndex).propVMAT,'beamSubChildrenGantryAngles') || isempty(stf(stf(i).propVMAT.beamParentIndex).propVMAT.beamSubChildrenGantryAngles)
@@ -165,10 +157,10 @@ for i = 1:length(pln.propStf.gantryAngles)
         
         if FMOIndex == 1
             
-            stf(i).propVMAT.FMOAngleBorders = [min(pln.propStf.FMOGantryAngles(FMOIndex),pln.propStf.gantryAngles(1)) (pln.propStf.FMOGantryAngles(FMOIndex+1)+pln.propStf.FMOGantryAngles(FMOIndex))/2];
+            stf(i).propVMAT.FMOAngleBorders = [pln.propOpt.VMAToptions.startingAngle (pln.propStf.FMOGantryAngles(FMOIndex+1)+pln.propStf.FMOGantryAngles(FMOIndex))/2];
         elseif FMOIndex == length(pln.propStf.FMOGantryAngles)
             
-            stf(i).propVMAT.FMOAngleBorders = [(pln.propStf.FMOGantryAngles(FMOIndex-1)+pln.propStf.FMOGantryAngles(FMOIndex))/2 max(pln.propStf.FMOGantryAngles(FMOIndex),pln.propStf.gantryAngles(end))];
+            stf(i).propVMAT.FMOAngleBorders = [(pln.propStf.FMOGantryAngles(FMOIndex-1)+pln.propStf.FMOGantryAngles(FMOIndex))/2 pln.propOpt.VMAToptions.finishingAngle];
         else
             
             stf(i).propVMAT.FMOAngleBorders = ([pln.propStf.FMOGantryAngles(FMOIndex-1) pln.propStf.FMOGantryAngles(FMOIndex+1)]+pln.propStf.FMOGantryAngles(FMOIndex))/2;

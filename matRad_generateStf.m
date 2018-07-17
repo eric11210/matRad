@@ -645,8 +645,6 @@ if pln.propOpt.runVMAT
     if pln.propOpt.run4D
         
         stf = matRad_Stf4DPost(stf,masterRayPosBEV,masterRayPosBEV_phase1);
-        
-
     end
 end
 

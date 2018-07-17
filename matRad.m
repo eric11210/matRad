@@ -35,7 +35,7 @@ pln.numOfFractions  = 30;
 
 % beam geometry settings
 pln.propStf.bixelWidth      = 5; % [mm] / also corresponds to lateral spot spacing for particles
-pln.propStf.gantryAngles    = 0; % [?]
+pln.propStf.gantryAngles    = 90; % [?]
 pln.propStf.couchAngles     = 0; % [?]
 pln.propStf.numOfBeams      = numel(pln.propStf.gantryAngles);
 pln.propStf.isoCenter       = ones(pln.propStf.numOfBeams,1) * matRad_getIsoCenter(cst,ct,0);
@@ -49,6 +49,7 @@ pln.propOpt.bioOptimization = 'none'; % none: physical optimization;            
 pln.propOpt.runDAO          = false;  % 1/true: run DAO, 0/false: don't / will be ignored for particles
 pln.propOpt.runSequencing   = false;  % 1/true: run sequencing, 0/false: don't / will be ignored for particles and also triggered by runDAO below
 pln.propOpt.runVMAT         = false;  % 1/true: run VMAT, 0/false: don't
+pln.propOpt.run4D           = false;
 
 
 %% For VMAT
@@ -89,11 +90,13 @@ pln.propOpt.numLevels = 7;
 pln.propOpt.VMAToptions.machineConstraintFile = [pln.radiationMode '_' pln.machine];
 pln.propOpt.VMAToptions.continuousAperture = true;
 
-pln.propOpt.VMAToptions.maxGantryAngleSpacing = 90;      % Max gantry angle spacing for dose calculation
-pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing = 180;      % Max gantry angle spacing for DAO
-pln.propOpt.VMAToptions.maxFMOGantryAngleSpacing = 180;      % Max gantry angle spacing for FMO
+pln.propOpt.VMAToptions.startingAngle = -180;
+pln.propOpt.VMAToptions.finishingAngle = 180;
+pln.propOpt.VMAToptions.maxGantryAngleSpacing = 45;      % Max gantry angle spacing for dose calculation
+pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing = 90;      % Max gantry angle spacing for DAO
+pln.propOpt.VMAToptions.maxFMOGantryAngleSpacing = 90;      % Max gantry angle spacing for FMO
 
-pln.propOpt.run4D = true;
+pln.propOpt.run4D = false;
 pln.propOpt.prop4D.singlePhaseFMO = true;
 % multi-phase FMO hasn't been implemented fully (would have to do changes in FMO and leaf
 % sequencing - probably better only for fluence, not DAO).

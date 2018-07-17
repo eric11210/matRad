@@ -495,9 +495,15 @@ for i = 1:dij.numOfBeams % loop over all beams
             end
             
             % Save dose for every bixel in cell array
-            phase = ct.tumourMotion.frames2Phases(k);
+            if pln.propOpt.run4D
+                phase = ct.tumourMotion.frames2Phases(k);
+                normFactor = ct.tumourMotion.nFramesPerPhase(phase);
+            else
+                phase = 1;
+                normFactor = 1;
+            end
             %doseTmpContainer{mod(counter-1,numOfBixelsContainer)+1,phase} = sparse(V{1}(ix{k}),1,bixelDose,dij.numOfVoxels,1)./ct.tumourMotion.nFramesPerPhase(phase);
-            doseTmpContainer{mod(counter-1,numOfBixelsContainer)+1,phase} = doseTmpContainer{mod(counter-1,numOfBixelsContainer)+1,phase}+sparse(V{1}(ix{k}),1,bixelDose,dij.numOfVoxels,1)./ct.tumourMotion.nFramesPerPhase(phase);
+            doseTmpContainer{mod(counter-1,numOfBixelsContainer)+1,phase} = doseTmpContainer{mod(counter-1,numOfBixelsContainer)+1,phase}+sparse(V{1}(ix{k}),1,bixelDose,dij.numOfVoxels,1)./normFactor;
             % Because it is V{1}(ix{k}), we are calculating the dose on the
             % transformed CT, but bringing back to the reference CT for the
             % Dij.  Also, this ensures that even if two different voxels on
@@ -518,7 +524,7 @@ for i = 1:dij.numOfBeams % loop over all beams
                     % fill entire dose influence matrix
                     dij.physicalDose{phase}(:,(ceil(counter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:counter) = [doseTmpContainer{1:mod(counter-1,numOfBixelsContainer)+1,phase}];
                     
-                    if any(k == cumsum(ct.tumourMotion.nFramesPerPhase))
+                    if pln.propOpt.run4D && any(k == cumsum(ct.tumourMotion.nFramesPerPhase))
                         for l = 1:numOfBixelsContainer
                             doseTmpContainer{l,phase} = spalloc(prod(ct.cubeDim),1,1);
                         end
