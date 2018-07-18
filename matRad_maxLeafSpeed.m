@@ -38,7 +38,6 @@ rightLeafPos = apertureInfoVec(1+apertureInfo.totalNumOfLeafPairs+apertureInfo.t
 
 % values of time differences of optimized gantry angles
 timeOptBorderAngles = apertureInfoVec((1+(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases):end);
-timeDoseBorderAngles = timeOptBorderAngles.*[apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).timeFacCurr]';
 
 % find values of leaf speeds of optimized gantry angles
 if apertureInfo.propVMAT.continuousAperture
@@ -46,15 +45,24 @@ if apertureInfo.propVMAT.continuousAperture
     % the vector be the leaf positions at the borders of the Dij arcs (for optimized angles only).
     % Therefore we must also use the times between the borders of the Dij
     % arc (for optimized angles only).
+    timeFac = [apertureInfo.propVMAT.beam.timeFac]';
+    deleteInd = timeFac == 0;
+    timeFac(deleteInd) = [];
+    
+    i = [apertureInfo.propVMAT.beam.timeFacInd]';
+    i(deleteInd) = [];
+    
+    j = repelem(1:apertureInfo.totalNumOfShapes,1,3);
+    j(deleteInd) = [];
+    
+    timeFacMatrix = sparse(i,j,timeFac,apertureInfo.propVMAT.numLeafSpeedConstraint,apertureInfo.totalNumOfShapes);
+    timeBNOptAngles = timeFacMatrix*timeOptBorderAngles;
     
     leftLeafDiff = diff(reshape(leftLeafPos,apertureInfo.beam(1).numOfActiveLeafPairs,[]),1,2);
     rightLeafDiff = diff(reshape(rightLeafPos,apertureInfo.beam(1).numOfActiveLeafPairs,[]),1,2);
     
-    leftLeafDiff = reshape(leftLeafDiff(repmat([apertureInfo.propVMAT.beam.DAOBeam],apertureInfo.beam(1).numOfActiveLeafPairs,1)),apertureInfo.beam(1).numOfActiveLeafPairs,apertureInfo.totalNumOfShapes);
-    rightLeafDiff = reshape(rightLeafDiff(repmat([apertureInfo.propVMAT.beam.DAOBeam],apertureInfo.beam(1).numOfActiveLeafPairs,1)),apertureInfo.beam(1).numOfActiveLeafPairs,apertureInfo.totalNumOfShapes);
-    
-    leftLeafSpeed = abs(leftLeafDiff)./repmat(timeDoseBorderAngles',apertureInfo.beam(1).numOfActiveLeafPairs,1);
-    rightLeafSpeed = abs(rightLeafDiff)./repmat(timeDoseBorderAngles',apertureInfo.beam(1).numOfActiveLeafPairs,1);
+    leftLeafSpeed = abs(leftLeafDiff)./repmat(timeBNOptAngles',apertureInfo.beam(1).numOfActiveLeafPairs,1);
+    rightLeafSpeed = abs(rightLeafDiff)./repmat(timeBNOptAngles',apertureInfo.beam(1).numOfActiveLeafPairs,1);
 else
     % Using the static fluence calculation, we have the leaf positions in
     % the vector be the leaf positions at the centre of the Dij arcs (for optimized angles only).
@@ -88,10 +96,11 @@ for i = 1:size(apertureInfo.beam,2)
         if apertureInfo.propVMAT.continuousAperture
             % for dynamic, we take the max leaf speed to be the actual leaf
             % speed
+            ind = apertureInfo.propVMAT.beam(i).timeFacInd(apertureInfo.propVMAT.beam(i).timeFac ~= 0);
             
-            apertureInfo.beam(i).maxLeafSpeed = maxLeafSpeed(l);
-            if maxLeafSpeed(l) >= maxMaxLeafSpeed
-                maxMaxLeafSpeed = maxLeafSpeed(l);
+            apertureInfo.beam(i).maxLeafSpeed = max(maxLeafSpeed(ind));
+            if apertureInfo.beam(i).maxLeafSpeed >= maxMaxLeafSpeed
+                maxMaxLeafSpeed = apertureInfo.beam(i).maxLeafSpeed;
             end
         else
             % for static, we take the max leaf speed to be the max leaf

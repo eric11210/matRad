@@ -43,6 +43,8 @@ densityThreshold = 0.05;
 
 if strcmp(mode,'first')
     
+    fprintf('matRad: SSD calculation... ');
+    
     for i = 1:size(stf,2)
         SSD = cell(ct.numOfCtScen,stf(i).numOfRays);
         for j = 1:stf(i).numOfRays
@@ -80,6 +82,8 @@ if strcmp(mode,'first')
                 stf(i).ray(j).SSD =  matRad_closestNeighbourSSD(rayPos_bev, SSD, rayPos_bev(j,:));
             end
         end
+        
+        matRad_progress(i,size(stf,2));
     end
 else
     error('mode not defined for SSD calculation');

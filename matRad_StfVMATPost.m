@@ -44,6 +44,7 @@ fprintf('matRad: VMAT post-processing (1/2)... ');
 IandFTimeInd = 1;
 DAODoseAngleBorders = zeros(2*numel(pln.propStf.DAOGantryAngles),1);
 offset = 1;
+timeFacIndOffset = 1;
 
 for i = 1:length(pln.propStf.gantryAngles)
     
@@ -125,13 +126,32 @@ for i = 1:length(pln.propStf.gantryAngles)
         %sector
         stf(i).propVMAT.timeFacCurr =  stf(i).propVMAT.doseAngleBordersDiff./stf(i).propVMAT.DAOAngleBordersDiff;
         
-        %These are the factors that relate the total time in the
-        %optimized arc sector to the total time in the previous and
-        %next dose sectors
-        stf(i).propVMAT.timeFac = zeros(1,2);
-        
-        stf(i).propVMAT.timeFac(1) = stf(i).propVMAT.DAOAngleBorderCentreDiff(1)/stf(i).propVMAT.DAOAngleBordersDiff;
-        stf(i).propVMAT.timeFac(2) = stf(i).propVMAT.DAOAngleBorderCentreDiff(2)/stf(i).propVMAT.DAOAngleBordersDiff;
+        if pln.propOpt.VMAToptions.continuousAperture
+            %These are the factors that relate the total time in the
+            %optimized arc sector to the total time in the previous and
+            %next dose sectors
+            stf(i).propVMAT.timeFac = zeros(1,3);
+            
+            stf(i).propVMAT.timeFac(1) = (stf(i).propVMAT.DAOAngleBorderCentreDiff(1)-stf(i).propVMAT.doseAngleBorderCentreDiff(1))/stf(i).propVMAT.DAOAngleBordersDiff;
+            stf(i).propVMAT.timeFac(2) = stf(i).propVMAT.timeFacCurr;
+            stf(i).propVMAT.timeFac(3) = (stf(i).propVMAT.DAOAngleBorderCentreDiff(2)-stf(i).propVMAT.doseAngleBorderCentreDiff(2))/stf(i).propVMAT.DAOAngleBordersDiff;
+            
+            stf(i).propVMAT.timeFacInd = zeros(1,3);
+            
+            stf(i).propVMAT.timeFacInd(1) = timeFacIndOffset-1;
+            stf(i).propVMAT.timeFacInd(2) = timeFacIndOffset;
+            stf(i).propVMAT.timeFacInd(3) = timeFacIndOffset+1;
+            
+            timeFacIndOffset = timeFacIndOffset+2;
+        else
+            %These are the factors that relate the total time in the
+            %optimized arc sector to the total time in the previous and
+            %next dose sectors
+            stf(i).propVMAT.timeFac = zeros(1,2);
+            
+            stf(i).propVMAT.timeFac(1) = stf(i).propVMAT.DAOAngleBorderCentreDiff(1)/stf(i).propVMAT.DAOAngleBordersDiff;
+            stf(i).propVMAT.timeFac(2) = stf(i).propVMAT.DAOAngleBorderCentreDiff(2)/stf(i).propVMAT.DAOAngleBordersDiff;
+        end
         
     else
         if ~isfield(stf(stf(i).propVMAT.beamParentIndex).propVMAT,'beamSubChildrenGantryAngles') || isempty(stf(stf(i).propVMAT.beamParentIndex).propVMAT.beamSubChildrenGantryAngles)

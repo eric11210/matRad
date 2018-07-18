@@ -67,15 +67,25 @@ else
     
     if apertureInfo.propVMAT.continuousAperture
         
+        timeFac = [apertureInfo.propVMAT.beam.timeFac]';
+        deleteInd = timeFac == 0;
+        timeFac(deleteInd) = [];
+        
+        i = [apertureInfo.propVMAT.beam.timeFacInd]';
+        i(deleteInd) = [];
+        
+        j = repelem(1:apertureInfo.totalNumOfShapes,1,3);
+        j(deleteInd) = [];
+        
+        timeFacMatrix = sparse(i,j,timeFac,2*apertureInfo.totalNumOfShapes-1,apertureInfo.totalNumOfShapes);
+        timeBNOptAngles = timeFacMatrix*timeDAOBorderAngles;
+        
         leftLeafDiff = diff(reshape(leftLeafPos,apertureInfo.beam(1).numOfActiveLeafPairs,[]),1,2);
         rightLeafDiff = diff(reshape(rightLeafPos,apertureInfo.beam(1).numOfActiveLeafPairs,[]),1,2);
-        
-        leftLeafDiff = reshape(leftLeafDiff(repmat([apertureInfo.propVMAT.beam.DAOBeam],apertureInfo.beam(1).numOfActiveLeafPairs,1)),apertureInfo.beam(1).numOfActiveLeafPairs,apertureInfo.totalNumOfShapes);
-        rightLeafDiff = reshape(rightLeafDiff(repmat([apertureInfo.propVMAT.beam.DAOBeam],apertureInfo.beam(1).numOfActiveLeafPairs,1)),apertureInfo.beam(1).numOfActiveLeafPairs,apertureInfo.totalNumOfShapes);
-        
+                
         % values of leaf speeds in an arc surrounding the optimized angles
         c_lfspd = reshape(abs([leftLeafDiff rightLeafDiff])./ ...
-            repmat(timeDoseBorderAngles',apertureInfo.beam(1).numOfActiveLeafPairs,2),2*apertureInfo.beam(1).numOfActiveLeafPairs*numel(timeDoseBorderAngles),1);
+            repmat(timeBNOptAngles',apertureInfo.beam(1).numOfActiveLeafPairs,2),2*apertureInfo.beam(1).numOfActiveLeafPairs*numel(timeBNOptAngles),1);
     else
         
         i = sort(repmat(1:(apertureInfo.totalNumOfShapes-1),1,2));
