@@ -26,7 +26,7 @@ clc
 %load PROSTATE.mat
 %load LIVER.mat
 %load BOXPHANTOM.mat
-load CALIBRATION_PHANTOM.mat
+load CALIBRATION_PHANTOM_DKFZ.mat
 
 % meta information for treatment plan
 pln.radiationMode   = 'photons';     % either photons / protons / carbon
