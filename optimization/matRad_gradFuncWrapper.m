@@ -100,7 +100,7 @@ for i = 1:options.numOfScenarios
         end
         
         if dij.memorySaverPhoton
-            g = g+matRad_memorySaverDoseAndGrad(delta,dij,'gradient',i);
+            g{i} = g{i}+matRad_memorySaverDoseAndGrad(delta,dij,'gradient',i);
         end
         
     elseif isequal(options.ID,'protons_const_RBExD')

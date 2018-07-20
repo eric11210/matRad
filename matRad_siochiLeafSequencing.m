@@ -254,7 +254,7 @@ if pln.propOpt.runVMAT
     
     %optimize delivery
     resultGUI = matRad_optDelivery(resultGUI,0);
-    %resultGUI.apertureInfo = matRad_maxLeafSpeed(resultGUI.apertureInfo);
+    resultGUI.apertureInfo = matRad_maxLeafSpeed(resultGUI.apertureInfo);
     fprintf('\nLeaf speed turned off for now!\n');
     
     sequencing.w = resultGUI.apertureInfo.bixelWeights;
