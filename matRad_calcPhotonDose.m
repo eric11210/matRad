@@ -524,7 +524,11 @@ for i = 1:dij.numOfBeams % loop over all beams
                     % fill entire dose influence matrix
                     dij.physicalDose{phase}(:,(ceil(counter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:counter) = [doseTmpContainer{1:mod(counter-1,numOfBixelsContainer)+1,phase}];
                     
-                    if pln.propOpt.run4D && any(k == cumsum(ct.tumourMotion.nFramesPerPhase))
+                    if ~pln.propOpt.run4D || any(k == cumsum(ct.tumourMotion.nFramesPerPhase))
+                        % this clears the doseTmpContainer
+                        % we want to do this after dumping the container if
+                        % we aren't doing 4D VMAT, or if we are, after the
+                        % last frame in the current phase
                         for l = 1:numOfBixelsContainer
                             doseTmpContainer{l,phase} = spalloc(prod(ct.cubeDim),1,1);
                         end
