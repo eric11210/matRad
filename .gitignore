@@ -5,3 +5,7 @@ lungPatient0*.mat
 *Slice*.dcm
 p*_f*_m*.csv
 *.zip
+vmc++/bin/*
+vmc++/data/*
+vmc++/lib/*
+vmc++/run/*
