@@ -63,7 +63,7 @@ resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,res
 tDAO = toc(t0);
 savefig(fname)
 
-%save(fname,'resultGUI','recalc','-v7.3')
+save(fname,'resultGUI','-v7.3')
 
 tOpt = tFMO+tSeq+tDAO;
 
