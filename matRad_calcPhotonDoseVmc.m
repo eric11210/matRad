@@ -74,13 +74,15 @@ for i = 1:dij.numOfScenarios
 end
 
 % set environment variables for vmc++
+cd(fileparts(mfilename('fullpath')))
+
 if exist(['vmc++' filesep 'bin'],'dir') ~= 7
     error(['Could not locate vmc++ environment. ' ...
           'Please provide the files in the correct folder structure at matRadroot' filesep 'vmc++.']);
 else
     VMCPath     = fullfile(pwd , 'vmc++');
-    runsPath    = fullfile(VMCPath, 'runs');
-    phantomPath = fullfile(VMCPath, 'phantoms');
+    runsPath    = fullfile(VMCPath, 'run');
+    phantomPath = fullfile(runsPath, 'phantoms');
 
     setenv('vmc_home',VMCPath);
     setenv('vmc_dir',runsPath);
@@ -143,7 +145,7 @@ absCalibrationFactorVmc = 99.818252282632300;
 % 1 source
 VmcOptions.beamletSource.myName       = 'source 1';                        % name of source
 VmcOptions.beamletSource.monitorUnits = 1;                                 
-VmcOptions.beamletSource.spectrum     = ['./spectra/var_6MV.spectrum'];    % energy spectrum source (only used if no mono-Energy given)
+VmcOptions.beamletSource.spectrum     = fullfile(runsPath,'spectra','var_6MV.spectrum');    % energy spectrum source (only used if no mono-Energy given)
 VmcOptions.beamletSource.charge       = 0;                                 % charge (-1,0,1)
 % 2 transport parameter
 VmcOptions.McParameter.automatic_parameter = 'yes';                        % if yes, automatic transport parameters are used
@@ -161,7 +163,7 @@ VmcOptions.quasi.skip      = 1;
 % 6 geometry
 VmcOptions.geometry.XyzGeometry.methodOfInput = 'CT-PHANTOM';              % input method ('CT-PHANTOM', 'individual', 'groups') 
 VmcOptions.geometry.XyzGeometry.Ct            = 'CT';                      % name of geometry
-VmcOptions.geometry.XyzGeometry.CtFile        = ['./phantoms/matRad_CT.ct']; % path of density matrix (only needed if input method is 'CT-PHANTOM')
+VmcOptions.geometry.XyzGeometry.CtFile        = fullfile(runsPath,'phantoms','matRad_CT.ct'); % path of density matrix (only needed if input method is 'CT-PHANTOM')
 % 7 scoring manager
 VmcOptions.scoringOptions.startInGeometry               = 'CT';            % geometry in which partciles start their transport
 VmcOptions.scoringOptions.doseOptions.scoreInGeometries = 'CT';            % geometry in which dose is recorded

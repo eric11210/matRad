@@ -26,7 +26,7 @@ clc
 %load PROSTATE.mat
 %load LIVER.mat
 %load BOXPHANTOM.mat
-load CALIBRATION_PHANTOM_DKFZ.mat
+load CALIBRATION_PHANTOM_TOH.mat
 
 % meta information for treatment plan
 pln.radiationMode   = 'photons';     % either photons / protons / carbon
@@ -125,7 +125,7 @@ end
 % - Mayneord factor to move SSD from 100 cm to 85 cm
 
 %At TOH: 100 cm SAD, 5 cm depth, 10x10cm2
-%At DKFZ: 95 cm SAD, 10 cm depth, 10x10cm2
+%At DKFZ: 104 cm SAD, 5 cm depth, 5x5cm2
 
 %% inverse planning for imrt
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
