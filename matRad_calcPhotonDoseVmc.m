@@ -143,10 +143,12 @@ absCalibrationFactorVmc = 99.818252282632300;
 
 % set general vmc++ parameters
 % 1 source
-VmcOptions.beamletSource.myName       = 'source 1';                        % name of source
-VmcOptions.beamletSource.monitorUnits = 1;                                 
-VmcOptions.beamletSource.spectrum     = fullfile(runsPath,'spectra','var_6MV.spectrum');    % energy spectrum source (only used if no mono-Energy given)
-VmcOptions.beamletSource.charge       = 0;                                 % charge (-1,0,1)
+VmcOptions.source.myName       = 'some_source';                        % name of source
+VmcOptions.source.monitorUnits = 1;
+if strcmp(pln.propDoseCalc.VMCoptions.source,'beamlet')
+    VmcOptions.source.spectrum     = fullfile(runsPath,'spectra','var_6MV.spectrum');    % energy spectrum source (only used if no mono-Energy given)
+    VmcOptions.source.charge       = 0;                                 % charge (-1,0,1
+end
 % 2 transport parameter
 VmcOptions.McParameter.automatic_parameter = 'yes';                        % if yes, automatic transport parameters are used
 % 3 MC control
@@ -196,6 +198,24 @@ for i = 1:dij.numOfBeams % loop over all beams
         dij.bixelNum(i)   = i;
     end
     
+    if strcmp(pln.propDoseCalc.VMCoptions.source,'phsp')
+        % set angle-specific vmc++ parameters
+        
+        % phsp source gets translated, then rotated (-z, +y, -x)
+        
+        % a) change coordinate system (Isocenter cs-> physical cs) and units mm -> cm
+        % also correct for the source to collimator distance
+        translation = (stf(i).sourcePoint_bev + stf(i).isoCenter + [0 pln.propDoseCalc.VMCoptions.SCD 0])/10;
+        
+        % b) determine vmc++ rotation angles from gantry and couch
+        % angles
+        angles = matRad_matRad2mvcSourceAngles(stf(i).gantryAngle,stf(i).couchAngle);
+        
+        % c) set vmc++ parameters
+        VmcOptions.source.translation = translation;
+        VmcOptions.source.angles = angles;
+    end
+    
     for j = 1:stf(i).numOfRays % loop over all rays / for photons we only have one bixel per ray!
         
         writeCounter = writeCounter + 1;
@@ -214,23 +234,32 @@ for i = 1:dij.numOfBeams % loop over all beams
         bixelNum(writeCounter) = j;
         
         % set ray specific vmc++ parameters
-        % a) change coordinate system (Isocenter cs-> physical cs) and units mm -> cm
-        rayCorner1 = (stf(i).ray(j).rayCorners_SCD(1,:) + stf(i).isoCenter)/10;              
-        rayCorner2 = (stf(i).ray(j).rayCorners_SCD(2,:) + stf(i).isoCenter)/10;
-        rayCorner3 = (stf(i).ray(j).rayCorners_SCD(3,:) + stf(i).isoCenter)/10; %vmc needs only three corners (counter-clockwise)
-        beamSource = (stf(i).sourcePoint + stf(i).isoCenter)/10;
+        switch pln.propDoseCalc.VMCoptions.source
+            case 'beamlet'
+                % a) change coordinate system (Isocenter cs-> physical cs) and units mm -> cm
+                rayCorner1 = (stf(i).ray(j).rayCorners_SCD(1,:) + stf(i).isoCenter)/10;
+                rayCorner2 = (stf(i).ray(j).rayCorners_SCD(2,:) + stf(i).isoCenter)/10;
+                rayCorner3 = (stf(i).ray(j).rayCorners_SCD(3,:) + stf(i).isoCenter)/10; %vmc needs only three corners (counter-clockwise)
+                beamSource = (stf(i).sourcePoint + stf(i).isoCenter)/10;
+                
+                % b) swap x and y (CT-standard = [y,x,z])
+                rayCorner1 = rayCorner1([2,1,3]);
+                rayCorner2 = rayCorner2([2,1,3]);
+                rayCorner3 = rayCorner3([2,1,3]);
+                beamSource  = beamSource([2,1,3]);
+                
+                % c) set vmc++ parameters
+                VmcOptions.source.monoEnergy                = stf(i).ray(j).energy;                 % photon energy
+                %VmcOptions.source.monoEnergy                 = []                  ;                  % use photon spectrum
+                VmcOptions.source.beamletEdges               = [rayCorner1,rayCorner2,rayCorner3];    % counter-clockwise beamlet edges
+                VmcOptions.source.virtualPointSourcePosition = beamSource;                            % virtual beam source position
+                
+            case 'phsp'
+                % use ray-specific file name for the phsp source (bixelized
+                % phsp)
+                VmcOptions.source.file_name = stf(i).ray(j).file_name;
+        end
         
-        % b) swap x and y (CT-standard = [y,x,z])
-        rayCorner1 = rayCorner1([2,1,3]);              
-        rayCorner2 = rayCorner2([2,1,3]);
-        rayCorner3 = rayCorner3([2,1,3]);
-        beamSource  = beamSource([2,1,3]);
-        
-        % c) set vmc++ parameters
-        VmcOptions.beamletSource.monoEnergy                = stf(i).ray(j).energy;                 % photon energy
-        %VmcOptions.beamletSource.monoEnergy                 = []                  ;                  % use photon spectrum
-        VmcOptions.beamletSource.beamletEdges               = [rayCorner1,rayCorner2,rayCorner3];    % counter-clockwise beamlet edges
-        VmcOptions.beamletSource.virtualPointSourcePosition = beamSource;                            % virtual beam source position
         
         % create inputfile with vmc++ parameters
         outfile = ['MCpencilbeam_temp_',num2str(mod(writeCounter-1,numOfParallelMCSimulations)+1)];
