@@ -145,27 +145,32 @@ absCalibrationFactorVmc = 99.818252282632300;
 % 1 source
 VmcOptions.source.myName       = 'some_source';                        % name of source
 VmcOptions.source.monitorUnits = 1;
-if strcmp(pln.propDoseCalc.VMCoptions.source,'beamlet')
+if strcmp(pln.propDoseCalc.vmcOptions.source,'beamlet')
     VmcOptions.source.spectrum     = fullfile(runsPath,'spectra','var_6MV.spectrum');    % energy spectrum source (only used if no mono-Energy given)
     VmcOptions.source.charge       = 0;                                 % charge (-1,0,1
+    VmcOptions.source.type         = 'beamlet';
+elseif strcmp(pln.propDoseCalc.vmcOptions.source,'phsp')
+    VmcOptions.source.particleType  = 2;
+    VmcOptions.source.type          = 'phsp';
 end
 % 2 transport parameter
-VmcOptions.McParameter.automatic_parameter = 'yes';                        % if yes, automatic transport parameters are used
+VmcOptions.McParameter.automatic_parameter  = 'yes';                       % if yes, automatic transport parameters are used
+VmcOptions.McParameter.spin                 = 0;                           % 0: spin effects ignored; 1: simplistic; 2: full treatment
 % 3 MC control
 VmcOptions.McControl.ncase  = nCasePerBixel;                               % number of histories
 VmcOptions.McControl.nbatch = 10;                                          % number of batches
 % 4 variance reduction
-VmcOptions.varianceReduction.repeatHistory      = 0.251;
-VmcOptions.varianceReduction.splitPhotons       = 'yes';   
-VmcOptions.varianceReduction.photonSplitFactor = -40;  
+VmcOptions.varianceReduction.repeatHistory      = 0.041;
+VmcOptions.varianceReduction.splitPhotons       = 1;   
+VmcOptions.varianceReduction.photonSplitFactor = -80;  
 % 5 quasi random numbers
 VmcOptions.quasi.base      = 2;                                                 
 VmcOptions.quasi.dimension = 60;                                             
 VmcOptions.quasi.skip      = 1;                                              
 % 6 geometry
-VmcOptions.geometry.XyzGeometry.methodOfInput = 'CT-PHANTOM';              % input method ('CT-PHANTOM', 'individual', 'groups') 
+VmcOptions.geometry.XyzGeometry.methodOfInput = 'MMC-PHANTOM';             % input method ('CT-PHANTOM', 'individual', 'groups') 
 VmcOptions.geometry.XyzGeometry.Ct            = 'CT';                      % name of geometry
-VmcOptions.geometry.XyzGeometry.CtFile        = fullfile(runsPath,'phantoms','matRad_CT.ct'); % path of density matrix (only needed if input method is 'CT-PHANTOM')
+VmcOptions.geometry.XyzGeometry.CtFile        = strrep(fullfile(runsPath,'phantoms','matRad_CT.ct'),'\','/'); % path of density matrix (only needed if input method is 'CT-PHANTOM')
 % 7 scoring manager
 VmcOptions.scoringOptions.startInGeometry               = 'CT';            % geometry in which partciles start their transport
 VmcOptions.scoringOptions.doseOptions.scoreInGeometries = 'CT';            % geometry in which dose is recorded
@@ -198,14 +203,14 @@ for i = 1:dij.numOfBeams % loop over all beams
         dij.bixelNum(i)   = i;
     end
     
-    if strcmp(pln.propDoseCalc.VMCoptions.source,'phsp')
+    if strcmp(pln.propDoseCalc.vmcOptions.source,'phsp')
         % set angle-specific vmc++ parameters
         
         % phsp source gets translated, then rotated (-z, +y, -x)
         
         % a) change coordinate system (Isocenter cs-> physical cs) and units mm -> cm
         % also correct for the source to collimator distance
-        translation = (stf(i).sourcePoint_bev + stf(i).isoCenter + [0 pln.propDoseCalc.VMCoptions.SCD 0])/10;
+        translation = (stf(i).sourcePoint_bev + stf(i).isoCenter + [0 pln.propDoseCalc.vmcOptions.SCD 0])/10;
         
         % b) determine vmc++ rotation angles from gantry and couch
         % angles
@@ -234,7 +239,7 @@ for i = 1:dij.numOfBeams % loop over all beams
         bixelNum(writeCounter) = j;
         
         % set ray specific vmc++ parameters
-        switch pln.propDoseCalc.VMCoptions.source
+        switch pln.propDoseCalc.vmcOptions.source
             case 'beamlet'
                 % a) change coordinate system (Isocenter cs-> physical cs) and units mm -> cm
                 rayCorner1 = (stf(i).ray(j).rayCorners_SCD(1,:) + stf(i).isoCenter)/10;
@@ -246,18 +251,18 @@ for i = 1:dij.numOfBeams % loop over all beams
                 rayCorner1 = rayCorner1([2,1,3]);
                 rayCorner2 = rayCorner2([2,1,3]);
                 rayCorner3 = rayCorner3([2,1,3]);
-                beamSource  = beamSource([2,1,3]);
+                beamSource = beamSource([2,1,3]);
                 
                 % c) set vmc++ parameters
-                VmcOptions.source.monoEnergy                = stf(i).ray(j).energy;                 % photon energy
-                %VmcOptions.source.monoEnergy                 = []                  ;                  % use photon spectrum
-                VmcOptions.source.beamletEdges               = [rayCorner1,rayCorner2,rayCorner3];    % counter-clockwise beamlet edges
-                VmcOptions.source.virtualPointSourcePosition = beamSource;                            % virtual beam source position
+                VmcOptions.source.monoEnergy                    = stf(i).ray(j).energy;                 % photon energy
+                %VmcOptions.source.monoEnergy                   = []                  ;                  % use photon spectrum
+                VmcOptions.source.beamletEdges                  = [rayCorner1,rayCorner2,rayCorner3];    % counter-clockwise beamlet edges
+                VmcOptions.source.virtualPointSourcePosition    = beamSource;                            % virtual beam source position
                 
             case 'phsp'
                 % use ray-specific file name for the phsp source (bixelized
                 % phsp)
-                VmcOptions.source.file_name = stf(i).ray(j).file_name;
+                VmcOptions.source.file_name     = strrep(fullfile(runsPath,'phsp',stf(i).ray(j).phspFileName),'\','/');
         end
         
         

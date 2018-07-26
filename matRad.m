@@ -26,7 +26,7 @@ clc
 %load PROSTATE.mat
 %load LIVER.mat
 %load BOXPHANTOM.mat
-load CALIBRATION_PHANTOM_TOH.mat
+load TG119.mat
 
 % meta information for treatment plan
 pln.radiationMode   = 'photons';     % either photons / protons / carbon
@@ -35,14 +35,18 @@ pln.machine         = 'Generic';
 pln.numOfFractions  = 30;
 
 % beam geometry settings
-pln.propStf.bixelWidth      = 1; % [mm] / also corresponds to lateral spot spacing for particles
+pln.propStf.bixelWidth      = 5; % [mm] / also corresponds to lateral spot spacing for particles
 pln.propStf.gantryAngles    = 0; % [?]
 pln.propStf.couchAngles     = 0; % [?]
 pln.propStf.numOfBeams      = numel(pln.propStf.gantryAngles);
 pln.propStf.isoCenter       = ones(pln.propStf.numOfBeams,1) * matRad_getIsoCenter(cst,ct,0);
 
 % dose calculation settings
-pln.propDoseCalc.memorySaverPhoton = false;
+pln.propDoseCalc.memorySaverPhoton          = false;
+pln.propDoseCalc.vmc                        = true;
+pln.propDoseCalc.vmcOptions.source          = 'phsp';
+pln.propDoseCalc.vmcOptions.phspBaseName    = '5x5_at_50cm';
+pln.propDoseCalc.vmcOptions.SCD             = 500;
 
 % optimization settings
 pln.propOpt.bioOptimization = 'none'; % none: physical optimization;             const_RBExD; constant RBE of 1.1;

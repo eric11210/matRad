@@ -1,4 +1,4 @@
-function [thetaX,thetaY,thetaZ] = matRad_matRad2mvcSourceAngles(gantryAngle,couchAngle)
+function angles = matRad_matRad2mvcSourceAngles(gantryAngle,couchAngle)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % matRad convert gantry and couch angles to angles used by vmc++
 %
@@ -70,6 +70,8 @@ if ~verifiedRelations(gantryAngle,couchAngle,thetaX,thetaY,thetaZ)
     error('Angular relations are not satisfied for some reason');
 end
 
+angles = [thetaX thetaY thetaZ];
+
 end
 
 
@@ -94,6 +96,5 @@ end
 if abs(-cosd(couchAngle)+cosd(thetaX).*sind(thetaY).*sind(thetaZ)+sind(thetaX).*cosd(thetaZ)) > eps*10e3
     ver = false;
 end
-
 
 end

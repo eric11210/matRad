@@ -398,6 +398,10 @@ for i = 1:length(pln.propStf.gantryAngles)
                     % book keeping for photons
                     stf(i).ray(j).energy = machine.data.energy;
                     
+                    if pln.propDoseCalc.vmc
+                        stf(i).ray(j).phspFileName = sprintf('%s_ray%d.egsphsp1',pln.propDoseCalc.vmcOptions.phspBaseName,j);
+                    end
+                    
                 else
                     error('Error generating stf struct: invalid radiation modality.');
                 end
