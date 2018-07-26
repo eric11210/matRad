@@ -72,11 +72,14 @@ for phase = 1:xcatLog.numFrames
         % each line contains the voxel coordinate (in the original resolution)
         % of each transformed voxel, and also the voxel sub-coordinates in the
         % transformed frame
-        xCoord_vox = 1+str2double(tline((spacesInd(2)+1):(spacesInd(3)-1)))./resRatioX;
-        yCoord_vox = 1+str2double(tline((spacesInd(3)+1):(spacesInd(4)-1)))./resRatioY;
+        
+        % also correct for the removal of the padding
+        xCoord_vox = 1+str2double(tline((spacesInd(2)+1):(spacesInd(3)-1)))./resRatioX-xcatLog.zeroIndPreX;
+        yCoord_vox = 1+str2double(tline((spacesInd(3)+1):(spacesInd(4)-1)))./resRatioY-xcatLog.zeroIndPreY;
         zCoord_vox = 1+str2double(tline((spacesInd(4)+1):(spacesInd(5)-1)))./resRatioZ;
         
-        if round(xCoord_vox) == xCoord_vox && round(yCoord_vox) == yCoord_vox && round(zCoord_vox) == zCoord_vox
+        if round(xCoord_vox) == xCoord_vox && round(yCoord_vox) == yCoord_vox && round(zCoord_vox) == zCoord_vox ...
+                && 1 <= xCoord_vox && xCoord_vox <= ct.cubeDim(2) && 1<= yCoord_vox && yCoord_vox <= ct.cubeDim(1)
             %only store motion vectors for voxels which map exactly to a voxel
             %in the interpolated resolution (note that the voxel in the new
             %frame will probably not map exactly to a voxel)
