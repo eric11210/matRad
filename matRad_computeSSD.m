@@ -70,16 +70,16 @@ if strcmp(mode,'first')
                 % calculate SSD
                 SSD{k,j} = double(2 * stf(i).SAD * alpha(ixSSD));
                 stf(i).ray(j).SSD{k} = SSD{k,j};
-                %change this to stf(i).ray(j).SSD{k} later
             end
         end
         
         % try to fix SSD by using SSD of closest neighbouring ray
-        SSDnotSet = find(cellfun('isempty',SSD));
+        SSDnotSet = find(cellfun('isempty',SSD))';
         if ~isempty(SSDnotSet)
             rayPos_bev = reshape([stf(i).ray(:).rayPos_bev]',[3 stf(i).numOfRays])';
-            for j = SSDnotSet
-                stf(i).ray(j).SSD =  matRad_closestNeighbourSSD(rayPos_bev, SSD, rayPos_bev(j,:));
+            for ind = SSDnotSet
+                [k, j] = ind2sub(size(SSD),ind);
+                stf(i).ray(j).SSD{k} =  matRad_closestNeighbourSSD(rayPos_bev, SSD(k,:), rayPos_bev(j,:));
             end
         end
         
