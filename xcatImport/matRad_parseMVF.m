@@ -4,6 +4,7 @@ dirXCAT = fullfile(fileparts(mfilename('fullpath')),'XCAT',filesep);
 
 fnameXcatPar = fullfile(dirXCAT,sprintf('%s.par',fnameXcatRoot));
 tumourPosInit = matRad_xcatReadPar(fnameXcatPar);
+tumourPosInit = tumourPosInit-[xcatLog.zeroIndPreX xcatLog.zeroIndPreY 0];
 
 tumourPos = zeros(xcatLog.numFrames+1,3);
 tumourPos(1,:) = tumourPosInit;
