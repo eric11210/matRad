@@ -65,11 +65,12 @@ clc
 
 % load patient data, i.e. ct, voi, cst
 
-load HEAD_AND_NECK.mat
+%load HEAD_AND_NECK.mat
 %load TG119.mat
 %load PROSTATE.mat
 %load LIVER.mat
 %load BOXPHANTOM.mat
+load lungPatient0_tenPhases.mat
 
 % meta information for treatment plan
 
@@ -97,11 +98,11 @@ pln.propOpt.VMAToptions.continuousAperture = true;
 
 pln.propOpt.VMAToptions.startingAngle = -180;
 pln.propOpt.VMAToptions.finishingAngle = 180;
-pln.propOpt.VMAToptions.maxGantryAngleSpacing = 2;      % Max gantry angle spacing for dose calculation
-pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing = 4;      % Max gantry angle spacing for DAO
-pln.propOpt.VMAToptions.maxFMOGantryAngleSpacing = 28;      % Max gantry angle spacing for FMO
+pln.propOpt.VMAToptions.maxGantryAngleSpacing = 90;      % Max gantry angle spacing for dose calculation
+pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing = 90;      % Max gantry angle spacing for DAO
+pln.propOpt.VMAToptions.maxFMOGantryAngleSpacing = 90;      % Max gantry angle spacing for FMO
 
-pln.propOpt.run4D = false;
+pln.propOpt.run4D = true;
 pln.propOpt.prop4D.singlePhaseFMO = true;
 % multi-phase FMO hasn't been implemented fully (would have to do changes in FMO and leaf
 % sequencing - probably better only for fluence, not DAO).

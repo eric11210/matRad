@@ -84,8 +84,8 @@ for phase = 1:xcatLog.numFrames
             %only store motion vectors for voxels which map exactly to a voxel
             %in the interpolated resolution (note that the voxel in the new
             %frame will probably not map exactly to a voxel)
-            xCoordNewFrame_vox = 1+str2double(tline((spacesInd(7)+1):(spacesInd(8)-1)))./resRatioX;
-            yCoordNewFrame_vox = 1+str2double(tline((spacesInd(8)+1):(spacesInd(9)-1)))./resRatioY;
+            xCoordNewFrame_vox = 1+str2double(tline((spacesInd(7)+1):(spacesInd(8)-1)))./resRatioX-xcatLog.zeroIndPreX;
+            yCoordNewFrame_vox = 1+str2double(tline((spacesInd(8)+1):(spacesInd(9)-1)))./resRatioY-xcatLog.zeroIndPreY;
             zCoordNewFrame_vox = 1+str2double(tline((spacesInd(9)+1):end))./resRatioZ;
             
             ct.motionVecX{phase}(yCoord_vox,xCoord_vox,zCoord_vox) = xCoordNewFrame_vox;

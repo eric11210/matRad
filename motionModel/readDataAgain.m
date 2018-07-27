@@ -31,6 +31,9 @@ for nSubPerPhase = nSubPerPhaseVec
     % construct probability matrix
     [Pij_deltaTSample, Pi_deltaTSample] = generateProbMatrix(l_sample,nSubPhases);
     
+    % generate tumour motion model struct
+    tmm = generateTmm(Pij_deltaTSample,Pi_deltaTSample,deltaT_sample,subPhase2Phase,nSubPhases);
+    
     % estimate standard deviation of probabilities
     nHistories = 10;
     nSteps_sample = numel(l_sample);
