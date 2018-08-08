@@ -1,4 +1,4 @@
-load PROSTATE_NEW.mat
+load lungPatient0_tenPhases_3DVMAT.mat
 
 % meta information for treatment plan
 
@@ -9,7 +9,6 @@ pln.propDoseCalc.memorySaverPhoton = false;
 
 % beam geometry settings
 pln.propStf.bixelWidth = 5;
-
 
 % optimization settings
 pln.propOpt.bioOptimization = 'none';
@@ -22,17 +21,21 @@ pln.propOpt.numLevels = 7;
 pln.propOpt.VMAToptions.machineConstraintFile = [pln.radiationMode '_' pln.machine];
 pln.propOpt.VMAToptions.continuousAperture = false;
 
+pln.propOpt.VMAToptions.startingAngle = -180;
+pln.propOpt.VMAToptions.finishingAngle = 180;
 pln.propOpt.VMAToptions.maxGantryAngleSpacing = 4;      % Max gantry angle spacing for dose calculation
 pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing = 4;      % Max gantry angle spacing for DAO
 pln.propOpt.VMAToptions.maxFMOGantryAngleSpacing = 28;      % Max gantry angle spacing for FMO
+
+pln.propOpt.run4D = false;
+pln.propOpt.prop4D.singlePhaseFMO = false;
+% multi-phase FMO hasn't been implemented fully (would have to do changes in FMO and leaf
+% sequencing - probably better only for fluence, not DAO).
 
 pln = matRad_VMATGantryAngles(pln,cst,ct);
 
 % load results
 load('Results.mat');
-
-
-
 
 angularResS = [0.5 1 2 4];
 

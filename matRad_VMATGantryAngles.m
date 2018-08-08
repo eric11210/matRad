@@ -47,7 +47,7 @@ end
 
 angularRange = abs(pln.propOpt.VMAToptions.finishingAngle-pln.propOpt.VMAToptions.startingAngle);
 
-% angularRange = gantryAngleSpacing*(numGantryAngles+1)
+% angularRange = gantryAngleSpacing*numGantryAngles
 % ensure that gantryAngleSpacing < maxGantryAngleSpacing (as close as
 % possible)
 numGantryAngles = ceil(angularRange./pln.propOpt.VMAToptions.maxGantryAngleSpacing)-1;
