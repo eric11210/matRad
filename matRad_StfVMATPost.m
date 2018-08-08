@@ -136,17 +136,15 @@ for i = 1:length(pln.propStf.gantryAngles)
             stf(i).propVMAT.timeFac(2) = stf(i).propVMAT.timeFacCurr;
             stf(i).propVMAT.timeFac(3) = (stf(i).propVMAT.DAOAngleBorderCentreDiff(2)-stf(i).propVMAT.doseAngleBorderCentreDiff(2))/stf(i).propVMAT.DAOAngleBordersDiff;
             
-            % delete entries with a timeFac of 0
-            deleteInd                           = stf(i).propVMAT.timeFac == 0;
-            stf(i).propVMAT.timeFac(deleteInd)  = [];
+            % keep entries with a non-0 timeFac
+            keepInd     = stf(i).propVMAT.timeFac ~= 0;
+            keepIndSum  = cumsum(keepInd);
             
             % write timeFacInd
-            stf(i).propVMAT.timeFacInd = zeros(1,numel(stf(i).propVMAT.timeFac));
+            stf(i).propVMAT.timeFacInd = zeros(1,3);
+            stf(i).propVMAT.timeFacInd(keepInd) = keepIndSum(keepInd)+timeFacIndOffset;
             
-            for j = 1:numel(stf(i).propVMAT.timeFac)
-                stf(i).propVMAT.timeFacInd(j) = timeFacIndOffset+j;
-            end
-            timeFacIndOffset = timeFacIndOffset+numel(stf(i).propVMAT.timeFac);
+            timeFacIndOffset = timeFacIndOffset+nnz(keepInd);
             
         else
             %These are the factors that relate the total time in the
