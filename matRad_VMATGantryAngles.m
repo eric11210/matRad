@@ -50,19 +50,19 @@ angularRange = abs(pln.propOpt.VMAToptions.finishingAngle-pln.propOpt.VMAToption
 % angularRange = gantryAngleSpacing*numGantryAngles
 % ensure that gantryAngleSpacing < maxGantryAngleSpacing (as close as
 % possible)
-numGantryAngles = ceil(angularRange./pln.propOpt.VMAToptions.maxGantryAngleSpacing)-1;
-gantryAngleSpacing = angularRange./(numGantryAngles+1);
+numGantryAngles = ceil(angularRange./pln.propOpt.VMAToptions.maxGantryAngleSpacing);
+gantryAngleSpacing = angularRange./numGantryAngles;
 
-% numDAOGantryAngles*DAOGantryAngleSpacing = numGantryAngles*gantryAngleSpacing
+% (numDAOGantryAngles-1)*DAOGantryAngleSpacing = (numGantryAngles-1)*gantryAngleSpacing
 % where 
 % ensure that DAOGantryAngleSpacing < maxDAOGantryAngleSpacing (as close as
 % possible)
-numDAOGantryAngles = ceil(numGantryAngles.*gantryAngleSpacing./pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing);
-% now ensure that numGantryAngles is a multiple of numDAOGantryAngles so
+numDAOGantryAngles = ceil((numGantryAngles-1).*gantryAngleSpacing./pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing)+1;
+% now ensure that numGantryAngles-1 is a multiple of numDAOGantryAngles-1 so
 % that they align
-numGantryAngles = numDAOGantryAngles.*ceil(numGantryAngles./numDAOGantryAngles);
-gantryAngleSpacing = angularRange./(numGantryAngles+1);
-DAOGantryAngleSpacing = (angularRange-gantryAngleSpacing)/numDAOGantryAngles;
+numGantryAngles = (numDAOGantryAngles-1).*ceil((numGantryAngles-1)./(numDAOGantryAngles-1))+1;
+gantryAngleSpacing = angularRange./numGantryAngles;
+DAOGantryAngleSpacing = (angularRange-gantryAngleSpacing)/(numDAOGantryAngles-1);
 
 firstGantryAngle = pln.propOpt.VMAToptions.startingAngle+gantryAngleSpacing/2;
 lastGantryAngle = pln.propOpt.VMAToptions.finishingAngle-gantryAngleSpacing/2;

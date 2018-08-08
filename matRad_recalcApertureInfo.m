@@ -46,8 +46,8 @@ if recalc.interpNew
     oldRightLeafPoss = zeros(apertureInfoOld.beam(1).numOfActiveLeafPairs,numel(apertureInfoOld.beam));
     for i = 1:numel(apertureInfoOld.beam)
         oldGantryAngles(i) = apertureInfoOld.beam(i).gantryAngle;
-        oldLeftLeafPoss(:,i) = apertureInfoOld.beam(i).shape(1).leftLeafPos;
-        oldRightLeafPoss(:,i) = apertureInfoOld.beam(i).shape(1).rightLeafPos;
+        oldLeftLeafPoss(:,i) = apertureInfoOld.beam(i).shape{1}(1).leftLeafPos;
+        oldRightLeafPoss(:,i) = apertureInfoOld.beam(i).shape{1}(1).rightLeafPos;
     end
 end
 
@@ -137,7 +137,7 @@ for i = 1:numel(apertureInfoOld.beam)
         apertureInfoNew.beam(j).posOfCornerBixel = posOfCornerBixel;
         apertureInfoNew.beam(j).MLCWindow = MLCWindow;
         apertureInfoNew.beam(j).bixOffset = 1+(j-1)*dimZ;
-        apertureInfoNew.beam(j).shape(1).vectorOffset = totalNumOfShapes+1+(j-1)*dimZ;
+        apertureInfoNew.beam(j).shape{1}(1).vectorOffset = totalNumOfShapes+1+(j-1)*dimZ;
         
         %inherit from old beam
         apertureInfoNew.propVMAT.beam(j).leafDir = apertureInfoOld.propVMAT.beam(i).leafDir;
@@ -159,38 +159,38 @@ for i = 1:numel(apertureInfoOld.beam)
         
         if ~isfield(apertureInfoNew.beam(j),'gantryRot') || isempty(apertureInfoNew.beam(j).gantryRot)
             apertureInfoNew.beam(j).gantryRot = 0;
-            apertureInfoNew.beam(j).shape(1).weight = 0;
-            apertureInfoNew.beam(j).shape(1).weight_I = 0;
-            apertureInfoNew.beam(j).shape(1).weight_F = 0;
+            apertureInfoNew.beam(j).shape{1}(1).weight = 0;
+            apertureInfoNew.beam(j).shape{1}(1).weight_I = 0;
+            apertureInfoNew.beam(j).shape{1}(1).weight_F = 0;
         end
         apertureInfoNew.beam(j).gantryRot = amountOfOldSpeed*apertureInfoOld.beam(i).gantryRot+apertureInfoNew.beam(j).gantryRot;
         
         %recalculate weight, MU
-        apertureInfoNew.beam(j).shape(1).weight = apertureInfoNew.beam(j).shape(1).weight+amountOfOldWeight*apertureInfoOld.beam(i).shape(1).weight;
-        apertureInfoNew.beam(j).shape(1).weight_I = apertureInfoNew.beam(j).shape(1).weight_I+amountOfOldWeight_I*apertureInfoOld.beam(i).shape(1).weight;
-        apertureInfoNew.beam(j).shape(1).weight_F = apertureInfoNew.beam(j).shape(1).weight_F+amountOfOldWeight_F*apertureInfoOld.beam(i).shape(1).weight;
-        apertureInfoNew.beam(j).MU = apertureInfoNew.beam(j).shape(1).weight.*apertureInfoNew.weightToMU;
+        apertureInfoNew.beam(j).shape{1}(1).weight = apertureInfoNew.beam(j).shape{1}(1).weight+amountOfOldWeight*apertureInfoOld.beam(i).shape{1}(1).weight;
+        apertureInfoNew.beam(j).shape{1}(1).weight_I = apertureInfoNew.beam(j).shape{1}(1).weight_I+amountOfOldWeight_I*apertureInfoOld.beam(i).shape{1}(1).weight;
+        apertureInfoNew.beam(j).shape{1}(1).weight_F = apertureInfoNew.beam(j).shape{1}(1).weight_F+amountOfOldWeight_F*apertureInfoOld.beam(i).shape{1}(1).weight;
+        apertureInfoNew.beam(j).MU = apertureInfoNew.beam(j).shape{1}(1).weight.*apertureInfoNew.weightToMU;
         
         apertureInfoNew.beam(j).MURate = apertureInfoNew.beam(j).MU.*apertureInfoNew.beam(j).gantryRot./apertureInfoNew.propVMAT.beam(j).doseAngleBordersDiff;
         
-        %apertureInfoNew.beam(j).shape(1).jacobiScale = apertureInfoOld.beam(i).shape(1).jacobiScale;
+        %apertureInfoNew.beam(j).shape{1}(1).jacobiScale = apertureInfoOld.beam(i).shape{1}(1).jacobiScale;
         apertureInfoNew.jacobiScale(j) = 1;
-        apertureInfoNew.beam(j).shape(1).jacobiScale = 1;
+        apertureInfoNew.beam(j).shape{1}(1).jacobiScale = 1;
         
         if recalc.interpNew
             %interpolate new apertures now so that weights are not
             %overwritten
-            apertureInfoNew.beam(j).shape(1).leftLeafPos = (interp1(oldGantryAngles',oldLeftLeafPoss',apertureInfoNew.beam(j).gantryAngle))';
-            apertureInfoNew.beam(j).shape(1).rightLeafPos = (interp1(oldGantryAngles',oldRightLeafPoss',apertureInfoNew.beam(j).gantryAngle))';
+            apertureInfoNew.beam(j).shape{1}(1).leftLeafPos = (interp1(oldGantryAngles',oldLeftLeafPoss',apertureInfoNew.beam(j).gantryAngle))';
+            apertureInfoNew.beam(j).shape{1}(1).rightLeafPos = (interp1(oldGantryAngles',oldRightLeafPoss',apertureInfoNew.beam(j).gantryAngle))';
             
-            apertureInfoNew.beam(j).shape(1).leftLeafPos_I = (interp1(oldGantryAngles',oldLeftLeafPoss',apertureInfoNew.propVMAT.beam(j).doseAngleBorders(1)))';
-            apertureInfoNew.beam(j).shape(1).rightLeafPos_I = (interp1(oldGantryAngles',oldRightLeafPoss',apertureInfoNew.propVMAT.beam(j).doseAngleBorders(1)))';
+            apertureInfoNew.beam(j).shape{1}(1).leftLeafPos_I = (interp1(oldGantryAngles',oldLeftLeafPoss',apertureInfoNew.propVMAT.beam(j).doseAngleBorders(1)))';
+            apertureInfoNew.beam(j).shape{1}(1).rightLeafPos_I = (interp1(oldGantryAngles',oldRightLeafPoss',apertureInfoNew.propVMAT.beam(j).doseAngleBorders(1)))';
             
-            apertureInfoNew.beam(j).shape(1).leftLeafPos_F = (interp1(oldGantryAngles',oldLeftLeafPoss',apertureInfoNew.propVMAT.beam(j).doseAngleBorders(2)))';
-            apertureInfoNew.beam(j).shape(1).rightLeafPos_F = (interp1(oldGantryAngles',oldRightLeafPoss',apertureInfoNew.propVMAT.beam(j).doseAngleBorders(2)))';
+            apertureInfoNew.beam(j).shape{1}(1).leftLeafPos_F = (interp1(oldGantryAngles',oldLeftLeafPoss',apertureInfoNew.propVMAT.beam(j).doseAngleBorders(2)))';
+            apertureInfoNew.beam(j).shape{1}(1).rightLeafPos_F = (interp1(oldGantryAngles',oldRightLeafPoss',apertureInfoNew.propVMAT.beam(j).doseAngleBorders(2)))';
         else
-            apertureInfoNew.beam(j).shape(1).leftLeafPos = apertureInfoOld.beam(i).shape(1).leftLeafPos;
-            apertureInfoNew.beam(j).shape(1).rightLeafPos = apertureInfoOld.beam(i).shape(1).rightLeafPos;
+            apertureInfoNew.beam(j).shape{1}(1).leftLeafPos = apertureInfoOld.beam(i).shape{1}(1).leftLeafPos;
+            apertureInfoNew.beam(j).shape{1}(1).rightLeafPos = apertureInfoOld.beam(i).shape{1}(1).rightLeafPos;
         end
         
         %all beams are now "optimized" to prevent their weights from being
@@ -235,7 +235,7 @@ for i = 1:numel(apertureInfoOld.beam)
         end
         %}
         
-        apertureInfoNew.apertureVector(shapeInd) = apertureInfoNew.beam(j).shape(1).weight;
+        apertureInfoNew.apertureVector(shapeInd) = apertureInfoNew.beam(j).shape{1}(1).weight;
         shapeInd = shapeInd+1;
     end
 end

@@ -71,9 +71,9 @@ if updatedInfo.runVMAT && ~all([updatedInfo.propVMAT.beam.DAOBeam])
             % update the shape weight
             % rescale the weight from the vector using the previous
             % iteration scaling factor
-            updatedInfo.beam(i).shape(j).weight = apertureInfoVect(shapeInd)./updatedInfo.beam(i).shape(j).jacobiScale;
+            updatedInfo.beam(i).shape{1}(j).weight = apertureInfoVect(shapeInd)./updatedInfo.beam(i).shape{1}(j).jacobiScale;
             
-            updatedInfo.beam(i).MU = updatedInfo.beam(i).shape(j).weight*updatedInfo.weightToMU;
+            updatedInfo.beam(i).MU = updatedInfo.beam(i).shape{1}(j).weight*updatedInfo.weightToMU;
             updatedInfo.beam(i).time = apertureInfoVect(updatedInfo.totalNumOfShapes+updatedInfo.totalNumOfLeafPairs*2+shapeInd)*updatedInfo.propVMAT.beam(i).timeFacCurr;
             updatedInfo.beam(i).gantryRot = updatedInfo.propVMAT.beam(i).doseAngleBordersDiff/updatedInfo.beam(i).time;
             updatedInfo.beam(i).MURate = updatedInfo.beam(i).MU./updatedInfo.beam(i).time;
@@ -113,21 +113,21 @@ for i = 1:numel(updatedInfo.beam)
         % loop over all shapes
         for j = 1:updatedInfo.beam(i).numOfShapes
             % update the shape weight
-            updatedInfo.beam(i).shape(j).weight = apertureInfoVect(shapeInd)./updatedInfo.beam(i).shape(j).jacobiScale;
+            updatedInfo.beam(i).shape{1}(j).weight = apertureInfoVect(shapeInd)./updatedInfo.beam(i).shape{1}(j).jacobiScale;
             
-            updatedInfo.beam(i).MU = updatedInfo.beam(i).shape(j).weight*updatedInfo.weightToMU;
+            updatedInfo.beam(i).MU = updatedInfo.beam(i).shape{1}(j).weight*updatedInfo.weightToMU;
             updatedInfo.beam(i).time = apertureInfoVect(updatedInfo.totalNumOfShapes+updatedInfo.totalNumOfLeafPairs*2+shapeInd);
             updatedInfo.beam(i).gantryRot = updatedInfo.propVMAT.beam(i).doseAngleBordersDiff/updatedInfo.beam(i).time;
             updatedInfo.beam(i).MURate = updatedInfo.beam(i).MU./updatedInfo.beam(i).time;
             
-            leftLeafPosI_I = min([updatedInfo.beam(i).shape(j).leftLeafPos_I,updatedInfo.beam(i).shape(j).leftLeafPos],[],2);
-            leftLeafPosF_I = max([updatedInfo.beam(i).shape(j).leftLeafPos_I,updatedInfo.beam(i).shape(j).leftLeafPos],[],2);
-            rightLeafPosI_I = min([updatedInfo.beam(i).shape(j).rightLeafPos_I,updatedInfo.beam(i).shape(j).rightLeafPos],[],2);
-            rightLeafPosF_I = max([updatedInfo.beam(i).shape(j).rightLeafPos_I,updatedInfo.beam(i).shape(j).rightLeafPos],[],2);
-            leftLeafPosI_F = min([updatedInfo.beam(i).shape(j).leftLeafPos,updatedInfo.beam(i).shape(j).leftLeafPos_F],[],2);
-            leftLeafPosF_F = max([updatedInfo.beam(i).shape(j).leftLeafPos,updatedInfo.beam(i).shape(j).leftLeafPos_F],[],2);
-            rightLeafPosI_F = min([updatedInfo.beam(i).shape(j).rightLeafPos,updatedInfo.beam(i).shape(j).rightLeafPos_F],[],2);
-            rightLeafPosF_F = max([updatedInfo.beam(i).shape(j).rightLeafPos,updatedInfo.beam(i).shape(j).rightLeafPos_F],[],2);
+            leftLeafPosI_I = min([updatedInfo.beam(i).shape{1}(j).leftLeafPos_I,updatedInfo.beam(i).shape{1}(j).leftLeafPos],[],2);
+            leftLeafPosF_I = max([updatedInfo.beam(i).shape{1}(j).leftLeafPos_I,updatedInfo.beam(i).shape{1}(j).leftLeafPos],[],2);
+            rightLeafPosI_I = min([updatedInfo.beam(i).shape{1}(j).rightLeafPos_I,updatedInfo.beam(i).shape{1}(j).rightLeafPos],[],2);
+            rightLeafPosF_I = max([updatedInfo.beam(i).shape{1}(j).rightLeafPos_I,updatedInfo.beam(i).shape{1}(j).rightLeafPos],[],2);
+            leftLeafPosI_F = min([updatedInfo.beam(i).shape{1}(j).leftLeafPos,updatedInfo.beam(i).shape{1}(j).leftLeafPos_F],[],2);
+            leftLeafPosF_F = max([updatedInfo.beam(i).shape{1}(j).leftLeafPos,updatedInfo.beam(i).shape{1}(j).leftLeafPos_F],[],2);
+            rightLeafPosI_F = min([updatedInfo.beam(i).shape{1}(j).rightLeafPos,updatedInfo.beam(i).shape{1}(j).rightLeafPos_F],[],2);
+            rightLeafPosF_F = max([updatedInfo.beam(i).shape{1}(j).rightLeafPos,updatedInfo.beam(i).shape{1}(j).rightLeafPos_F],[],2);
             
             %{
             leftLeafPosI_I = round2(leftLeafPosI_I,10);
@@ -254,9 +254,9 @@ for i = 1:numel(updatedInfo.beam)
             tempMap_I(isnan(tempMap_I)) = 0;
             tempMap_F(isnan(tempMap_F)) = 0;
             
-            if isfield(updatedInfo.beam(i).shape(j),'weight_I')
-                weight_I = updatedInfo.beam(i).shape(j).weight_I./updatedInfo.beam(i).shape(j).weight;
-                weight_F = updatedInfo.beam(i).shape(j).weight_F./updatedInfo.beam(i).shape(j).weight;
+            if isfield(updatedInfo.beam(i).shape{1}(j),'weight_I')
+                weight_I = updatedInfo.beam(i).shape{1}(j).weight_I./updatedInfo.beam(i).shape{1}(j).weight;
+                weight_F = updatedInfo.beam(i).shape{1}(j).weight_F./updatedInfo.beam(i).shape{1}(j).weight;
             else
                 %only happens at original angular resolution
                 weight_I = updatedInfo.beam(i).doseAngleBorderCentreDiff(1)./updatedInfo.beam(i).doseAngleBordersDiff;
@@ -279,11 +279,11 @@ for i = 1:numel(updatedInfo.beam)
             tempMapIx = tempMap > 10E-8;
             
             currBixelIx = apertureInfo.beam(i).bixelIndMap(tempMapIx);
-            w(currBixelIx) = w(currBixelIx) + tempMap(tempMapIx)*updatedInfo.beam(i).shape(j).weight;
+            w(currBixelIx) = w(currBixelIx) + tempMap(tempMapIx)*updatedInfo.beam(i).shape{1}(j).weight;
             
             % save the tempMap (we need to apply a positivity operator !)
-            updatedInfo.beam(i).shape(j).shapeMap = tempMap;
-            %updatedInfo.beam(i).shape(j).shapeMap = (tempMap  + abs(tempMap))  / 2;
+            updatedInfo.beam(i).shape{1}(j).shapeMap = tempMap;
+            %updatedInfo.beam(i).shape{1}(j).shapeMap = (tempMap  + abs(tempMap))  / 2;
             
             % increment shape index
             shapeInd = shapeInd +1;
@@ -305,11 +305,11 @@ for i = 1:numel(updatedInfo.beam)
         updatedInfo.beam(i).gantryRot = updatedInfo.beam(i).fracFromLastOpt*updatedInfo.beam(updatedInfo.beam(i).lastOptIndex).gantryRot+(1-updatedInfo.beam(i).fracFromLastOpt)*updatedInfo.beam(updatedInfo.beam(i).nextOptIndex).gantryRot;
         
         updatedInfo.beam(i).MU = updatedInfo.beam(i).MURate*updatedInfo.beam(i).doseAngleBordersDiff/updatedInfo.beam(i).gantryRot;
-        updatedInfo.beam(i).shape(1).weight = updatedInfo.beam(i).MU./updatedInfo.weightToMU;
+        updatedInfo.beam(i).shape{1}(1).weight = updatedInfo.beam(i).MU./updatedInfo.weightToMU;
         
         % update information in shape structure
-        updatedInfo.beam(i).shape(1).leftLeafPos  = leftLeafPos;
-        updatedInfo.beam(i).shape(1).rightLeafPos = rightLeafPos;
+        updatedInfo.beam(i).shape{1}(1).leftLeafPos  = leftLeafPos;
+        updatedInfo.beam(i).shape{1}(1).rightLeafPos = rightLeafPos;
         
         %The following is taken from the non-VMAT case (j->1, since there is only 1
         %shape per beam in VMAT)
@@ -356,10 +356,10 @@ for i = 1:numel(updatedInfo.beam)
         tempMapIx = tempMap > 0;
         
         currBixelIx = apertureInfo.beam(i).bixelIndMap(tempMapIx);
-        w(currBixelIx) = w(currBixelIx) + tempMap(tempMapIx)*updatedInfo.beam(i).shape(1).weight;
+        w(currBixelIx) = w(currBixelIx) + tempMap(tempMapIx)*updatedInfo.beam(i).shape{1}(1).weight;
         
         % save the tempMap (we need to apply a positivity operator !)
-        updatedInfo.beam(i).shape(1).shapeMap = (tempMap  + abs(tempMap))  / 2;
+        updatedInfo.beam(i).shape{1}(1).shapeMap = (tempMap  + abs(tempMap))  / 2;
         
     end
     

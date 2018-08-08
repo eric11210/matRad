@@ -51,7 +51,7 @@ for i = 1:length(pln.propStf.gantryAngles)
     % Determine which FMO beam the current beam belongs to
     [~,stf(i).propVMAT.beamParentFMOIndex] = min(abs(pln.propStf.FMOGantryAngles-pln.propStf.gantryAngles(i)));
     stf(i).propVMAT.beamParentGantryAngle = pln.propStf.FMOGantryAngles(stf(i).propVMAT.beamParentFMOIndex);
-    stf(i).propVMAT.beamParentIndex = find(pln.propStf.gantryAngles == stf(i).propVMAT.beamParentGantryAngle);
+    stf(i).propVMAT.beamParentIndex = find(abs(pln.propStf.gantryAngles - stf(i).propVMAT.beamParentGantryAngle) < 1e-6);
     
     % Indicate if this beam is to be included in DOA/FMO or not. All beams
     % are still considered in dose calc for objective function in DAO
