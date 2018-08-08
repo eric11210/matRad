@@ -25,7 +25,7 @@ pln.propOpt.preconditioner = true;
 pln.propOpt.numLevels = 7;
 
 pln.propOpt.VMAToptions.machineConstraintFile = [pln.radiationMode '_' pln.machine];
-pln.propOpt.VMAToptions.continuousAperture = true;
+pln.propOpt.VMAToptions.continuousAperture = false;
 
 pln.propOpt.VMAToptions.startingAngle = -180;
 pln.propOpt.VMAToptions.finishingAngle = 180;

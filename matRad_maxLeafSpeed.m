@@ -46,10 +46,14 @@ if apertureInfo.propVMAT.continuousAperture
     % Therefore we must also use the times between the borders of the Dij
     % arc (for optimized angles only).
     timeFac = [apertureInfo.propVMAT.beam.timeFac]';
+    deleteInd = timeFac == 0;
+    timeFac(deleteInd) = [];
     
     i = [apertureInfo.propVMAT.beam.timeFacInd]';
+    i(deleteInd) = [];
     
     j = repelem(1:apertureInfo.totalNumOfShapes,1,3);
+    j(deleteInd) = [];
     
     timeFacMatrix = sparse(i,j,timeFac,apertureInfo.propVMAT.numLeafSpeedConstraint,apertureInfo.totalNumOfShapes);
     timeBNOptAngles = timeFacMatrix*timeOptBorderAngles;
