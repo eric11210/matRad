@@ -77,7 +77,7 @@ recalc.dijNew = true;
 
 recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo,0,dij);
 %}
-%save(fname,'resultGUI','recalc','-v7.3')
+save(fname,'resultGUI','recalc','-v7.3')
 
 tOpt = tFMO+tSeq+tDAO;
 

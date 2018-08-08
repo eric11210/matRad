@@ -73,7 +73,9 @@ else
     j(end) = [];
     
     timeFac = [apertureInfo.propVMAT.beam.timeFac]';
-    timeFac(timeFac == 0) = [];
+    timeFac(1) = [];
+    timeFac(end) = [];
+    %timeFac(timeFac == 0) = [];
     
     timeFacMatrix = sparse(i,j,timeFac,(apertureInfo.totalNumOfShapes-1),apertureInfo.totalNumOfShapes);
     timeBNOptAngles = timeFacMatrix*timeOptBorderAngles;

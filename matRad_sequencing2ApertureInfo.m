@@ -245,7 +245,6 @@ for i=1:size(stf,2)
             
             apertureInfo.propVMAT.beam(i).timeFacCurr = stf(i).propVMAT.timeFacCurr;
             apertureInfo.propVMAT.beam(i).timeFac = stf(i).propVMAT.timeFac;
-            apertureInfo.propVMAT.beam(i).timeFacInd = stf(i).propVMAT.timeFacInd;
             
             apertureInfo.propVMAT.beam(i).lastDAOIndex = stf(i).propVMAT.lastDAOIndex;
             apertureInfo.propVMAT.beam(i).nextDAOIndex = stf(i).propVMAT.nextDAOIndex;
@@ -257,6 +256,7 @@ for i=1:size(stf,2)
             end
             
             if sequencing.propVMAT.continuousAperture
+                apertureInfo.propVMAT.beam(i).timeFacInd = stf(i).propVMAT.timeFacInd;
                 apertureInfo.propVMAT.beam(i).doseAngleDAO = stf(i).propVMAT.doseAngleDAO;
             end
             

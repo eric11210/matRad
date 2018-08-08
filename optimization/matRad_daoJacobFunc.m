@@ -224,8 +224,10 @@ else
         j(1) = [];
         j(end) = [];
         
-        timeFac = [apertureInfo.propVMAT.beam(DAOInd).timeFac]';
-        timeFac(timeFac == 0) = [];
+        timeFac = [apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).timeFac]';
+        timeFac(1) = [];
+        timeFac(end) = [];
+        %timeFac(timeFac == 0) = [];
         
         timeFacMatrix = sparse(i,j,timeFac,(apertureInfo.totalNumOfShapes-1),apertureInfo.totalNumOfShapes);
         timeBNOptAngles = timeFacMatrix*timeDAOBorderAngles;
