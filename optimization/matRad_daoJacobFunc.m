@@ -150,14 +150,10 @@ else
     if apertureInfo.propVMAT.continuousAperture
         
         timeFac = [apertureInfo.propVMAT.beam.timeFac]';
-        deleteInd = timeFac == 0;
-        timeFac(deleteInd) = [];
         
         i = [apertureInfo.propVMAT.beam.timeFacInd]';
-        i(deleteInd) = [];
         
         j = repelem(1:apertureInfo.totalNumOfShapes,1,3);
-        j(deleteInd) = [];
         
         timeFacMatrix = sparse(i,j,timeFac,2*apertureInfo.totalNumOfShapes-1,apertureInfo.totalNumOfShapes);
         timeBNOptAngles = timeFacMatrix*timeDAOBorderAngles;

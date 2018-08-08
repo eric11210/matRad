@@ -44,7 +44,7 @@ fprintf('matRad: VMAT post-processing (1/2)... ');
 IandFTimeInd = 1;
 DAODoseAngleBorders = zeros(2*numel(pln.propStf.DAOGantryAngles),1);
 offset = 1;
-timeFacIndOffset = 1;
+timeFacIndOffset = 0;
 
 for i = 1:length(pln.propStf.gantryAngles)
     
@@ -136,13 +136,18 @@ for i = 1:length(pln.propStf.gantryAngles)
             stf(i).propVMAT.timeFac(2) = stf(i).propVMAT.timeFacCurr;
             stf(i).propVMAT.timeFac(3) = (stf(i).propVMAT.DAOAngleBorderCentreDiff(2)-stf(i).propVMAT.doseAngleBorderCentreDiff(2))/stf(i).propVMAT.DAOAngleBordersDiff;
             
-            stf(i).propVMAT.timeFacInd = zeros(1,3);
+            % delete entries with a timeFac of 0
+            deleteInd                           = stf(i).propVMAT.timeFac == 0;
+            stf(i).propVMAT.timeFac(deleteInd)  = [];
             
-            stf(i).propVMAT.timeFacInd(1) = timeFacIndOffset-1;
-            stf(i).propVMAT.timeFacInd(2) = timeFacIndOffset;
-            stf(i).propVMAT.timeFacInd(3) = timeFacIndOffset+1;
+            % write timeFacInd
+            stf(i).propVMAT.timeFacInd = zeros(1,numel(stf(i).propVMAT.timeFac));
             
-            timeFacIndOffset = timeFacIndOffset+2;
+            for j = 1:numel(stf(i).propVMAT.timeFac)
+                stf(i).propVMAT.timeFacInd(j) = timeFacIndOffset+j;
+            end
+            timeFacIndOffset = timeFacIndOffset+numel(stf(i).propVMAT.timeFac);
+            
         else
             %These are the factors that relate the total time in the
             %optimized arc sector to the total time in the previous and
