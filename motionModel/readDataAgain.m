@@ -26,7 +26,7 @@ for nSubPerPhase = nSubPerPhaseVec
     nPhases = 10;
     
     % convert raw data to phase
-    [l_sample,t_sample,deltaT_sample,subPhase2Phase,nSubPhases] = motionData2Phase(x_cut,t_cut,nPhases,nSubPerPhase);
+    [l_sample,t_sample,deltaT_sample,subPhase2Phase,nSubPhases] = motionData2Phase_NEW(x_cut,t_cut,nPhases,nSubPerPhase);
     
     % construct probability matrix
     [Pij_deltaTSample, Pi_deltaTSample] = generateProbMatrix(l_sample,nSubPhases);

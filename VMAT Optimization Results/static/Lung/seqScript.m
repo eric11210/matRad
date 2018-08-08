@@ -4,7 +4,10 @@
 %close all
 
 % meta information for treatment plan
-%{
+load lungPatient0_tenPhases_3DVMAT.mat
+
+% meta information for treatment plan
+
 pln.radiationMode   = 'photons';   % either photons / protons / carbon
 pln.machine         = 'Generic';
 
@@ -12,7 +15,6 @@ pln.propDoseCalc.memorySaverPhoton = false;
 
 % beam geometry settings
 pln.propStf.bixelWidth = 5;
-
 
 % optimization settings
 pln.propOpt.bioOptimization = 'none';
@@ -23,14 +25,18 @@ pln.propOpt.preconditioner = true;
 pln.propOpt.numLevels = 7;
 
 pln.propOpt.VMAToptions.machineConstraintFile = [pln.radiationMode '_' pln.machine];
-pln.propOpt.VMAToptions.continuousAperture = false;
+pln.propOpt.VMAToptions.continuousAperture = true;
 
+pln.propOpt.VMAToptions.startingAngle = -180;
+pln.propOpt.VMAToptions.finishingAngle = 180;
 pln.propOpt.VMAToptions.maxGantryAngleSpacing = 4;      % Max gantry angle spacing for dose calculation
 pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing = 4;      % Max gantry angle spacing for DAO
 pln.propOpt.VMAToptions.maxFMOGantryAngleSpacing = 28;      % Max gantry angle spacing for FMO
 
 pln.propOpt.run4D = false;
 pln.propOpt.prop4D.singlePhaseFMO = false;
+% multi-phase FMO hasn't been implemented fully (would have to do changes in FMO and leaf
+% sequencing - probably better only for fluence, not DAO).
 
 pln = matRad_VMATGantryAngles(pln,cst,ct);
 
@@ -39,14 +45,14 @@ stf = matRad_generateStf(ct,cst,pln);
 
 % calc Dij
 t0 = tic;
-dij = matRad_calcPhotonDose_CELL(ct,stf,pln,cst);
+dij = matRad_calcPhotonDose(ct,stf,pln,cst);
 tDij = toc(t0);
 
 % inverse planning for imrt
 t0 = tic;
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
 tFMO = toc(t0);
-%}
+
 % DAO
 fname = 'Results';
 t0 = tic;
