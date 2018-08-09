@@ -37,34 +37,40 @@ calcDoseDirect = true;
 
 % check if weight vector is available, either in function call or in stf - otherwise dose calculation not possible
 if ~exist('w','var') && ~isfield([stf.ray],'weight')
-     error('No weight vector available. Please provide w or add info to stf')
+    error('No weight vector available. Please provide w or add info to stf')
 end
 
 % copy bixel weight vector into stf struct
 if exist('w','var')
-    if sum([stf.totalNumOfBixels]) ~= numel(w)
-        error('weighting does not match steering information')
-    end
-    counter = 0;
-    for i = 1:size(stf,2)
-        for j = 1:stf(i).numOfRays
-            for k = 1:stf(i).numOfBixelsPerRay(j)
-                counter = counter + 1;
-                stf(i).ray(j).weight(k) = w(counter);
+    for phase = 1:ct.tumourMotion.numPhases
+        if sum([stf.totalNumOfBixels]) ~= numel(w{phase})
+            error('weighting does not match steering information')
+        end
+        counter = 0;
+        for i = 1:size(stf,2)
+            for j = 1:stf(i).numOfRays
+                for k = 1:stf(i).numOfBixelsPerRay(j)
+                    counter = counter + 1;
+                    stf(i).ray(j).weight{phase}(k) = w{phase}(counter);
+                end
             end
         end
     end
 else % weights need to be in stf!
-    w = NaN*ones(sum([stf.totalNumOfBixels]),1);
-    counter = 0;
-    for i = 1:size(stf,2)
-        for j = 1:stf(i).numOfRays
-            for k = 1:stf(i).numOfBixelsPerRay(j)
-                counter = counter + 1;
-                w(counter) = stf(i).ray(j).weight(k);
+    w = cell(apertureInfo.numPhases,1);
+    w(:) = {zeros(sum([stf.totalNumOfBixels]),1)};
+    
+    for phase = 1:ct.tumourMotion.numPhases
+        counter = 0;
+        for i = 1:size(stf,2)
+            for j = 1:stf(i).numOfRays
+                for k = 1:stf(i).numOfBixelsPerRay(j)
+                    counter = counter + 1;
+                    w{phase}(counter) = stf(i).ray(j).weight{phase}(k);
+                end
             end
         end
-    end    
+    end
 end
 
 % dose calculation
@@ -77,7 +83,9 @@ end
 
 % calculate cubes; use uniform weights here, weighting with actual fluence 
 % already performed in dij construction 
-resultGUI    = matRad_calcCubes(ones(pln.propStf.numOfBeams,1),dij,cst);
+options.bioOpt          = 'none';
+options.numOfScenarios  = 1;
+resultGUI               = matRad_calcCubes({ones(pln.propStf.numOfBeams,1)},dij,cst,options);
 
 % remember original fluence weights
 resultGUI.w  = w; 

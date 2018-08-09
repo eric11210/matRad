@@ -71,7 +71,7 @@ dij.numOfBeams         = pln.propStf.numOfBeams;
 dij.numOfVoxels        = prod(ct.cubeDim);
 dij.resolution         = ct.resolution;
 dij.dimensions         = ct.cubeDim;
-if pln.propOpt.run4D
+if pln.propOpt.run4D || ~calcDoseDirect
     dij.numOfScenarios     = ct.tumourMotion.numPhases;
     dij.numPhases          = ct.tumourMotion.numPhases;
     dij.numFrames          = ct.tumourMotion.numFrames;
@@ -516,7 +516,7 @@ for i = 1:dij.numOfBeams % loop over all beams
                 if calcDoseDirect
                     if isfield(stf(1).ray(1),'weight')
                         % score physical dose
-                        dij.physicalDose{phase}(:,i) = dij.physicalDose{phase}(:,i) + stf(i).ray(j).weight * doseTmpContainer{1,k};
+                        dij.physicalDose{1}(:,i) = dij.physicalDose{1}(:,i) + stf(i).ray(j).weight{phase} * doseTmpContainer{1,phase};
                     else
                         error(['No weight available for beam ' num2str(i) ', ray ' num2str(j)]);
                     end
