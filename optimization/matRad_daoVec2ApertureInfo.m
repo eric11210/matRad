@@ -135,9 +135,11 @@ bixelJApVec_offset = 0;
 % here the new colimator positions are used to create new shapeMaps that
 % now include decimal values instead of binary
 
-% loop over all beams
+calcOptions.saveJacobian = true;
+
+% loop over all phases
 for phase = 1:apertureInfo.numPhases
-    
+    % loop over all beams
     for i = 1:numel(updatedInfo.beam)
         
         %posOfRightCornerPixel = apertureInfo.beam(i).posOfCornerBixel(1) + (size(apertureInfo.beam(i).bixelIndMap,2)-1)*apertureInfo.bixelWidth;
@@ -302,9 +304,6 @@ for phase = 1:apertureInfo.numPhases
             
             variables.phase = phase;
             variables.weight = updatedInfo.beam(i).shape{phase}(j).weight;
-            
-            % is it necessary to distinguish the apertureMotion for the
-            % calculation part? (it definitely is for the bixelJApVec)
             
             if updatedInfo.propVMAT.beam(i).DAOBeam
                 % the weight here is going to depend on the beginning and
