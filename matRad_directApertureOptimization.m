@@ -160,6 +160,16 @@ resultGUI.apertureInfo = matRad_daoVec2ApertureInfo(apertureInfo,optApertureInfo
 resultGUI.w    = resultGUI.apertureInfo.bixelWeights;
 resultGUI.wDao = resultGUI.apertureInfo.bixelWeights;
 
+if pln.propOpt.preconditioner
+    % revert scaling
+    
+    dij.weightToMU = dij.weightToMU./dij.scaleFactor;
+    resultGUI.apertureInfo.weightToMU = resultGUI.apertureInfo.weightToMU./dij.scaleFactor;
+    resultGUI.apertureInfo.apertureVector(1:apertureInfo.totalNumOfShapes*apertureInfo.numPhases) = resultGUI.apertureInfo.apertureVector(1:apertureInfo.totalNumOfShapes*apertureInfo.numPhases).*dij.scaleFactor;
+    
+    dij.scaleFactor = 1;
+end
+
 % calc dose and reshape from 1D vector to 3D array
 d = matRad_backProjection(resultGUI.w,dij,options);
 resultGUI.physicalDose = reshape(d,dij.dimensions);

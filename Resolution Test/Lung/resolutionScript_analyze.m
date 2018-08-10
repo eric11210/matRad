@@ -48,7 +48,7 @@ percVErr1_NN_itself = zeros(size(angularResS));
 percVErr3_NN_itself = zeros(size(angularResS));
 percVErr5_NN_itself = zeros(size(angularResS));
 percVErr10_NN_itself = zeros(size(angularResS));
-fluence_NN = zeros(size(recalc.apertureInfo.beam(1).shape(1).shapeMap,1), size(recalc.apertureInfo.beam(1).shape(1).shapeMap,2), numel(angularResS));
+fluence_NN = zeros(size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,1), size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,2), numel(angularResS));
 weight_NN = zeros(size(angularResS));
 obj_NN = zeros(size(angularResS));
 
@@ -56,7 +56,7 @@ percVErr1_NY = zeros(size(angularResS));
 percVErr3_NY = zeros(size(angularResS));
 percVErr5_NY = zeros(size(angularResS));
 percVErr10_NY = zeros(size(angularResS));
-fluence_NY = zeros(size(recalc.apertureInfo.beam(1).shape(1).shapeMap,1), size(recalc.apertureInfo.beam(1).shape(1).shapeMap,2), numel(angularResS));
+fluence_NY = zeros(size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,1), size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,2), numel(angularResS));
 weight_NY = zeros(size(angularResS));
 obj_NY = zeros(size(angularResS));
 
@@ -64,7 +64,7 @@ percVErr1_YN = zeros(size(angularResS));
 percVErr3_YN = zeros(size(angularResS));
 percVErr5_YN = zeros(size(angularResS));
 percVErr10_YN = zeros(size(angularResS));
-fluence_YN = zeros(size(recalc.apertureInfo.beam(1).shape(1).shapeMap,1), size(recalc.apertureInfo.beam(1).shape(1).shapeMap,2), numel(angularResS));
+fluence_YN = zeros(size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,1), size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,2), numel(angularResS));
 weight_YN = zeros(size(angularResS));
 obj_YN = zeros(size(angularResS));
 
@@ -72,7 +72,7 @@ percVErr1_YY = zeros(size(angularResS));
 percVErr3_YY = zeros(size(angularResS));
 percVErr5_YY = zeros(size(angularResS));
 percVErr10_YY = zeros(size(angularResS));
-fluence_YY = zeros(size(recalc.apertureInfo.beam(1).shape(1).shapeMap,1), size(recalc.apertureInfo.beam(1).shape(1).shapeMap,2), numel(angularResS));
+fluence_YY = zeros(size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,1), size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,2), numel(angularResS));
 weight_YY = zeros(size(angularResS));
 obj_YY = zeros(size(angularResS));
 
@@ -84,7 +84,7 @@ percVErr1_YY_oldDij_itself = zeros(size(angularResS));
 percVErr3_YY_oldDij_itself = zeros(size(angularResS));
 percVErr5_YY_oldDij_itself = zeros(size(angularResS));
 percVErr10_YY_oldDij_itself = zeros(size(angularResS));
-fluence_YY_oldDij = zeros(size(recalc.apertureInfo.beam(1).shape(1).shapeMap,1), size(recalc.apertureInfo.beam(1).shape(1).shapeMap,2), numel(angularResS));
+fluence_YY_oldDij = zeros(size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,1), size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,2), numel(angularResS));
 weight_YY_oldDij = zeros(size(angularResS));
 
 numPVHPoints = 1e3;
@@ -127,8 +127,8 @@ for angularRes = angularResS
     percVErr10_YY(i) = 100*nnz(abs(dose-refDose)./refDose >= 0.10 & V_TargAndNorm)./nnz(V_TargAndNorm);
     
     for j = 1:numel(recalc.apertureInfo.beam)
-        fluence_YY(:,:,i) = fluence_YY(:,:,i)+recalc.apertureInfo.beam(j).shape(1).weight*recalc.apertureInfo.beam(j).shape(1).shapeMap;
-        weight_YY(i) = weight_YY(i)+recalc.apertureInfo.beam(j).shape(1).weight;
+        fluence_YY(:,:,i) = fluence_YY(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).weight*recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
+        weight_YY(i) = weight_YY(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
     end
     %obj_YY(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,recalc.apertureInfo,dij,cst_Over,options);
     
@@ -143,8 +143,8 @@ for angularRes = angularResS
     percVErr5_YN(i) = 100*nnz(abs(dose-refDose)./refDose >= 0.05 & V_TargAndNorm)./nnz(V_TargAndNorm);
     percVErr10_YN(i) = 100*nnz(abs(dose-refDose)./refDose >= 0.10 & V_TargAndNorm)./nnz(V_TargAndNorm);
     for j = 1:numel(recalc.apertureInfo.beam)
-        fluence_YN(:,:,i) = fluence_YN(:,:,i)+recalc.apertureInfo.beam(j).shape(1).weight*recalc.apertureInfo.beam(j).shape(1).shapeMap;
-        weight_YN(i) = weight_YN(i)+recalc.apertureInfo.beam(j).shape(1).weight;
+        fluence_YN(:,:,i) = fluence_YN(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).weight*recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
+        weight_YN(i) = weight_YN(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
     end
     %obj_YN(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,recalc.apertureInfo,dij,cst_Over,options);
     %}
@@ -170,8 +170,8 @@ for angularRes = angularResS
     percVErr5_NY(i) = 100*nnz(abs(dose-refDose)./refDose >= 0.05 & V_TargAndNorm)./nnz(V_TargAndNorm);
     percVErr10_NY(i) = 100*nnz(abs(dose-refDose)./refDose >= 0.10 & V_TargAndNorm)./nnz(V_TargAndNorm);
     for j = 1:numel(recalc.apertureInfo.beam)
-        fluence_NY(:,:,i) = fluence_NY(:,:,i)+recalc.apertureInfo.beam(j).shape(1).weight*recalc.apertureInfo.beam(j).shape(1).shapeMap;
-        weight_NY(i) = weight_NY(i)+recalc.apertureInfo.beam(j).shape(1).weight;
+        fluence_NY(:,:,i) = fluence_NY(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).weight*recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
+        weight_NY(i) = weight_NY(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
     end
     %obj_NY(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,recalc.apertureInfo,dij,cst_Over,options);
     
@@ -202,8 +202,8 @@ for angularRes = angularResS
     percVErr5_YY_oldDij_itself(i) = 100*nnz(abs(dose-refDose_YY_oldDij)./refDose_YY_oldDij >= 0.05 & V_TargAndNorm)./nnz(V_TargAndNorm);
     percVErr10_YY_oldDij_itself(i) = 100*nnz(abs(dose-refDose_YY_oldDij)./refDose_YY_oldDij >= 0.10 & V_TargAndNorm)./nnz(V_TargAndNorm);
     for j = 1:numel(recalc.apertureInfo.beam)
-        fluence_YY_oldDij(:,:,i) = fluence_YY_oldDij(:,:,i)+recalc.apertureInfo.beam(j).shape(1).weight*recalc.apertureInfo.beam(j).shape(1).shapeMap;
-        weight_YY_oldDij(i) = weight_YY_oldDij(i)+recalc.apertureInfo.beam(j).shape(1).weight;
+        fluence_YY_oldDij(:,:,i) = fluence_YY_oldDij(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).weight*recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
+        weight_YY_oldDij(i) = weight_YY_oldDij(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
     end
     %obj_NY(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,recalc.apertureInfo,dij,cst_Over,options);
     
@@ -233,8 +233,8 @@ for angularRes = angularResS
     percVErr5_NN_itself(i) = 100*nnz(abs(dose-refDose_NN)./refDose_NN >= 0.05 & V_TargAndNorm)./nnz(V_TargAndNorm);
     percVErr10_NN_itself(i) = 100*nnz(abs(dose-refDose_NN)./refDose_NN >= 0.10 & V_TargAndNorm)./nnz(V_TargAndNorm);
     for j = 1:numel(recalc.apertureInfo.beam)
-        fluence_NN(:,:,i) = fluence_NN(:,:,i)+recalc.apertureInfo.beam(j).shape(1).weight*recalc.apertureInfo.beam(j).shape(1).shapeMap;
-        weight_NN(i) = weight_NN(i)+recalc.apertureInfo.beam(j).shape(1).weight;
+        fluence_NN(:,:,i) = fluence_NN(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).weight*recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
+        weight_NN(i) = weight_NN(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
     end
     %obj_NN(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,recalc.apertureInfo,dij,cst_Over,options);
     
@@ -243,7 +243,7 @@ for angularRes = angularResS
 end
 
 
-save('Results','*_NN', '*_NY', '*_YN', '*_YY','*_YY_oldDij')
+save('Res Results','*_NN', '*_NY', '*_YN', '*_YY','*_YY_oldDij')
 %{
 figure
 hold
@@ -352,6 +352,7 @@ path = 'C:\Users\eric\Carleton University\OneDrive - Carleton University\Carleto
 figure(1)
 xlabel('Relative dose difference (\%)')
 ylabel('Volume (\%)')
+ylim([1 100])
 fname = 'Prostate_Dynamic_interpolated';
 %title(fname)
 legend({'$\Delta\theta_{\mathrm{dose}} = \SI{0.5}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{1}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{2}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{4}{\degree}$'},'Location','Best')
@@ -359,11 +360,12 @@ grid on
 set(gca,'YMinorTick','on','XMinorTick','on')
 savefig(fname)
 fullpath = [path fname '.tex'];
-matlab2tikz('filename',fullpath,'interpretTickLabelsAsTex',true,'parseStrings',false,'noSize',true,'extraAxisOptions','minor y tick num=4,minor x tick num=4,width=\linewidth,height=\linewidth','showInfo',false);
+%matlab2tikz('filename',fullpath,'interpretTickLabelsAsTex',true,'parseStrings',false,'noSize',true,'extraAxisOptions','minor y tick num=4,minor x tick num=4,width=\linewidth,height=\linewidth','showInfo',false);
 
 figure(2)
 xlabel('Relative dose difference (\%)')
 ylabel('Volume (\%)')
+ylim([1 100])
 fname = 'Prostate_Notdynamic_notinterpolated';
 %title(fname)
 legend({'$\Delta\theta_{\mathrm{dose}} = \SI{0.5}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{1}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{2}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{4}{\degree}$'},'Location','Best')
@@ -371,11 +373,12 @@ grid on
 set(gca,'YMinorTick','on','XMinorTick','on')
 savefig(fname)
 fullpath = [path fname '.tex'];
-matlab2tikz('filename',fullpath,'interpretTickLabelsAsTex',true,'parseStrings',false,'noSize',true,'extraAxisOptions','minor y tick num=4,minor x tick num=4,width=\linewidth,height=\linewidth','showInfo',false);
+%matlab2tikz('filename',fullpath,'interpretTickLabelsAsTex',true,'parseStrings',false,'noSize',true,'extraAxisOptions','minor y tick num=4,minor x tick num=4,width=\linewidth,height=\linewidth','showInfo',false);
 
 figure(3)
 xlabel('Relative dose difference (\%)')
 ylabel('Volume (\%)')
+ylim([1 100])
 fname = 'Prostate_Dynamic_interpolated_oldDij';
 %title(fname)
 legend({'$\Delta\theta_{\mathrm{dose}} = \SI{0.5}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{1}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{2}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{4}{\degree}$'},'Location','Best')
@@ -383,11 +386,12 @@ grid on
 set(gca,'YMinorTick','on','XMinorTick','on')
 savefig(fname)
 fullpath = [path fname '.tex'];
-matlab2tikz('filename',fullpath,'interpretTickLabelsAsTex',true,'parseStrings',false,'noSize',true,'extraAxisOptions','minor y tick num=4,minor x tick num=4,width=\linewidth,height=\linewidth','showInfo',false);
+%matlab2tikz('filename',fullpath,'interpretTickLabelsAsTex',true,'parseStrings',false,'noSize',true,'extraAxisOptions','minor y tick num=4,minor x tick num=4,width=\linewidth,height=\linewidth','showInfo',false);
 
 figure(4)
 xlabel('Relative dose difference (\%)')
 ylabel('Volume (\%)')
+ylim([1 100])
 fname = 'Prostate_Notdynamic_interpolated';
 %title(fname)
 legend({'$\Delta\theta_{\mathrm{dose}} = \SI{0.5}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{1}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{2}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{4}{\degree}$'},'Location','Best')
@@ -395,5 +399,5 @@ grid on
 set(gca,'YMinorTick','on','XMinorTick','on')
 savefig(fname)
 fullpath = [path fname '.tex'];
-matlab2tikz('filename',fullpath,'interpretTickLabelsAsTex',true,'parseStrings',false,'noSize',true,'extraAxisOptions','minor y tick num=4,minor x tick num=4,width=\linewidth,height=\linewidth','showInfo',false);
+%matlab2tikz('filename',fullpath,'interpretTickLabelsAsTex',true,'parseStrings',false,'noSize',true,'extraAxisOptions','minor y tick num=4,minor x tick num=4,width=\linewidth,height=\linewidth','showInfo',false);
 
