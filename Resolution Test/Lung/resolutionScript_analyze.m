@@ -22,7 +22,7 @@ for i = 1:size(cst_Over,1)
     for j = 1:size(cst_Over{i,6},1)
         cst_Over{i,6}(j).dose = cst_Over{i,6}(j).dose/pln.numOfFractions;
     end
-    if ~isempty(cst_Over{i,6}) && (~strcmp(cst_Over{i,2},'BODY'))
+    if ~isempty(cst_Over{i,6}) && ~strcmp(cst_Over{i,2},'BODY') %&& ~strcmp(cst_Over{i,2},'External')
         [x, y, z] = ind2sub(size(refDose),cst_Over{i,4}{1});
         for k = 1:numel(x)
             V_TargAndNorm(x(k),y(k),z(k)) = true;
@@ -31,9 +31,6 @@ for i = 1:size(cst_Over,1)
 end
 
 angularResS = [0.5 1 2 4];
-
-
-
 
 %dynamic, interpolated
 
@@ -99,6 +96,8 @@ PVHPoints_NY = zeros(numel(angularResS),numPVHPoints);
 PVHPoints_YY_oldDij = zeros(numel(angularResS),numPVHPoints);
 PVHPoints_NN = zeros(numel(angularResS),numPVHPoints);
 
+%deleteInd = ~V_TargAndNorm | refDose < 0.001*max(refDose(:));
+deleteInd = ~V_TargAndNorm;
 
 i = 1;
 for angularRes = angularResS
@@ -111,7 +110,8 @@ for angularRes = angularResS
     dose = recalc.resultGUI.physicalDose;
     
     percDiff = 100*abs(dose-refDose)./refDose;
-    percDiff(~V_TargAndNorm) = [];
+    percDiff(refDose == 0) = 0;
+    percDiff(deleteInd) = [];
     percDiff = percDiff(:);
     numVox = numel(percDiff);
     
@@ -155,7 +155,8 @@ for angularRes = angularResS
     dose = recalc.resultGUI.physicalDose;
     
     percDiff = 100*abs(dose-refDose)./refDose;
-    percDiff(~V_TargAndNorm) = [];
+    percDiff(refDose == 0) = 0;
+    percDiff(deleteInd) = [];
     percDiff = percDiff(:);
     numVox = numel(percDiff);
     
@@ -182,7 +183,8 @@ for angularRes = angularResS
     dose = recalc.resultGUI.physicalDose;
     
     percDiff = 100*abs(dose-refDose)./refDose;
-    percDiff(~V_TargAndNorm) = [];
+    percDiff(refDose == 0) = 0;
+    percDiff(deleteInd) = [];
     percDiff = percDiff(:);
     numVox = numel(percDiff);
     
@@ -213,7 +215,8 @@ for angularRes = angularResS
     dose = recalc.resultGUI.physicalDose;
     
     percDiff = 100*abs(dose-refDose)./refDose;
-    percDiff(~V_TargAndNorm) = [];
+    percDiff(refDose == 0) = 0;
+    percDiff(deleteInd) = [];
     percDiff = percDiff(:);
     numVox = numel(percDiff);
     
@@ -353,7 +356,7 @@ figure(1)
 xlabel('Relative dose difference (\%)')
 ylabel('Volume (\%)')
 ylim([1 100])
-fname = 'Prostate_Dynamic_interpolated';
+fname = 'Lung_Dynamic_interpolated';
 %title(fname)
 legend({'$\Delta\theta_{\mathrm{dose}} = \SI{0.5}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{1}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{2}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{4}{\degree}$'},'Location','Best')
 grid on
@@ -366,7 +369,7 @@ figure(2)
 xlabel('Relative dose difference (\%)')
 ylabel('Volume (\%)')
 ylim([1 100])
-fname = 'Prostate_Notdynamic_notinterpolated';
+fname = 'Lung_Notdynamic_notinterpolated';
 %title(fname)
 legend({'$\Delta\theta_{\mathrm{dose}} = \SI{0.5}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{1}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{2}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{4}{\degree}$'},'Location','Best')
 grid on
@@ -379,7 +382,7 @@ figure(3)
 xlabel('Relative dose difference (\%)')
 ylabel('Volume (\%)')
 ylim([1 100])
-fname = 'Prostate_Dynamic_interpolated_oldDij';
+fname = 'Lung_Dynamic_interpolated_oldDij';
 %title(fname)
 legend({'$\Delta\theta_{\mathrm{dose}} = \SI{0.5}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{1}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{2}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{4}{\degree}$'},'Location','Best')
 grid on
@@ -392,7 +395,7 @@ figure(4)
 xlabel('Relative dose difference (\%)')
 ylabel('Volume (\%)')
 ylim([1 100])
-fname = 'Prostate_Notdynamic_interpolated';
+fname = 'Lung_Notdynamic_interpolated';
 %title(fname)
 legend({'$\Delta\theta_{\mathrm{dose}} = \SI{0.5}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{1}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{2}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{4}{\degree}$'},'Location','Best')
 grid on

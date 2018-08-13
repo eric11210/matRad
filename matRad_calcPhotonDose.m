@@ -471,7 +471,7 @@ for i = 1:dij.numOfBeams % loop over all beams
             
             
             % sample dose only for bixel based dose calculation
-            if ~isFieldBasedDoseCalc %&& ~calcDoseDirect
+            if ~isFieldBasedDoseCalc && ~calcDoseDirect
                 r0   = 25;   % [mm] sample beyond the inner core
                 Type = 'radius';
                 
