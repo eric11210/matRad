@@ -125,9 +125,9 @@ if importOptions.binFrames2Phases
     ct.tumourMotion.indPhase = ind_x_l_XCAT;
     ct.tumourMotion.tPhaseRounded = t_x_l_XCAT;
     
-    ct.tumourMotion.XCATPar.out_period = 2.*(ct.tumourMotion.tPhase-ct.tumourMotion.tPhase(1));
-    ct.tumourMotion.XCATPar.hrt_start_ph_index = ct.tumourMotion.tPhase(1)./1; % the 1 is the hrt_period
-    ct.tumourMotion.XCATPar.resp_start_ph_index = ct.tumourMotion.tPhase(1)./5; % the 1 is the resp_period
+    ct.tumourMotion.XCATPar.out_period = 2.*ct.tumourMotion.tPhase;
+    %ct.tumourMotion.XCATPar.hrt_start_ph_index = ct.tumourMotion.tPhase(1)./1; % the 1 is the hrt_period
+    %ct.tumourMotion.XCATPar.resp_start_ph_index = ct.tumourMotion.tPhase(1)./5; % the 1 is the resp_period
 else
     
     ct.tumourMotion.frames2Phases = (1:importOptions.numPhases)';

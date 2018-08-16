@@ -3,7 +3,7 @@ function ct = matRad_parseMVF(ct,xcatLog,fnameXcatRoot)
 dirXCAT = fullfile(fileparts(mfilename('fullpath')),'XCAT',filesep);
 
 fnameXcatPar = fullfile(dirXCAT,sprintf('%s.par',fnameXcatRoot));
-tumourPosInit = matRad_xcatReadPar(fnameXcatPar);
+[tumourPosInit,tumourRadius] = matRad_xcatReadPar(fnameXcatPar);
 tumourPosInit = tumourPosInit-[xcatLog.zeroIndPreX xcatLog.zeroIndPreY 0];
 
 tumourPos = zeros(xcatLog.numFrames+1,3);
@@ -110,7 +110,8 @@ for phase = 1:xcatLog.numFrames
     
 end
 
-ct.tumourMotion.coordsVox = tumourPos;
-ct.tumourMotion.t = t;
+ct.tumourMotion.coordsVox   = tumourPos;
+ct.tumourMotion.t           = t;
+ct.tumourMotion.radius      = tumourRadius;
 
 end

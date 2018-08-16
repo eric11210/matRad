@@ -54,7 +54,14 @@ for i = 1:numel(structures)
     structures(i).indices = matRad_convRtssContours2Indices(structures(i),ct);
 end
 fprintf('Done!\n');
+
+fprintf('matRad: Adding tumour volumes to structure set... \n');
+% create a function to draw a tumour contour and move it around with the
+% lungs
+
 cst = matRad_createCst(structures);
+
+%% Save file
 
 saveName = importOptions.fnameXcatRoot;
 
