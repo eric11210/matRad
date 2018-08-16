@@ -42,6 +42,7 @@ angularResS = [0.5 1 2 4];
 for angularRes = angularResS
     %for each angular resolution, proceed from the best approximation to
     %the worst
+    
     recalc.pln = pln;
     recalc.pln.propOpt.VMAToptions.maxGantryAngleSpacing = angularRes;
     

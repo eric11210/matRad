@@ -22,7 +22,7 @@ for i = 1:size(cst_Over,1)
     for j = 1:size(cst_Over{i,6},1)
         cst_Over{i,6}(j).dose = cst_Over{i,6}(j).dose/pln.numOfFractions;
     end
-    if ~isempty(cst_Over{i,6}) && ~strcmp(cst_Over{i,2},'BODY') %&& ~strcmp(cst_Over{i,2},'External')
+    if ~isempty(cst_Over{i,6}) && ~strcmp(cst_Over{i,2},'BODY') && ~strcmp(cst_Over{i,2},'External')
         [x, y, z] = ind2sub(size(refDose),cst_Over{i,4}{1});
         for k = 1:numel(x)
             V_TargAndNorm(x(k),y(k),z(k)) = true;
@@ -96,7 +96,7 @@ PVHPoints_NY = zeros(numel(angularResS),numPVHPoints);
 PVHPoints_YY_oldDij = zeros(numel(angularResS),numPVHPoints);
 PVHPoints_NN = zeros(numel(angularResS),numPVHPoints);
 
-%deleteInd = ~V_TargAndNorm | refDose < 0.001*max(refDose(:));
+%deleteInd = ~V_TargAndNorm | refDose < 0.01*max(refDose(:));
 deleteInd = ~V_TargAndNorm;
 
 i = 1;

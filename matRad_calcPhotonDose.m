@@ -71,7 +71,7 @@ dij.numOfBeams         = pln.propStf.numOfBeams;
 dij.numOfVoxels        = prod(ct.cubeDim);
 dij.resolution         = ct.resolution;
 dij.dimensions         = ct.cubeDim;
-if pln.propOpt.run4D || ~calcDoseDirect
+if pln.propOpt.run4D
     dij.numOfScenarios     = ct.tumourMotion.numPhases;
     dij.numPhases          = ct.tumourMotion.numPhases;
     dij.numFrames          = ct.tumourMotion.numFrames;

@@ -153,6 +153,7 @@ end
 
 
 if calcDoseDirect
+    clear global
     recalc.resultGUI = matRad_calcDoseDirect(ct,recalc.stf,recalc.pln,cst,recalc.apertureInfo.bixelWeights);
 else
     recalc.resultGUI.w = recalc.apertureInfo.bixelWeights;
