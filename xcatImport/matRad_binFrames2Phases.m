@@ -112,14 +112,15 @@ if importOptions.binFrames2Phases
         % overwrite old ct info with new
         ct.cube         = ct.cube_new;
         ct.cubeHU       = ct.cubeHU_new;
-        ct.motionVecX   = ct.motionVecX_new;
-        ct.motionVecY   = ct.motionVecY_new;
-        ct.motionVecZ   = ct.motionVecZ_new;
+        %ct.motionVecX   = ct.motionVecX_new;
+        %ct.motionVecY   = ct.motionVecY_new;
+        %ct.motionVecZ   = ct.motionVecZ_new;
         
     end
     
     % now delete _new fields
-    ct = rmfield(ct,{'cube_new' 'cubeHU_new' 'motionVecX_new' 'motionVecY_new' 'motionVecZ_new'});
+    %ct = rmfield(ct,{'cube_new' 'cubeHU_new' 'motionVecX_new' 'motionVecY_new' 'motionVecZ_new'});
+    ct = rmfield(ct,{'cube_new' 'cubeHU_new'});
     
     ct.tumourMotion.tPhase = t_x_l;
     ct.tumourMotion.indPhase = ind_x_l_XCAT;

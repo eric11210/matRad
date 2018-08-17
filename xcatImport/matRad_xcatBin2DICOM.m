@@ -27,47 +27,47 @@ zeroIndPostY = 0;
 
 fprintf('matRad: Determing padding in CT images ... \n');
 for phase = 1:xcatLog.numFrames
+    
+    if importOptions.massConserve
+        fnameXcatBin = fullfile(dirXCAT,sprintf('%s_atnMC_%d.bin',importOptions.fnameXcatRoot,phase));
+    else
+        fnameXcatBin = fullfile(dirXCAT,sprintf('%s_atn_%d.bin',importOptions.fnameXcatRoot,phase));
+    end
+    
+    fid = fopen(fnameXcatBin);
+    phantBody = fread(fid,numVox,'single');
+    phantBody = reshape(phantBody,[xcatLog.dim.x xcatLog.dim.y xcatLog.dim.z]);
+    phantBody = permute(phantBody,[2 1 3]);
+    fclose(fid);
+    
+    if importOptions.addTumour
         
         if importOptions.massConserve
-            fnameXcatBin = fullfile(dirXCAT,sprintf('%s_atnMC_%d.bin',importOptions.fnameXcatRoot,phase));
+            fnameXcatBin = fullfile(dirXCAT,sprintf('%s_tumour_atnMC_%d.bin',importOptions.fnameXcatRoot,phase));
         else
-            fnameXcatBin = fullfile(dirXCAT,sprintf('%s_atn_%d.bin',importOptions.fnameXcatRoot,phase));
+            fnameXcatBin = fullfile(dirXCAT,sprintf('%s_tumour_atn_%d.bin',importOptions.fnameXcatRoot,phase));
         end
         
         fid = fopen(fnameXcatBin);
-        phantBody = fread(fid,numVox,'single');
-        phantBody = reshape(phantBody,[xcatLog.dim.x xcatLog.dim.y xcatLog.dim.z]);
-        phantBody = permute(phantBody,[2 1 3]);
+        phantTumour = fread(fid,numVox,'single');
+        phantTumour = reshape(phantTumour,[xcatLog.dim.x xcatLog.dim.y xcatLog.dim.z]);
+        phantTumour = permute(phantTumour,[2 1 3]);
         fclose(fid);
         
-        if importOptions.addTumour
-            
-            if importOptions.massConserve
-                fnameXcatBin = fullfile(dirXCAT,sprintf('%s_tumour_atnMC_%d.bin',importOptions.fnameXcatRoot,phase));
-            else
-                fnameXcatBin = fullfile(dirXCAT,sprintf('%s_tumour_atn_%d.bin',importOptions.fnameXcatRoot,phase));
-            end
-            
-            fid = fopen(fnameXcatBin);
-            phantTumour = fread(fid,numVox,'single');
-            phantTumour = reshape(phantTumour,[xcatLog.dim.x xcatLog.dim.y xcatLog.dim.z]);
-            phantTumour = permute(phantTumour,[2 1 3]);
-            fclose(fid);
-            
-            phant = phantBody+phantTumour;
-        else
-            
-            phant = phantBody;
-        end
+        phant = phantBody+phantTumour;
+    else
         
-        % find padding in x- and y-direction
-        sumPhantZ = sum(phant,3);
-        sumPhantXZ = sum(sumPhantZ,2);
-        sumPhantYZ = sum(sumPhantZ,1);
-        zeroIndPreX = min(find(sumPhantYZ ~= 0,1,'first')-1,zeroIndPreX);
-        zeroIndPostX = max(find(sumPhantYZ ~= 0,1,'last')+1,zeroIndPostX);
-        zeroIndPreY = min(find(sumPhantXZ ~= 0,1,'first')-1,zeroIndPreY);
-        zeroIndPostY = max(find(sumPhantXZ ~= 0,1,'last')+1,zeroIndPostY);
+        phant = phantBody;
+    end
+    
+    % find padding in x- and y-direction
+    sumPhantZ = sum(phant,3);
+    sumPhantXZ = sum(sumPhantZ,2);
+    sumPhantYZ = sum(sumPhantZ,1);
+    zeroIndPreX = min(find(sumPhantYZ ~= 0,1,'first')-1,zeroIndPreX);
+    zeroIndPostX = max(find(sumPhantYZ ~= 0,1,'last')+1,zeroIndPostX);
+    zeroIndPreY = min(find(sumPhantXZ ~= 0,1,'first')-1,zeroIndPreY);
+    zeroIndPostY = max(find(sumPhantXZ ~= 0,1,'last')+1,zeroIndPostY);
     
     matRad_progress(phase,xcatLog.numFrames);
 end

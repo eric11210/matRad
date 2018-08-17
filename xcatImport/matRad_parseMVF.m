@@ -1,4 +1,6 @@
-function ct = matRad_parseMVF(ct,xcatLog,fnameXcatRoot)
+function ct = matRad_parseMVF(ct,xcatLog,importOptions)
+
+fnameXcatRoot = importOptions.fnameXcatRoot;
 
 dirXCAT = fullfile(fileparts(mfilename('fullpath')),'XCAT',filesep);
 
@@ -14,6 +16,14 @@ t = xcatLog.deltaT.*((1:(xcatLog.numFrames+1))-1);
 ct.motionVecX = cell(xcatLog.numFrames,1);
 ct.motionVecY = cell(xcatLog.numFrames,1);
 ct.motionVecZ = cell(xcatLog.numFrames,1);
+
+resRatioX = ct.resolution.x./xcatLog.resolution.x;
+resRatioY = ct.resolution.y./xcatLog.resolution.y;
+resRatioZ = ct.resolution.z./xcatLog.resolution.z;
+
+if ~( round(resRatioX) == resRatioX && round(resRatioY) == resRatioY && round(resRatioZ) == resRatioZ )
+    error('Non-integral ratios of resolutions.  Inexact motion vector mapping may occur.');
+end
 
 for phase = 1:xcatLog.numFrames
     
@@ -35,16 +45,8 @@ for phase = 1:xcatLog.numFrames
         ct.motionVecZ{phase}(:,:,i) = i;
     end
     
-    if phase == 1
+    if phase == 1 && ~importOptions.repPhase
         continue
-    end
-    
-    resRatioX = ct.resolution.x./xcatLog.resolution.x;
-    resRatioY = ct.resolution.y./xcatLog.resolution.y;
-    resRatioZ = ct.resolution.z./xcatLog.resolution.z;
-    
-    if ~( round(resRatioX) == resRatioX && round(resRatioY) == resRatioY && round(resRatioZ) == resRatioZ )
-        error('Non-integral ratios of resolutions.  Inexact motion vector mapping may occur.');
     end
     
     fnameXcatMVF = fullfile(dirXCAT,sprintf('%s_vec_frame1_to_frame%d.txt',fnameXcatRoot,phase));

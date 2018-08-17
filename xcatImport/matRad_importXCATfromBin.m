@@ -1,5 +1,9 @@
 function [ct,cst] = matRad_importXCATfromBin(importOptions)
 
+if importOptions.repPhase
+    importOptions.fnameXcatRoot = [importOptions.fnameXcatRoot '_rep'];
+end
+
 %% Convert binaries from XCAT to DICOM
 dirDICOM = fullfile(fileparts(mfilename('fullpath')),'DICOM',filesep);
 
@@ -32,7 +36,7 @@ ct.numOfCtScen = xcatLog.numFrames;
 %% Import vector files
 fprintf('matRad: Importing motion vectors from XCAT files ... \n');
 
-ct = matRad_parseMVF(ct,xcatLog,importOptions.fnameXcatRoot);
+ct = matRad_parseMVF(ct,xcatLog,importOptions);
 
 fprintf('Done!\n');
 
@@ -56,8 +60,8 @@ end
 fprintf('Done!\n');
 
 fprintf('matRad: Adding tumour volumes to structure set... \n');
-% create a function to draw a tumour contour and move it around with the
-% lungs
+structures = matRad_tumourContourWrapper(structures,ct,importOptions);
+fprintf('Done!\n');
 
 cst = matRad_createCst(structures);
 

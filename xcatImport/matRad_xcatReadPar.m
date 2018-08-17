@@ -30,7 +30,7 @@ while(ischar(tline))
         
         equalInd    = find(tline == '=');
         hashInd     = find(tline == '#');
-        tRad        = str2double(tline((equalInd(1)+1):(hashInd(1)-1)));
+        tRad        = str2double(tline((equalInd(1)+1):(hashInd(1)-1)))/2;
         
     end
     
