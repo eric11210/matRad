@@ -1,6 +1,6 @@
 function [ct,cst] = matRad_importXCATfromBin(importOptions)
 
-if importOptions.repPhase
+if importOptions.repPhase && ~strfind(importOptions.fnameXcatRoot,'rep')
     importOptions.fnameXcatRoot = [importOptions.fnameXcatRoot '_rep'];
 end
 
@@ -49,7 +49,8 @@ ct = matRad_binFrames2Phases(ct,importOptions);
 %% Import DICOM structure set
 fprintf('matRad: Importing DICOM structure set ... \n');
 
-fnameRTSS = fullfile(dirDICOM,sprintf('%s_RTSS.dcm',importOptions.fnameXcatRoot));
+%fnameRTSS = fullfile(dirDICOM,sprintf('%s_RTSS.dcm',importOptions.fnameXcatRoot));
+fnameRTSS = fullfile(dirDICOM,'XCAT_RTSS.dcm');
 structures = matRad_importDicomRtss(fnameRTSS,ct.dicomInfo);
 
 for i = 1:numel(structures)

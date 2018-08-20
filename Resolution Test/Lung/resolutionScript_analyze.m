@@ -104,6 +104,8 @@ for angularRes = angularResS
     %for each angular resolution, proceed from the best approximation to
     %the worst
     
+    angularRes = 4;
+    
     %first time, do interpolation and dynamic fluence calculation
     fname = sprintf('%.1f degrees, dyn + interp.mat',angularRes);
     load(fname);

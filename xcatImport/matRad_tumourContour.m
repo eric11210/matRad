@@ -28,9 +28,9 @@ if tumourMotion
     
     for frame = 1:ct.tumourMotion.numFrames
         
-        tumourCloudx_coord(:,frame) = interp3(ct.motionVecX{frame},tumourCloudy_coord_p1,tumourCloudx_coord_p1,tumourCloudz_coord_p1);
-        tumourCloudy_coord(:,frame) = interp3(ct.motionVecY{frame},tumourCloudy_coord_p1,tumourCloudx_coord_p1,tumourCloudz_coord_p1);
-        tumourCloudz_coord(:,frame) = interp3(ct.motionVecZ{frame},tumourCloudy_coord_p1,tumourCloudx_coord_p1,tumourCloudz_coord_p1);
+        tumourCloudx_coord(:,frame) = interp3(ct.motionVecX{frame},tumourCloudx_coord_p1,tumourCloudy_coord_p1,tumourCloudz_coord_p1);
+        tumourCloudy_coord(:,frame) = interp3(ct.motionVecY{frame},tumourCloudx_coord_p1,tumourCloudy_coord_p1,tumourCloudz_coord_p1);
+        tumourCloudz_coord(:,frame) = interp3(ct.motionVecZ{frame},tumourCloudx_coord_p1,tumourCloudy_coord_p1,tumourCloudz_coord_p1);
     end
 end
 

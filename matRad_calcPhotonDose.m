@@ -141,8 +141,8 @@ end
 
 % take only voxels inside patient
 V = cell(dij.numFrames,1);
-V{1} = [cst{:,4}];
-V{1} = unique(vertcat(V{1}{:}));
+V_p0 = [cst{:,4}];
+V_p0 = unique(vertcat(V_p0{:}));
 
 % Convert CT subscripts to linear indices.
 
@@ -157,17 +157,11 @@ xCoordsV_voxRound = cell(dij.numFrames,1);
 yCoordsV_voxRound = cell(dij.numFrames,1);
 zCoordsV_voxRound = cell(dij.numFrames,1);
 
-[yCoordsV_vox{1}, xCoordsV_vox{1}, zCoordsV_vox{1}] = ind2sub(ct.cubeDim,V{1});
-
-% ignore densities outside of contours
-eraseCtDensMask = ones(dij.numOfVoxels,1);
-eraseCtDensMask(V{1}) = 0;
-%ct.cube{1}(eraseCtDensMask == 1) = 0;
-for i = 2:dij.numFrames
+for i = 1:dij.numFrames
     % these are probably fractional voxels
-    xCoordsV_vox{i} = ct.motionVecX{i}(V{1});
-    yCoordsV_vox{i} = ct.motionVecY{i}(V{1});
-    zCoordsV_vox{i} = ct.motionVecZ{i}(V{1});
+    xCoordsV_vox{i} = ct.motionVecX{i}(V_p0);
+    yCoordsV_vox{i} = ct.motionVecY{i}(V_p0);
+    zCoordsV_vox{i} = ct.motionVecZ{i}(V_p0);
     
     % to get the voxel index to which each point belongs, round to the
     % nearest integer
