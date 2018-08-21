@@ -5,7 +5,7 @@ options.fileInfo.processed  = true;
 
 options.processing.percExtTarg  = 1;
 options.processing.nPosPhases   = 10;
-options.processing.nVelPhases   = 50;
+options.processing.nVelPhases   = 10;
 options.processing.velBinning   = true;
 options.convTime.percRMSD_targ  = 1;
 options.std.nHistories          = 10;
@@ -23,7 +23,8 @@ for nSubPerPhase = nSubPerPhaseVec
     fprintf('Number of subphases per phase: %d.\n',nSubPerPhase);
     fprintf('Run %d of %d.\n',i,totNumSubPhases);
     
-    options.processing.nSubPerPhase = nSubPerPhase;
+    options.processing.nSubPerVelPhase = 1;
+    options.processing.nSubPerPosPhase = 10;
     
     model = matRad_generateMotionModel(options);
     

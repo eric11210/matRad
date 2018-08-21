@@ -6,10 +6,11 @@ t_cut   = data.t_cut;
 x_cut   = data.x_cut;
 
 % options
-percExtTarg     = options.percExtTarg;
-nPosPhases      = options.nPosPhases;
-nVelPhases      = options.nVelPhases;
-nSubPerPhase    = options.nSubPerPhase;
+percExtTarg         = options.percExtTarg;
+nPosPhases          = options.nPosPhases;
+nVelPhases          = options.nVelPhases;
+nSubPerPosPhase     = options.nSubPerPosPhase;
+nSubPerVelPhase     = options.nSubPerVelPhase;
 
 % resample data to have consistent sampling interval
 deltaT_sample = mean(diff(t_cut));
@@ -38,15 +39,7 @@ percBelow = 0;
 
 while percAbove < percExtTarg || percBelow < percExtTarg
     
-    if percAbove < percExtTarg
-        nPosSubPhasesMaxExt = nPosSubPhasesMaxExt+1;
-    end
-    
-    if percBelow < percExtTarg
-        nPosSubPhasesMinExt = nPosSubPhasesMinExt+1;
-    end
-    
-    nPosBins = nPosPhases.*nSubPerPhase/2+nPosSubPhasesMaxExt+nPosSubPhasesMinExt;
+    nPosBins = nPosPhases.*nSubPerPosPhase/2+nPosSubPhasesMaxExt+nPosSubPhasesMinExt;
     deltaL = (xBoundsMax-xBoundsMin)./nPosBins;
     lMaxThres = xBoundsMax-nPosSubPhasesMaxExt.*deltaL;
     lMinThres = xBoundsMin+nPosSubPhasesMinExt.*deltaL;
@@ -54,7 +47,26 @@ while percAbove < percExtTarg || percBelow < percExtTarg
     percAbove = 100.*nnz(x_sample > lMaxThres)./numel(x_sample);
     percBelow = 100*nnz(x_sample < lMinThres)./numel(x_sample);
     
+    if percAbove < percExtTarg
+        nPosSubPhasesMaxExt_final = nPosSubPhasesMaxExt;
+        nPosSubPhasesMaxExt = nPosSubPhasesMaxExt+1;
+    end
+    
+    if percBelow < percExtTarg
+        nPosSubPhasesMinExt_final = nPosSubPhasesMinExt;
+        nPosSubPhasesMinExt = nPosSubPhasesMinExt+1;
+    end
 end
+
+nPosSubPhasesMaxExt = nPosSubPhasesMaxExt_final;
+nPosSubPhasesMinExt = nPosSubPhasesMinExt_final;
+
+nPosBins = nPosPhases.*nSubPerPosPhase/2+nPosSubPhasesMaxExt+nPosSubPhasesMinExt;
+deltaL = (xBoundsMax-xBoundsMin)./nPosBins;
+lMaxThres = xBoundsMax-nPosSubPhasesMaxExt.*deltaL;
+lMinThres = xBoundsMin+nPosSubPhasesMinExt.*deltaL;
+percAbove = 100.*nnz(x_sample > lMaxThres)./numel(x_sample);
+percBelow = 100*nnz(x_sample < lMinThres)./numel(x_sample);
 
 nPosSubPhases = 2*nPosBins;
 xBounds = linspace(xBoundsMax,xBoundsMin,nPosBins+1);
@@ -123,12 +135,13 @@ if options.velBinning
     
     while percAboveAndBelow < 2*percExtTarg
         
-        nVelSubPhasesExt = nVelSubPhasesExt+1;
-        
-        nVelBins = nVelPhases.*nSubPerPhase+2*nVelSubPhasesExt;
+        nVelBins = nVelPhases.*nSubPerVelPhase+2*nVelSubPhasesExt;
         if mod(nVelBins,2) ~= 0
             % we want an even number of bins, so that they split nicely into
             % positive and negative
+            if percAboveAndBelow < 2*percExtTarg
+                nVelSubPhasesExt = nVelSubPhasesExt+1;
+            end
             continue
         end
         deltaL = 2*vBoundsM./nVelBins;
@@ -136,7 +149,20 @@ if options.velBinning
         lMinThres = -vBoundsM+nVelSubPhasesExt.*deltaL;
         
         percAboveAndBelow = 100.*nnz(v_sample > lMaxThres)./numel(v_sample)+100*nnz(v_sample < lMinThres)./numel(v_sample);
+        
+        if percAboveAndBelow < 2*percExtTarg
+            nVelSubPhasesExt_final = nVelSubPhasesExt;
+            nVelSubPhasesExt = nVelSubPhasesExt+1;
+        end 
     end
+    
+    nVelSubPhasesExt = nVelSubPhasesExt_final;
+    
+    nVelBins = nVelPhases.*nSubPerVelPhase+2*nVelSubPhasesExt;
+    deltaL = 2*vBoundsM./nVelBins;
+    lMaxThres = vBoundsM-nVelSubPhasesExt.*deltaL;
+    lMinThres = -vBoundsM+nVelSubPhasesExt.*deltaL;
+    percAboveAndBelow = 100.*nnz(v_sample > lMaxThres)./numel(v_sample)+100*nnz(v_sample < lMinThres)./numel(v_sample);
     
     nVelSubPhases = nVelBins;
     vBounds = linspace(-vBoundsM,vBoundsM,nVelBins+1);
@@ -166,10 +192,10 @@ subPhase2VelSubPhase = floor((1:nSubPhases)'./nPosSubPhases)+1;
 subPhase2VelSubPhase(changeInd) = subPhase2VelSubPhase(changeInd)-1;
 
 % convert from pos sub phase to pos phase
-posSubPhase2PosPhase = [repmat(nPosPhases+1,nPosSubPhasesMaxExt,1); repelem((1:nPosPhases/2)',nSubPerPhase,1); repmat(nPosPhases+2,nPosSubPhasesMinExt*2,1); repelem(((nPosPhases/2+1):nPosPhases)',nSubPerPhase,1); repmat(nPosPhases+1,nPosSubPhasesMaxExt,1)];
+posSubPhase2PosPhase = [repmat(nPosPhases+1,nPosSubPhasesMaxExt,1); repelem((1:nPosPhases/2)',nSubPerPosPhase,1); repmat(nPosPhases+2,nPosSubPhasesMinExt*2,1); repelem(((nPosPhases/2+1):nPosPhases)',nSubPerPosPhase,1); repmat(nPosPhases+1,nPosSubPhasesMaxExt,1)];
 
 % convert from vel sub phase to vel phase
-velSubPhase2VelPhase = [repmat(nVelPhases+1,nVelSubPhasesExt,1); repelem((1:nVelPhases)',nSubPerPhase,1); repmat(nVelPhases+2,nVelSubPhasesExt,1)];
+velSubPhase2VelPhase = [repmat(nVelPhases+1,nVelSubPhasesExt,1); repelem((1:nVelPhases)',nSubPerVelPhase,1); repmat(nVelPhases+2,nVelSubPhasesExt,1)];
 if isempty(velSubPhase2VelPhase)
     velSubPhase2VelPhase = 1;
 end

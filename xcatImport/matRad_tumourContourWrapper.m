@@ -50,12 +50,12 @@ structures(offset).indices = indPTV_ITV;
 offset = offset+1;
 
 %% delete/rename motionVec
-if isfield(ct,'motionVecX_new')
+if isfield(ct,'motionVecX_new') && ~importOptions.keepAllFrames
     ct.motionVecX   = ct.motionVecX_new;
     ct.motionVecY   = ct.motionVecY_new;
     ct.motionVecZ   = ct.motionVecZ_new;
-    ct = rmfield(ct,{'motionVecX_new' 'motionVecY_new' 'motionVecZ_new'});
 end
+ct = rmfield(ct,{'motionVecX_new' 'motionVecY_new' 'motionVecZ_new'});
 
 newNumStruct = size(structures,2);
 

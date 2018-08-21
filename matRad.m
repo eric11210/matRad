@@ -66,11 +66,11 @@ clc
 % load patient data, i.e. ct, voi, cst
 
 %load HEAD_AND_NECK.mat
-load TG119.mat
+%load TG119.mat
 %load PROSTATE.mat
 %load LIVER.mat
 %load BOXPHANTOM.mat
-%load lungPatient0_tenPhases.mat
+load('CONTAINS CONSTRAINTS.mat')
 
 % meta information for treatment plan
 
@@ -94,11 +94,11 @@ pln.propOpt.preconditioner = true;
 pln.propOpt.numLevels = 7;
 
 pln.propOpt.VMAToptions.machineConstraintFile = [pln.radiationMode '_' pln.machine];
-pln.propOpt.VMAToptions.continuousAperture = false;
+pln.propOpt.VMAToptions.continuousAperture = true;
 
 pln.propOpt.VMAToptions.startingAngle = -180;
 pln.propOpt.VMAToptions.finishingAngle = 180;
-pln.propOpt.VMAToptions.maxGantryAngleSpacing = 4;      % Max gantry angle spacing for dose calculation
+pln.propOpt.VMAToptions.maxGantryAngleSpacing = 45;      % Max gantry angle spacing for dose calculation
 pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing = 90;      % Max gantry angle spacing for DAO
 pln.propOpt.VMAToptions.maxFMOGantryAngleSpacing = 90;      % Max gantry angle spacing for FMO
 

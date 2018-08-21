@@ -61,7 +61,7 @@ end
 fprintf('Done!\n');
 
 fprintf('matRad: Adding tumour volumes to structure set... \n');
-structures = matRad_tumourContourWrapper(structures,ct,importOptions);
+[structures,ct] = matRad_tumourContourWrapper(structures,ct,importOptions);
 fprintf('Done!\n');
 
 cst = matRad_createCst(structures);
