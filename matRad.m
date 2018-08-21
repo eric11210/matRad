@@ -22,11 +22,10 @@ clc
 % load patient data, i.e. ct, voi, cst
 
 %load HEAD_AND_NECK
-%load TG119.mat
+load TG119.mat
 %load PROSTATE.mat
 %load LIVER.mat
 %load BOXPHANTOM.mat
-load TG119.mat
 
 % meta information for treatment plan
 pln.radiationMode   = 'photons';     % either photons / protons / carbon
@@ -47,6 +46,8 @@ pln.propDoseCalc.vmc                        = true;
 pln.propDoseCalc.vmcOptions.source          = 'phsp';
 pln.propDoseCalc.vmcOptions.phspBaseName    = '5x5_at_50cm';
 pln.propDoseCalc.vmcOptions.SCD             = 500;
+pln.propDoseCalc.vmcOptions.dumpDose        = 1;
+pln.propDoseCalc.vmcOptions.version = 'Carleton';
 
 % optimization settings
 pln.propOpt.bioOptimization = 'none'; % none: physical optimization;             const_RBExD; constant RBE of 1.1;
@@ -67,10 +68,10 @@ clc
 
 %load HEAD_AND_NECK.mat
 %load TG119.mat
-%load PROSTATE.mat
+load PROSTATE.mat
 %load LIVER.mat
 %load BOXPHANTOM.mat
-load('CONTAINS CONSTRAINTS.mat')
+%load('CONTAINS CONSTRAINTS.mat')
 
 % meta information for treatment plan
 

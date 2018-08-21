@@ -30,7 +30,7 @@ end
 
 % set output level. 0 = no vmc specific output. 1 = print to matlab cmd.
 % 2 = open in terminal(s)
-verbose = 1;
+verbose = 0;
 
 if ~isdeployed % only if _not_ running as standalone    
     % add path for optimization functions
@@ -78,10 +78,15 @@ cd(fileparts(mfilename('fullpath')))
 
 if exist(['vmc++' filesep 'bin'],'dir') ~= 7
     error(['Could not locate vmc++ environment. ' ...
-          'Please provide the files in the correct folder structure at matRadroot' filesep 'vmc++.']);
+        'Please provide the files in the correct folder structure at matRadroot' filesep 'vmc++.']);
 else
     VMCPath     = fullfile(pwd , 'vmc++');
-    runsPath    = fullfile(VMCPath, 'run');
+    switch pln.propDoseCalc.vmcOptions.version
+        case 'Carleton'
+            runsPath    = fullfile(VMCPath, 'run');
+        case 'dkfz'
+            runsPath    = fullfile(VMCPath, 'runs');
+    end
     phantomPath = fullfile(runsPath, 'phantoms');
 
     setenv('vmc_home',VMCPath);
@@ -139,9 +144,15 @@ relDoseCutoff = 10^(-3);
 % SAD = 1000mm, SCD = 500mm, bixelWidth = 5mm, IC = [240mm,240mm,240mm]
 % fieldsize@IC = 105mm x 105mm, phantomsize = 81 x 81 x 81 = 243mm x 243mm x 243mm
 % rel_Dose_cutoff = 10^(-3), ncase = 500000/bixel
-absCalibrationFactorVmc = 99.818252282632300;
+switch pln.propDoseCalc.vmcOptions.version
+    case 'Carleton'
+        absCalibrationFactorVmc = 1;
+    case 'dkfz'
+        absCalibrationFactorVmc = 99.818252282632300;
+end
 
 % set general vmc++ parameters
+VmcOptions.version = pln.propDoseCalc.vmcOptions.version;
 % 1 source
 VmcOptions.source.myName       = 'some_source';                        % name of source
 VmcOptions.source.monitorUnits = 1;
@@ -166,17 +177,23 @@ VmcOptions.varianceReduction.photonSplitFactor = -80;
 % 5 quasi random numbers
 VmcOptions.quasi.base      = 2;                                                 
 VmcOptions.quasi.dimension = 60;                                             
-VmcOptions.quasi.skip      = 1;                                              
+VmcOptions.quasi.skip      = 1;
 % 6 geometry
-VmcOptions.geometry.XyzGeometry.methodOfInput = 'MMC-PHANTOM';             % input method ('CT-PHANTOM', 'individual', 'groups') 
-VmcOptions.geometry.XyzGeometry.Ct            = 'CT';                      % name of geometry
-VmcOptions.geometry.XyzGeometry.CtFile        = strrep(fullfile(runsPath,'phantoms','matRad_CT.ct'),'\','/'); % path of density matrix (only needed if input method is 'CT-PHANTOM')
+switch pln.propDoseCalc.vmcOptions.version
+    case 'Carleton'
+        VmcOptions.geometry.XyzGeometry.methodOfInput = 'MMC-PHANTOM';             % input method ('CT-PHANTOM', 'individual', 'groups')
+    case 'dkfz'
+        VmcOptions.geometry.XyzGeometry.methodOfInput = 'CT-PHANTOM';             % input method ('CT-PHANTOM', 'individual', 'groups')
+end
+VmcOptions.geometry.dimensions          = dij.dimensions;
+VmcOptions.geometry.XyzGeometry.Ct      = 'CT';                      % name of geometry
+VmcOptions.geometry.XyzGeometry.CtFile  = strrep(fullfile(runsPath,'phantoms','matRad_CT.ct'),'\','/'); % path of density matrix (only needed if input method is 'CT-PHANTOM')
 % 7 scoring manager
 VmcOptions.scoringOptions.startInGeometry               = 'CT';            % geometry in which partciles start their transport
 VmcOptions.scoringOptions.doseOptions.scoreInGeometries = 'CT';            % geometry in which dose is recorded
 VmcOptions.scoringOptions.doseOptions.scoreDoseToWater  = 'yes';           % if yes output is dose to water
 VmcOptions.scoringOptions.outputOptions.name            = 'CT';            % geometry for which dose output is created (geometry has to be scored)
-VmcOptions.scoringOptions.outputOptions.dumpDose        = 2;               % output format (1: format=float, Dose + deltaDose; 2: format=short int, Dose)
+VmcOptions.scoringOptions.outputOptions.dumpDose        = pln.propDoseCalc.vmcOptions.dumpDose;               % output format (1: format=float, Dose + deltaDose; 2: format=short int, Dose)
 
 % export CT cube as binary file for vmc++
 matRad_exportCtVmc(ct, fullfile(phantomPath, 'matRad_CT.ct'));
@@ -310,8 +327,13 @@ for i = 1:dij.numOfBeams % loop over all beams
                 
                 % import calculated dose
                 idx = regexp(outfile,'_');
-                [bixelDose,~] = matRad_readDoseVmc(fullfile(VMCPath, 'runs',...
-                                                     [outfile(1:idx(2)),num2str(k), '_', VmcOptions.scoringOptions.outputOptions.name, '.dos']));
+                switch pln.propDoseCalc.vmcOptions.version
+                    case 'Carleton'
+                        filename = sprintf('%s%d.dos',outfile(1:idx(2)),k);
+                    case 'dkfz'
+                        filename = sprintf('%s%d_%s.dos',outfile(1:idx(2)),k,VmcOptions.scoringOptions.outputOptions.name);
+                end
+                [bixelDose,~] = matRad_readDoseVmc(fullfile(runsPath,filename),VmcOptions);
 
                 % apply relative dose cutoff
                 doseCutoff                        = relDoseCutoff*max(bixelDose);

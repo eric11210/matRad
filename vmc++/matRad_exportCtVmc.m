@@ -30,6 +30,10 @@ fwrite(fid,Y,'float32');
 fwrite(fid,Z,'float32');
 
 % write voxel densities
-fwrite(fid,ct.cube{1}(:),'float32');
+% first permute indices y <-> x
+ctVMC = permute(ct.cube{1},[2 1 3]);
+% then reshape into single column
+ctVMC = reshape(ctVMC,[],1);
+fwrite(fid,ctVMC,'float32');
 
 fclose(fid);
