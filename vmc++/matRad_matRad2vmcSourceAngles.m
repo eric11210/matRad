@@ -1,4 +1,4 @@
-function angles = matRad_matRad2mvcSourceAngles(gantryAngle,couchAngle)
+function angles = matRad_matRad2vmcSourceAngles(gantryAngle,couchAngle)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % matRad convert gantry and couch angles to angles used by vmc++
 %

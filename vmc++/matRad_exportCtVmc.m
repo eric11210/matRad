@@ -1,4 +1,4 @@
-function matRad_exportCtVmc(ct,filename)
+function matRad_exportCtVmc(ct,filename,isocenter)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % matRad binary CT export for vmc++
 % 
@@ -24,6 +24,12 @@ fwrite(fid,ct.cubeDim,'int32');
 X = [.5:(ct.cubeDim(1)+.5)]*ct.resolution.x/10;
 Y = [.5:(ct.cubeDim(2)+.5)]*ct.resolution.y/10;
 Z = [.5:(ct.cubeDim(3)+.5)]*ct.resolution.z/10;
+
+% correct for isocenter
+% isocenter should only be non-zero for phsp sources
+X = X-isocenter(1)/10;
+Y = Y-isocenter(2)/10;
+Z = Z-isocenter(3)/10;
 
 fwrite(fid,X,'float32');
 fwrite(fid,Y,'float32');

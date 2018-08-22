@@ -94,29 +94,33 @@ if strcmp(pln.radiationMode,'protons') || strcmp(pln.radiationMode,'carbon')
     %clear machine;
 end
 
-% for 4D
-numVox = numel(V);
-coordsX_vox = zeros(numVox*ct.numOfCtScen,1);
-coordsY_vox = zeros(numVox*ct.numOfCtScen,1);
-coordsZ_vox = zeros(numVox*ct.numOfCtScen,1);
-
-offset = 0;
-[coordsY_voxTemp, coordsX_voxTemp, coordsZ_voxTemp] = ind2sub(ct.cubeDim,V);
-coordsX_vox(offset+(1:numVox)) = coordsX_voxTemp;
-coordsY_vox(offset+(1:numVox)) = coordsY_voxTemp;
-coordsZ_vox(offset+(1:numVox)) = coordsZ_voxTemp;
-for i = 2:ct.numOfCtScen
+if pln.propOpt.run4D
     
-    offset = offset+numVox;
-    % these are probably fractional voxels
-    coordsX_voxTemp = ct.motionVecX{i}(V);
-    coordsY_voxTemp = ct.motionVecY{i}(V);
-    coordsZ_voxTemp = ct.motionVecZ{i}(V);
+    % for 4D
+    numVox = numel(V);
+    coordsX_vox = zeros(numVox*ct.numOfCtScen,1);
+    coordsY_vox = zeros(numVox*ct.numOfCtScen,1);
+    coordsZ_vox = zeros(numVox*ct.numOfCtScen,1);
     
-    coordsX_vox(offset+(1:numVox)) = coordsX_voxTemp;
-    coordsY_vox(offset+(1:numVox)) = coordsY_voxTemp;
-    coordsZ_vox(offset+(1:numVox)) = coordsZ_voxTemp;
+    offset = 0;
+    for i = 1:ct.numOfCtScen
+        
+        % these are probably fractional voxels
+        coordsX_voxTemp = ct.motionVecX{i}(V);
+        coordsY_voxTemp = ct.motionVecY{i}(V);
+        coordsZ_voxTemp = ct.motionVecZ{i}(V);
+        
+        coordsX_vox(offset+(1:numVox)) = coordsX_voxTemp;
+        coordsY_vox(offset+(1:numVox)) = coordsY_voxTemp;
+        coordsZ_vox(offset+(1:numVox)) = coordsZ_voxTemp;
+        
+        offset = offset+numVox;
+    end
+else
+    [coordsY_vox, coordsX_vox, coordsZ_vox] = ind2sub(ct.cubeDim,V);
 end
+
+
 %{
 round2 = @(a,b) round(a*10^b)/10^b;
 coordsV_vox = [coordsX_vox coordsY_vox coordsZ_vox];

@@ -105,35 +105,27 @@ rng(0);
 % set number of photons simulated per bixel and number of parallel MC simulations if not specified by user
 if nargin < 5
     nCasePerBixel              = 5000;
-    if ispc
-        numOfParallelMCSimulations = 4;
-    elseif isunix
-        numOfParallelMCSimulations = 1;
-    end
+    numOfParallelMCSimulations = 4;
     
     warning(['Number of photons simulated per bixel (nCasePerBixel) and number of parallel MC simulations (numOfParallelMCSimulations) not specified by user. ',...
-             'Use default settings with nCasePerBixel = ',num2str(nCasePerBixel),...
-             ' and numOfParallelMCSimulations = ',num2str(numOfParallelMCSimulations),...
-             ' in vmc++ calculations.'])
+        'Use default settings with nCasePerBixel = ',num2str(nCasePerBixel),...
+        ' and numOfParallelMCSimulations = ',num2str(numOfParallelMCSimulations),...
+        ' in vmc++ calculations.'])
+    
 elseif nargin < 6
-    if ispc
-        numOfParallelMCSimulations = 4;
-    elseif isunix
-        numOfParallelMCSimulations = 1;
-    end
+    numOfParallelMCSimulations = 4;
     
     warning(['Number of parallel MC simulations (numOfParallelMCSimulations) not specified by user. ',...
-             'Use default settings with numOfParallelMCSimulations = ',num2str(numOfParallelMCSimulations),...
-             ' in vmc++ calculations.'])    
-elseif isunix
-    if numOfParallelMCSimulations > 1
-        numOfParallelMCSimulations = 1;
-    end
-    warning(['Running Unix environment: Number of parallel MC simulations (numOfParallelMCSimulations) set to default settings with numOfParallelMCSimulations = ',num2str(numOfParallelMCSimulations),...
-             ' in vmc++ calculations.'])    
-    
+        'Use default settings with numOfParallelMCSimulations = ',num2str(numOfParallelMCSimulations),...
+        ' in vmc++ calculations.'])
 end
-    
+
+if isunix && numOfParallelMCSimulations > 1
+    numOfParallelMCSimulations = 1;
+    warning(['Running Unix environment: Number of parallel MC simulations (numOfParallelMCSimulations) set to default settings with numOfParallelMCSimulations = ',num2str(numOfParallelMCSimulations),...
+        ' in vmc++ calculations.'])
+end
+
 % set relative dose cutoff for storage in dose influence matrix
 relDoseCutoff = 10^(-3);
 
@@ -187,16 +179,12 @@ switch pln.propDoseCalc.vmcOptions.version
 end
 VmcOptions.geometry.dimensions          = dij.dimensions;
 VmcOptions.geometry.XyzGeometry.Ct      = 'CT';                      % name of geometry
-VmcOptions.geometry.XyzGeometry.CtFile  = strrep(fullfile(runsPath,'phantoms','matRad_CT.ct'),'\','/'); % path of density matrix (only needed if input method is 'CT-PHANTOM')
 % 7 scoring manager
 VmcOptions.scoringOptions.startInGeometry               = 'CT';            % geometry in which partciles start their transport
 VmcOptions.scoringOptions.doseOptions.scoreInGeometries = 'CT';            % geometry in which dose is recorded
 VmcOptions.scoringOptions.doseOptions.scoreDoseToWater  = 'yes';           % if yes output is dose to water
 VmcOptions.scoringOptions.outputOptions.name            = 'CT';            % geometry for which dose output is created (geometry has to be scored)
 VmcOptions.scoringOptions.outputOptions.dumpDose        = pln.propDoseCalc.vmcOptions.dumpDose;               % output format (1: format=float, Dose + deltaDose; 2: format=short int, Dose)
-
-% export CT cube as binary file for vmc++
-matRad_exportCtVmc(ct, fullfile(phantomPath, 'matRad_CT.ct'));
 
 % take only voxels inside patient
 V = [cst{:,4}];
@@ -223,20 +211,36 @@ for i = 1:dij.numOfBeams % loop over all beams
     if strcmp(pln.propDoseCalc.vmcOptions.source,'phsp')
         % set angle-specific vmc++ parameters
         
-        % phsp source gets translated, then rotated (-z, +y, -x)
+        % export CT cube as binary file for vmc++
+        % for the phsp source, rotations are made around the origin
+        % need to make the origin the isocenter in the CT
+        matRad_exportCtVmc(ct, fullfile(phantomPath, sprintf('matRad_CT_beam%d.ct',i)), stf(i).isoCenter);
         
-        % a) change coordinate system (Isocenter cs-> physical cs) and units mm -> cm
-        % also correct for the source to collimator distance
-        translation = (stf(i).sourcePoint_bev + stf(i).isoCenter + [0 pln.propDoseCalc.vmcOptions.SCD 0])/10;
+        % phsp starts off pointed in the +z direction, with source at -z
+        
+        % phsp source gets translated, then rotated (-z, +y, -x) around
+        % origin
+        
+        % a) correct for the source to collimator distance and change units mm -> cm
+        translation = [0 0 pln.propDoseCalc.vmcOptions.SCD + stf(i).sourcePoint_bev(2)]/10;
         
         % b) determine vmc++ rotation angles from gantry and couch
         % angles
-        angles = matRad_matRad2mvcSourceAngles(stf(i).gantryAngle,stf(i).couchAngle);
+        angles = matRad_matRad2vmcSourceAngles(stf(i).gantryAngle,stf(i).couchAngle);
         
         % c) set vmc++ parameters
         VmcOptions.source.translation = translation;
         VmcOptions.source.angles = angles;
+        
+    else
+        % export CT cube as binary file for vmc++
+        
+        % use dummy isocenter
+        matRad_exportCtVmc(ct, fullfile(phantomPath, sprintf('matRad_CT_beam%d.ct',i)), [0 0 0]);
     end
+    
+    % use beam-specific CT name
+    VmcOptions.geometry.XyzGeometry.CtFile  = strrep(fullfile(runsPath,'phantoms',sprintf('matRad_CT_beam%d.ct',i)),'\','/'); % path of density matrix (only needed if input method is 'CT-PHANTOM')
     
     for j = 1:stf(i).numOfRays % loop over all rays / for photons we only have one bixel per ray!
         
@@ -370,11 +374,16 @@ end
 
 % delete temporary files
 delete(fullfile(VMCPath, 'run_parallel_simulations.bat')); % batch file
-delete(fullfile(phantomPath, 'matRad_CT.ct'));             % phantom file
+delete(fullfile(phantomPath, 'matRad_CT_beam*.ct'));             % phantom file
 for j = 1:maxNumOfParallelMcSimulations
     delete(fullfile(runsPath, ['MCpencilbeam_temp_',num2str(mod(j-1,numOfParallelMCSimulations)+1),'.vmc'])); % vmc inputfile
-    delete(fullfile(runsPath, ['MCpencilbeam_temp_',num2str(mod(j-1,numOfParallelMCSimulations)+1),'_',...
-                                    VmcOptions.scoringOptions.doseOptions.scoreInGeometries,'.dos']));    % vmc outputfile
+    switch pln.propDoseCalc.vmcOptions.version
+        case 'Carleton'
+            filename = sprintf('%s%d.dos','MCpencilbeam_temp_',j);
+        case 'dkfz'
+            filename = sprintf('%s%d_%s.dos','MCpencilbeam_temp_',j,VmcOptions.scoringOptions.outputOptions.name);
+    end
+    delete(fullfile(runsPath,filename));    % vmc outputfile
 end
 
 try
