@@ -45,11 +45,11 @@ end
 fclose(fid);
 
 % reshape into array, permute y <-> x, reshape back into column
-bixelDose = reshape(bixelDose,VmcOptions.geometry.dimensions);
+bixelDose = reshape(bixelDose,VmcOptions.geometry.dimensions([2 1 3]));
 bixelDose = permute(bixelDose,[2 1 3]);
 bixelDose = reshape(bixelDose,[],1);
 
-bixelDoseError = reshape(bixelDoseError,VmcOptions.geometry.dimensions);
+bixelDoseError = reshape(bixelDoseError,VmcOptions.geometry.dimensions([2 1 3]));
 bixelDoseError = permute(bixelDoseError,[2 1 3]);
 bixelDoseError = reshape(bixelDoseError,[],1);
 
