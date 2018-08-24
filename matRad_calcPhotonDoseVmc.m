@@ -105,7 +105,7 @@ rng(0);
 % set number of photons simulated per bixel and number of parallel MC simulations if not specified by user
 if nargin < 5
     nCasePerBixel              = 5000;
-    numOfParallelMCSimulations = 4;
+    numOfParallelMCSimulations = 8;
     
     warning(['Number of photons simulated per bixel (nCasePerBixel) and number of parallel MC simulations (numOfParallelMCSimulations) not specified by user. ',...
         'Use default settings with nCasePerBixel = ',num2str(nCasePerBixel),...
@@ -283,7 +283,7 @@ for i = 1:dij.numOfBeams % loop over all beams
             case 'phsp'
                 % use ray-specific file name for the phsp source (bixelized
                 % phsp)
-                VmcOptions.source.file_name     = strrep(fullfile(runsPath,'phsp',stf(i).ray(j).phspFileName),'\','/');
+                VmcOptions.source.file_name     = strrep(stf(i).ray(j).phspFileName,'\','/');
         end
         
         

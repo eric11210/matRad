@@ -135,17 +135,17 @@ coordsZ_vox = coordsV_vox(:,3);
 % code
 stf = struct('gantryAngle',cell(size(pln.propStf.gantryAngles)));
 
-if pln.propOpt.runVMAT
+if pln.propOpt.runVMAT || (pln.propDoseCalc.vmc && strcmp(pln.propDoseCalc.vmcOptions.source,'phsp'))
     %Initialize master ray positions and target points with NaNs, to be
     %deleted later.  These arrays are the unions of the corresponding
     %arrays per gantry angle.  In order to do VMAT, it is easier to have
     %the same MLC range and dij calculation for every possible beam/gantry
     %angle.
     masterRayPosBEV = zeros(1,3);
-    masterTargetPointBEV = zeros(1,3);
+    masterTargetPointBEV = zeros(0,3);
     
     if pln.propOpt.run4D
-        masterRayPosBEV_phase1 = zeros(1,3);
+        masterRayPosBEV_phase1 = zeros(0,3);
     end
 end
 
@@ -402,11 +402,6 @@ for i = 1:length(pln.propStf.gantryAngles)
                     % book keeping for photons
                     stf(i).ray(j).energy = machine.data.energy;
                     
-                    if pln.propDoseCalc.vmc
-                        %stf(i).ray(j).phspFileName = sprintf('%s_ray%d.egsphsp1',pln.propDoseCalc.vmcOptions.phspBaseName,j);
-                        stf(i).ray(j).phspFileName = sprintf('%s.egsphsp1',pln.propDoseCalc.vmcOptions.phspBaseName);
-                    end
-                    
                 else
                     error('Error generating stf struct: invalid radiation modality.');
                 end
@@ -477,14 +472,16 @@ for i = 1:length(pln.propStf.gantryAngles)
         
         % save total number of bixels
         stf(i).totalNumOfBixels = sum(stf(i).numOfBixelsPerRay);
-        
-    else
-        
-        %The following must be taken as the union of stf(:).FIELD and stf(:).FIELD:
+    end
+    
+    if pln.propOpt.runVMAT || (pln.propDoseCalc.vmc && strcmp(pln.propDoseCalc.vmcOptions.source,'phsp'))
+        % For VMAT, The following must be taken as the union of stf(:).FIELD and stf(:).FIELD:
         %ray.rayPos_bev
         %ray.targetPoint_bev
         %Then these are rotated to form the non-bev forms;
         %ray.rayCorners_SCD is also formed
+        
+        % For vmc++ with phsp, masterRayPosBEV is useful to have (phsp definition
         numOfRays = stf(i).numOfRays;
         rayPosBEV = reshape([stf(i).ray(:).rayPos_bev]',3,numOfRays)';
         targetPointBEV = reshape([stf(i).ray(:).targetPoint_bev]',3,numOfRays)';
@@ -655,6 +652,12 @@ if pln.propOpt.runVMAT
         
         stf = matRad_Stf4DPost(stf,masterRayPosBEV,masterRayPosBEV_phase1);
     end
+end
+
+%% vmc++
+
+if pln.propDoseCalc.vmc && strcmp(pln.propDoseCalc.vmcOptions.source,'phsp')
+    stf = matRad_bixelPhspVmc(stf,masterRayPosBEV,pln.propDoseCalc.vmcOptions);
 end
 
 
