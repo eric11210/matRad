@@ -16,14 +16,6 @@ function matRad_createVmcInput(VmcOptions,filename)
 %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if strcmp(VmcOptions.source.type,'beamlet')
-    % if beamlet source, check for monoenergy option
-    if ~isempty(VmcOptions.source.monoEnergy) && VmcOptions.source.monoEnergy>0
-        monoEnergyLine = ['      mono energy = ' num2str(VmcOptions.source.monoEnergy)];
-    else
-        monoEnergyLine = [];
-    end
-end
 
 % define a cell array which is bigger than necessary
 % some parts of the input (e.g., the source) are variable

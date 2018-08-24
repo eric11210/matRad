@@ -21,7 +21,7 @@ function [bixelDose,bixelDoseError] = matRad_readDoseVmc(filename,VmcOptions)
 fid = fopen(filename,'r');
 
 % read header (no regions, no histories, no batches, no beamlets, format specifier (dump_dose))
-switch VmcOptions.version
+switch VmcOptions.run.version
     case 'Carleton'
         Header      = fread(fid,1,'int32');
         no_regions  = Header(1);

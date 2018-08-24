@@ -1,4 +1,4 @@
-function dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst,nCasePerBixel,numOfParallelMCSimulations,calcDoseDirect)
+function dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst,calcDoseDirect)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % matRad vmc++ photon dose calculation wrapper
 % 
@@ -102,89 +102,8 @@ end
 % set consistent random seed (enables reproducibility)
 rng(0);
 
-% set number of photons simulated per bixel and number of parallel MC simulations if not specified by user
-if nargin < 5
-    nCasePerBixel              = 5000;
-    numOfParallelMCSimulations = 8;
-    
-    warning(['Number of photons simulated per bixel (nCasePerBixel) and number of parallel MC simulations (numOfParallelMCSimulations) not specified by user. ',...
-        'Use default settings with nCasePerBixel = ',num2str(nCasePerBixel),...
-        ' and numOfParallelMCSimulations = ',num2str(numOfParallelMCSimulations),...
-        ' in vmc++ calculations.'])
-    
-elseif nargin < 6
-    numOfParallelMCSimulations = 4;
-    
-    warning(['Number of parallel MC simulations (numOfParallelMCSimulations) not specified by user. ',...
-        'Use default settings with numOfParallelMCSimulations = ',num2str(numOfParallelMCSimulations),...
-        ' in vmc++ calculations.'])
-end
-
-if isunix && numOfParallelMCSimulations > 1
-    numOfParallelMCSimulations = 1;
-    warning(['Running Unix environment: Number of parallel MC simulations (numOfParallelMCSimulations) set to default settings with numOfParallelMCSimulations = ',num2str(numOfParallelMCSimulations),...
-        ' in vmc++ calculations.'])
-end
-
-% set relative dose cutoff for storage in dose influence matrix
-relDoseCutoff = 10^(-3);
-
-% set absolute calibration factor
-% CALCULATION
-% absolute_calibration_factor = 1/D(depth = 100,5mm) -> D(depth = 100,5mm) = 1Gy
-% SETUP
-% SAD = 1000mm, SCD = 500mm, bixelWidth = 5mm, IC = [240mm,240mm,240mm]
-% fieldsize@IC = 105mm x 105mm, phantomsize = 81 x 81 x 81 = 243mm x 243mm x 243mm
-% rel_Dose_cutoff = 10^(-3), ncase = 500000/bixel
-switch pln.propDoseCalc.vmcOptions.version
-    case 'Carleton'
-        absCalibrationFactorVmc = 1;
-    case 'dkfz'
-        absCalibrationFactorVmc = 99.818252282632300;
-end
-
-% set general vmc++ parameters
-VmcOptions.version = pln.propDoseCalc.vmcOptions.version;
-% 1 source
-VmcOptions.source.myName       = 'some_source';                        % name of source
-VmcOptions.source.monitorUnits = 1;
-if strcmp(pln.propDoseCalc.vmcOptions.source,'beamlet')
-    VmcOptions.source.spectrum     = fullfile(runsPath,'spectra','var_6MV.spectrum');    % energy spectrum source (only used if no mono-Energy given)
-    VmcOptions.source.charge       = 0;                                 % charge (-1,0,1
-    VmcOptions.source.type         = 'beamlet';
-elseif strcmp(pln.propDoseCalc.vmcOptions.source,'phsp')
-    VmcOptions.source.particleType  = 2;
-    VmcOptions.source.type          = 'phsp';
-end
-% 2 transport parameter
-VmcOptions.McParameter.automatic_parameter  = 'yes';                       % if yes, automatic transport parameters are used
-VmcOptions.McParameter.spin                 = 0;                           % 0: spin effects ignored; 1: simplistic; 2: full treatment
-% 3 MC control
-VmcOptions.McControl.ncase  = nCasePerBixel;                               % number of histories
-VmcOptions.McControl.nbatch = 10;                                          % number of batches
-% 4 variance reduction
-VmcOptions.varianceReduction.repeatHistory      = 0.041;
-VmcOptions.varianceReduction.splitPhotons       = 1;   
-VmcOptions.varianceReduction.photonSplitFactor = -80;  
-% 5 quasi random numbers
-VmcOptions.quasi.base      = 2;                                                 
-VmcOptions.quasi.dimension = 60;                                             
-VmcOptions.quasi.skip      = 1;
-% 6 geometry
-switch pln.propDoseCalc.vmcOptions.version
-    case 'Carleton'
-        VmcOptions.geometry.XyzGeometry.methodOfInput = 'MMC-PHANTOM';             % input method ('CT-PHANTOM', 'individual', 'groups')
-    case 'dkfz'
-        VmcOptions.geometry.XyzGeometry.methodOfInput = 'CT-PHANTOM';             % input method ('CT-PHANTOM', 'individual', 'groups')
-end
-VmcOptions.geometry.dimensions          = dij.dimensions;
-VmcOptions.geometry.XyzGeometry.Ct      = 'CT';                      % name of geometry
-% 7 scoring manager
-VmcOptions.scoringOptions.startInGeometry               = 'CT';            % geometry in which partciles start their transport
-VmcOptions.scoringOptions.doseOptions.scoreInGeometries = 'CT';            % geometry in which dose is recorded
-VmcOptions.scoringOptions.doseOptions.scoreDoseToWater  = 'yes';           % if yes output is dose to water
-VmcOptions.scoringOptions.outputOptions.name            = 'CT';            % geometry for which dose output is created (geometry has to be scored)
-VmcOptions.scoringOptions.outputOptions.dumpDose        = pln.propDoseCalc.vmcOptions.dumpDose;               % output format (1: format=float, Dose + deltaDose; 2: format=short int, Dose)
+% get default vmc options
+VmcOptions = matRad_vmcOptions(pln);
 
 % take only voxels inside patient
 V = [cst{:,4}];
@@ -195,12 +114,14 @@ readCounter                   = 0;
 maxNumOfParallelMcSimulations = 0;
 
 % initialize waitbar
-figureWait = waitbar(0,'VMC++ photon dose influence matrix calculation..');
+figureWait = waitbar(0,'calculate dose influence matrix for photons (vmc++)...');
+% show busy state
+set(figureWait,'pointer','watch');
 
 fprintf('matRad: VMC++ photon dose calculation... ');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 for i = 1:dij.numOfBeams % loop over all beams
-       
+    
    % remember beam and bixel number
     if calcDoseDirect
         dij.beamNum(i)    = i;
@@ -287,7 +208,7 @@ for i = 1:dij.numOfBeams % loop over all beams
         end
         
         
-        % create inputfile with vmc++ parameters
+        %% create input file with vmc++ parameters
         outfile = ['MCpencilbeam_temp_',num2str(mod(writeCounter-1,numOfParallelMCSimulations)+1)];
         matRad_createVmcInput(VmcOptions,fullfile(runsPath, [outfile,'.vmc']));
         
@@ -307,7 +228,7 @@ for i = 1:dij.numOfBeams % loop over all beams
                 maxNumOfParallelMcSimulations = currNumOfParallelMcSimulations;
             end
             
-            % perform vmc++ simulation
+            %% perform vmc++ simulation
             current = pwd;
             cd(VMCPath);
             if verbose > 0 % only show output if verbose level > 0
@@ -329,7 +250,7 @@ for i = 1:dij.numOfBeams % loop over all beams
                 % update waitbar
                 waitbar(writeCounter/dij.totalNumOfBixels);
                 
-                % import calculated dose
+                %% import calculated dose
                 idx = regexp(outfile,'_');
                 switch pln.propDoseCalc.vmcOptions.version
                     case 'Carleton'
@@ -372,7 +293,7 @@ for i = 1:dij.numOfBeams % loop over all beams
     end
 end
 
-% delete temporary files
+%% delete temporary files
 delete(fullfile(VMCPath, 'run_parallel_simulations.bat')); % batch file
 delete(fullfile(phantomPath, 'matRad_CT_beam*.ct'));             % phantom file
 for j = 1:maxNumOfParallelMcSimulations
