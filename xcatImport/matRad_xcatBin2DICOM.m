@@ -101,6 +101,12 @@ for phase = 1:xcatLog.numFrames
         phantBody = permute(phantBody,[2 1 3]);
         fclose(fid);
         
+        % remove extra padding
+        phantBody(:,zeroIndPostX:end,:) = [];
+        phantBody(:,1:zeroIndPreX,:)    = [];
+        phantBody(zeroIndPostY:end,:,:) = [];
+        phantBody(1:zeroIndPreY,:,:)    = [];
+        
         if importOptions.addTumour
             
             if importOptions.massConserve
@@ -115,17 +121,28 @@ for phase = 1:xcatLog.numFrames
             phantTumour = permute(phantTumour,[2 1 3]);
             fclose(fid);
             
-            phant = phantBody+phantTumour;
+            % remove extra padding
+            phantTumour(:,zeroIndPostX:end,:) = [];
+            phantTumour(:,1:zeroIndPreX,:)    = [];
+            phantTumour(zeroIndPostY:end,:,:) = [];
+            phantTumour(1:zeroIndPreY,:,:)    = [];
+            
+            % find where tumour is
+            maskTumour = phantTumour > 0;
+            % determine minimum density of body in this region
+            % should be lung
+            threshold = min(phantBody(maskTumour));
+            % restrict mask to voxels where density is higher than
+            % threshold
+            maskTumour = maskTumour & phantTumour > threshold;
+            % in this mask, let the phantom be the tumour only
+            % outside, let it be the body only
+            phant = phantBody;
+            phant(maskTumour) = phantTumour(maskTumour);
         else
             
             phant = phantBody;
         end
-        
-        % remove extra padding
-        phant(:,zeroIndPostX:end,:) = [];
-        phant(:,1:zeroIndPreX,:)    = [];
-        phant(zeroIndPostY:end,:,:) = [];
-        phant(1:zeroIndPreY,:,:) = [];
         
         % convert density to HU
         phant = 1000*(phant-xcatLog.muWater)./xcatLog.muWater;
