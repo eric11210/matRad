@@ -48,7 +48,9 @@ pln.propDoseCalc.vmcOptions.source          = 'phsp';
 pln.propDoseCalc.vmcOptions.phspBaseName    = '5x5_at_50cm';
 pln.propDoseCalc.vmcOptions.SCD             = 500;
 pln.propDoseCalc.vmcOptions.dumpDose        = 1;
-pln.propDoseCalc.vmcOptions.version = 'Carleton';
+pln.propDoseCalc.vmcOptions.version         = 'Carleton';
+pln.propDoseCalc.vmcOptions.nCasePerBixel   = 5000;
+pln.propDoseCalc.vmcOptions.numOfParMCSim   = 8;
 
 % optimization settings
 pln.propOpt.bioOptimization = 'none'; % none: physical optimization;             const_RBExD; constant RBE of 1.1;
@@ -129,7 +131,11 @@ stf = matRad_generateStf(ct,cst,pln);
 
 %% dose calculation
 if strcmp(pln.radiationMode,'photons')
-    dij = matRad_calcPhotonDose(ct,stf,pln,cst);
+    if pln.propDoseCalc.vmc
+        dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
+    else
+        dij = matRad_calcPhotonDose(ct,stf,pln,cst);
+    end
 elseif strcmp(pln.radiationMode,'protons') || strcmp(pln.radiationMode,'carbon')
     dij = matRad_calcParticleDose(ct,stf,pln,cst);
 end

@@ -1,15 +1,15 @@
-function VmcOptions = matRad_vmcOptions(pln)
+function VmcOptions = matRad_vmcOptions(pln,ct)
 
 %% run options
 
 % number of paralle MC simulations
 if isfield(pln.propDoseCalc.vmcOptions,'numOfParMCSim')
-    VmcOptions.run.numOfParallelMCSimulations   = pln.propDoseCalc.vmcOptions.numOfParMCSim;
+    VmcOptions.run.numOfParMCSim    = pln.propDoseCalc.vmcOptions.numOfParMCSim;
 else
-    VmcOptions.run.numOfParallelMCSimulations   = 4;
+    VmcOptions.run.numOfParMCSim    = 4;
 end
-if isunix && VmcOptions.run.numOfParallelMCSimulations > 1
-    VmcOptions.run.numOfParallelMCSimulations = 1;
+if isunix && VmcOptions.run.numOfParMCSim > 1
+    VmcOptions.run.numOfParMCSim = 1;
 end
 
 % number of histories per bixel
@@ -60,7 +60,7 @@ VmcOptions.McParameter.spin                 = 0;                           % 0: 
 
 %% MC control
 
-VmcOptions.McControl.ncase  = nCasePerBixel;                               % number of histories
+VmcOptions.McControl.ncase  = VmcOptions.run.nCasePerBixel;                % number of histories
 VmcOptions.McControl.nbatch = 10;                                          % number of batches
 
 %% variance reduction
@@ -82,7 +82,7 @@ switch pln.propDoseCalc.vmcOptions.version
     case 'dkfz'
         VmcOptions.geometry.XyzGeometry.methodOfInput = 'CT-PHANTOM';   % input method ('CT-PHANTOM', 'individual', 'groups')
 end
-VmcOptions.geometry.dimensions          = dij.dimensions;
+VmcOptions.geometry.dimensions          = ct.cubeDim;
 VmcOptions.geometry.XyzGeometry.Ct      = 'CT';                         % name of geometry
 
 %% scoring manager

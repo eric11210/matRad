@@ -21,11 +21,19 @@ bixelWidth  = stf(1).bixelWidth.*SAD2SCD/10;
 X           = masterRayPosBEV(:,1).*SAD2SCD/10;
 Y           = -masterRayPosBEV(:,3).*SAD2SCD/10; % minus sign necessary since to get from BEAM coord. to DICOM, we do a rotation, NOT reflection
 
-% determine file names
-numBixels           = size(masterRayPosBEV,1);
-fname_bixels        = cell(numBixels,1);
+% determine file names, check for existence
+numBixels       = size(masterRayPosBEV,1);
+fname_bixels    = cell(numBixels,1);
+writeFiles      = false;
 for i = 1:numBixels
+    
+    % file name
     fname_bixels{i}         = fullfile(phspPath,sprintf('%s_bixelWidth%f_X%f_Y%f.egsphsp1',vmcOptions.phspBaseName,bixelWidth,X(i),Y(i)));
+    
+    if ~exist(fname_bixels{i},'file')
+        % if any file doesn't exist, then we want to write new phsp file
+        writeFiles = true;
+    end
 end
 
 % give file name to ray
@@ -39,133 +47,138 @@ for i = 1:numel(stf)
     end
 end
 
-% check if all files exist; if they do, don't do the rest of the function
-
-
-%% extract information from full phsp file, write to bixel files
-
-% set up arrays for the bixel phsp files
-fid_bixels          = cell(numBixels,1);
-header_bixels       = cell(numBixels,1);
-firstParticle_bixels   = false(numBixels,1);
-
-% open header of full phsp
-[fid_full, header_full] = getHeader(fid_full);
-mode = char(header_full.MODE_RW(5));
-
-% loop through each record in full phsp
-fprintf('matRad: creating bixel phsp files... ');
-for i = 1:header_full.NPPHSP
+if writeFiles
+    % only do read/write files if they don't already exist
     
-    % extract record
-    [fid_full, record] = getRecord(fid_full,mode);
+    %% extract information from full phsp file, write to bixel files
     
-    % sort into correct bixel
-    bixelInd = find(sum(abs([X Y]-repelem([record.X record.Y],numBixels,1)) < repelem(bixelWidth/2,numBixels,2),2) == 2,1,'first');
+    % set up arrays for the bixel phsp files
+    fid_bixels          = cell(numBixels,1);
+    header_bixels       = cell(numBixels,1);
+    firstParticle_bixels   = false(numBixels,1);
     
-    if ~isempty(bixelInd)
+    % open header of full phsp
+    [fid_full, header_full] = getHeader(fid_full);
+    mode = char(header_full.MODE_RW(5));
+    
+    % loop through each record in full phsp
+    fprintf('matRad: creating bixel phsp files... ');
+    for i = 1:header_full.NPPHSP
         
-        if isempty(fid_bixels{bixelInd})
-            % if not previously opened, open the file, write the header
-            % the header is just a dummy for now
-            header_bixels{bixelInd}             = header_full;
-            % these variables will change throughout the read/write process
-            header_bixels{bixelInd}.NPPHSP      = 0;
-            header_bixels{bixelInd}.NPHOTPHSP   = 0;
-            header_bixels{bixelInd}.EKMAXPHSP   = 0;
-            header_bixels{bixelInd}.EKMINPHSPE  = 1000;
+        % extract record
+        [fid_full, record] = getRecord(fid_full,mode);
+        
+        % sort into correct bixel
+        bixelInd = find(sum(abs([X Y]-repelem([record.X record.Y],numBixels,1)) < repelem(bixelWidth/2,numBixels,2),2) == 2,1,'first');
+        
+        if ~isempty(bixelInd)
             
-            % open file, write header
-            fid_bixels{bixelInd} = fopen(fname_bixels{bixelInd},'W'); % turn this to 'W'?
-            writeHeader(fid_bixels{bixelInd},header_bixels{bixelInd});
-        end
-        
-        %% bixel header
-        
-        % increment number of particles
-        header_bixels{bixelInd}.NPPHSP = header_bixels{bixelInd}.NPPHSP+1;
-        
-        % modify max/min energies, increment number of photons
-        % must determine particle type using LATCH
-        LATCH = de2bi(record.LATCH,32);
-        if LATCH(30:31) == [0 0]
-            % photon
-            header_bixels{bixelInd}.EKMAXPHSP   = max(header_bixels{bixelInd}.EKMAXPHSP,abs(record.E));
-            header_bixels{bixelInd}.NPHOTPHSP   = header_bixels{bixelInd}.NPHOTPHSP+1;
-            
-        elseif LATCH(30:31) == [0 1]
-            % electron
-            header_bixels{bixelInd}.EKMINPHSPE  = min(header_bixels{bixelInd}.EKMINPHSPE,abs(record.E)-0.511);
-            header_bixels{bixelInd}.EKMAXPHSP   = max(header_bixels{bixelInd}.EKMAXPHSP,abs(record.E)-0.511);
-            
-        elseif LATCH(30:31) == [1 0]
-            % positron
-            header_bixels{bixelInd}.EKMINPHSPE  = min(header_bixels{bixelInd}.EKMINPHSPE,abs(record.E)-0.511);
-            header_bixels{bixelInd}.EKMAXPHSP   = max(header_bixels{bixelInd}.EKMAXPHSP,abs(record.E)-0.511);
-            
-        elseif LATCH(30:31) == [1 1]
-            error('Electron and positron???')
-            
-        end
-        
-        %% bixel record
-        
-        % is this the first particle scored from a new primary history?
-        if record.E < 0
-            % if it is, then we want ALL bixel phsp files to reflect this
-            % i.e., the next particle in all bixel phsp files should have
-            % a negative energy (first particle scored from a new primary
-            % history)
-            
-            firstParticle_bixels(:) = true;
-        end
-        
-        if firstParticle_bixels(bixelInd)
-            % this is the first from a new primary history
-            % make the energy negative
-            record.E = -abs(record.E);
-            % make sure next particle is not negative
-            firstParticle_bixels(bixelInd) = false;
-        else
-            % these particles should already have positive energy
-            if record.E < 0
-                % SHOULDN'T HAPPEN
-                warning('NEGATIVE ENERGY')
+            if isempty(fid_bixels{bixelInd})
+                % if not previously opened, open the file, write the header
+                % the header is just a dummy for now
+                header_bixels{bixelInd}             = header_full;
+                % these variables will change throughout the read/write process
+                header_bixels{bixelInd}.NPPHSP      = 0;
+                header_bixels{bixelInd}.NPHOTPHSP   = 0;
+                header_bixels{bixelInd}.EKMAXPHSP   = 0;
+                header_bixels{bixelInd}.EKMINPHSPE  = 1000;
+                
+                % open file, write header
+                fid_bixels{bixelInd} = fopen(fname_bixels{bixelInd},'W'); % turn this to 'W'?
+                writeHeader(fid_bixels{bixelInd},header_bixels{bixelInd});
             end
+            
+            %% bixel header
+            
+            % increment number of particles
+            header_bixels{bixelInd}.NPPHSP = header_bixels{bixelInd}.NPPHSP+1;
+            
+            % modify max/min energies, increment number of photons
+            % must determine particle type using LATCH
+            LATCH = de2bi(record.LATCH,32);
+            if LATCH(30:31) == [0 0]
+                % photon
+                header_bixels{bixelInd}.EKMAXPHSP   = max(header_bixels{bixelInd}.EKMAXPHSP,abs(record.E));
+                header_bixels{bixelInd}.NPHOTPHSP   = header_bixels{bixelInd}.NPHOTPHSP+1;
+                
+            elseif LATCH(30:31) == [0 1]
+                % electron
+                header_bixels{bixelInd}.EKMINPHSPE  = min(header_bixels{bixelInd}.EKMINPHSPE,abs(record.E)-0.511);
+                header_bixels{bixelInd}.EKMAXPHSP   = max(header_bixels{bixelInd}.EKMAXPHSP,abs(record.E)-0.511);
+                
+            elseif LATCH(30:31) == [1 0]
+                % positron
+                header_bixels{bixelInd}.EKMINPHSPE  = min(header_bixels{bixelInd}.EKMINPHSPE,abs(record.E)-0.511);
+                header_bixels{bixelInd}.EKMAXPHSP   = max(header_bixels{bixelInd}.EKMAXPHSP,abs(record.E)-0.511);
+                
+            elseif LATCH(30:31) == [1 1]
+                error('Electron and positron???')
+                
+            end
+            
+            %% bixel record
+            
+            % is this the first particle scored from a new primary history?
+            if record.E < 0
+                % if it is, then we want ALL bixel phsp files to reflect this
+                % i.e., the next particle in all bixel phsp files should have
+                % a negative energy (first particle scored from a new primary
+                % history)
+                
+                firstParticle_bixels(:) = true;
+            end
+            
+            if firstParticle_bixels(bixelInd)
+                % this is the first from a new primary history
+                % make the energy negative
+                record.E = -abs(record.E);
+                % make sure next particle is not negative
+                firstParticle_bixels(bixelInd) = false;
+            else
+                % these particles should already have positive energy
+                if record.E < 0
+                    % SHOULDN'T HAPPEN
+                    warning('NEGATIVE ENERGY')
+                end
+            end
+            
+            % write the record
+            writeRecord(fid_bixels{bixelInd},record,mode);
         end
         
-        % write the record
-        writeRecord(fid_bixels{bixelInd},record,mode);
+        % display progress
+        if mod(i,max(1,round(header_full.NPPHSP/200))) == 0
+            matRad_progress(i/max(1,round(header_full.NPPHSP/200)),...
+                floor(header_full.NPPHSP/max(1,round(header_full.NPPHSP/200))));
+        end
     end
     
-    % display progress
-    if mod(i,max(1,round(header_full.NPPHSP/200))) == 0
-        matRad_progress(i/max(1,round(header_full.NPPHSP/200)),...
-            floor(header_full.NPPHSP/max(1,round(header_full.NPPHSP/200))));
+    
+    %% clean up bixel phsp headers
+    fprintf('matRad: updating bixel phsp file headers... ');
+    for i = 1:numBixels
+        
+        if header_bixels{i}.EKMINPHSPE == 1000
+            header_bixels{i}.EKMINPHSPE = 0;
+        end
+        
+        % seek to beginning of file
+        fseek(fid_bixels{i},0,'bof');
+        
+        % write updated header
+        writeHeader(fid_bixels{i},header_bixels{i});
+        
+        % close file
+        fclose(fid_bixels{i});
     end
+    fprintf('Done!\n')
+    
 end
-
-%% clean up bixel phsp headers
-fprintf('matRad: updating bixel phsp file headers... ');
-for i = 1:numBixels
-    
-    if header_bixels{i}.EKMINPHSPE == 1000
-        header_bixels{i}.EKMINPHSPE = 0;
-    end
-    
-    % seek to beginning of file
-    fseek(fid_bixels{i},0,'bof');
-    
-    % write updated header
-    writeHeader(fid_bixels{i},header_bixels{i});
-    
-    % close file
-    fclose(fid_bixels{i});
-end
-fprintf('Done!\n')
 
 end
 
+
+% read/write functions
 
 function [fid, header] = getHeader(fid)
 

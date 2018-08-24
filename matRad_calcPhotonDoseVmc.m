@@ -3,15 +3,13 @@ function dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst,calcDoseDirect)
 % matRad vmc++ photon dose calculation wrapper
 % 
 % call
-%   dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst,nCasePerBixel,numOfParallelMCSimulations)
+%   dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst,calcDoseDirect)
 %
 % input
 %   ct:                         matRad ct struct
 %   stf:                        matRad steering information struct
 %   pln:                        matRad plan meta information struct
 %   cst:                        matRad cst struct
-%   nCasePerBixel:              number of photons simulated per bixel
-%   numOfParallelMCSimulations: number of simultaneously performed simulations (optional) 
 %   calcDoseDirect:             boolian switch to bypass dose influence matrix
 %                               computation and directly calculate dose; only makes
 %                               sense in combination with matRad_calcDoseDirect.m%
@@ -103,31 +101,35 @@ end
 rng(0);
 
 % get default vmc options
-VmcOptions = matRad_vmcOptions(pln);
+VmcOptions = matRad_vmcOptions(pln,ct);
 
 % take only voxels inside patient
 V = [cst{:,4}];
 V = unique(vertcat(V{:}));
 
-writeCounter                  = 0;
-readCounter                   = 0;
-maxNumOfParallelMcSimulations = 0;
+writeCounter        = 0;
+readCounter         = 0;
+maxNumOfParMCSim    = 0;
 
 % initialize waitbar
 figureWait = waitbar(0,'calculate dose influence matrix for photons (vmc++)...');
 % show busy state
 set(figureWait,'pointer','watch');
 
-fprintf('matRad: VMC++ photon dose calculation... ');
+fprintf('matRad: VMC++ photon dose calculation...\n');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 for i = 1:dij.numOfBeams % loop over all beams
     
-   % remember beam and bixel number
+    fprintf(['Beam ' num2str(i) ' of ' num2str(dij.numOfBeams) ': \n']);
+    
+    % remember beam and bixel number
     if calcDoseDirect
         dij.beamNum(i)    = i;
         dij.rayNum(i)     = i;
         dij.bixelNum(i)   = i;
     end
+    
+    bixelsPerBeam = 0;
     
     if strcmp(pln.propDoseCalc.vmcOptions.source,'phsp')
         % set angle-specific vmc++ parameters
@@ -209,23 +211,23 @@ for i = 1:dij.numOfBeams % loop over all beams
         
         
         %% create input file with vmc++ parameters
-        outfile = ['MCpencilbeam_temp_',num2str(mod(writeCounter-1,numOfParallelMCSimulations)+1)];
+        outfile = ['MCpencilbeam_temp_',num2str(mod(writeCounter-1,VmcOptions.run.numOfParMCSim)+1)];
         matRad_createVmcInput(VmcOptions,fullfile(runsPath, [outfile,'.vmc']));
         
         % parallelization: only run this block for every numOfParallelMCSimulations!!!
-        if mod(writeCounter,numOfParallelMCSimulations) == 0 || writeCounter == dij.totalNumOfBixels
+        if mod(writeCounter,VmcOptions.run.numOfParMCSim) == 0 || writeCounter == dij.totalNumOfBixels
             
             % create batch file (enables parallel processes)
-            if writeCounter == dij.totalNumOfBixels && mod(writeCounter,numOfParallelMCSimulations) ~= 0
-                currNumOfParallelMcSimulations = mod(writeCounter,numOfParallelMCSimulations);
+            if writeCounter == dij.totalNumOfBixels && mod(writeCounter,VmcOptions.run.numOfParMCSim) ~= 0
+                currNumOfParMCSim = mod(writeCounter,VmcOptions.run.numOfParMCSim);
             else
-                currNumOfParallelMcSimulations = numOfParallelMCSimulations;
+                currNumOfParMCSim = VmcOptions.run.numOfParMCSim;
             end
-            matRad_createVmcBatchFile(currNumOfParallelMcSimulations,fullfile(VMCPath,'run_parallel_simulations.bat'),verbose);
+            matRad_createVmcBatchFile(currNumOfParMCSim,fullfile(VMCPath,'run_parallel_simulations.bat'),verbose);
             
             % save max number of executed parallel simulations
-            if currNumOfParallelMcSimulations > maxNumOfParallelMcSimulations 
-                maxNumOfParallelMcSimulations = currNumOfParallelMcSimulations;
+            if currNumOfParMCSim > maxNumOfParMCSim 
+                maxNumOfParMCSim = currNumOfParMCSim;
             end
             
             %% perform vmc++ simulation
@@ -239,12 +241,14 @@ for i = 1:dij.numOfBeams % loop over all beams
             end
             cd(current);
             
-            for k = 1:currNumOfParallelMcSimulations
-                readCounter = readCounter + 1;
+            for k = 1:currNumOfParMCSim
+                readCounter     = readCounter+1;
+                bixelsPerBeam   = bixelsPerBeam+1;
                 
-                % Display progress
-                if verbose == 0
-                   % matRad_progress(readCounter,dij.totalNumOfBixels);
+                % Display progress and update text only 200 times
+                if mod(bixelsPerBeam,max(1,round(stf(i).totalNumOfBixels/200))) == 0
+                    matRad_progress(bixelsPerBeam/max(1,round(stf(i).totalNumOfBixels/200)),...
+                        floor(stf(i).totalNumOfBixels/max(1,round(stf(i).totalNumOfBixels/200))));
                 end
                 
                 % update waitbar
@@ -261,11 +265,11 @@ for i = 1:dij.numOfBeams % loop over all beams
                 [bixelDose,~] = matRad_readDoseVmc(fullfile(runsPath,filename),VmcOptions);
 
                 % apply relative dose cutoff
-                doseCutoff                        = relDoseCutoff*max(bixelDose);
+                doseCutoff                        = VmcOptions.run.relDoseCutoff*max(bixelDose);
                 bixelDose(bixelDose < doseCutoff) = 0;
 
                 % apply absolute calibration factor
-                bixelDose = bixelDose*absCalibrationFactorVmc;
+                bixelDose = bixelDose*VmcOptions.run.absCalibrationFactorVmc;
 
                 % Save dose for every bixel in cell array
                 doseTmpContainer{mod(readCounter-1,numOfBixelsContainer)+1,1} = sparse(V,1,bixelDose(V),dij.numOfVoxels,1);
@@ -296,8 +300,8 @@ end
 %% delete temporary files
 delete(fullfile(VMCPath, 'run_parallel_simulations.bat')); % batch file
 delete(fullfile(phantomPath, 'matRad_CT_beam*.ct'));             % phantom file
-for j = 1:maxNumOfParallelMcSimulations
-    delete(fullfile(runsPath, ['MCpencilbeam_temp_',num2str(mod(j-1,numOfParallelMCSimulations)+1),'.vmc'])); % vmc inputfile
+for j = 1:maxNumOfParMCSim
+    delete(fullfile(runsPath, ['MCpencilbeam_temp_',num2str(mod(j-1,VmcOptions.run.numOfParMCSim)+1),'.vmc'])); % vmc inputfile
     switch pln.propDoseCalc.vmcOptions.version
         case 'Carleton'
             filename = sprintf('%s%d.dos','MCpencilbeam_temp_',j);
