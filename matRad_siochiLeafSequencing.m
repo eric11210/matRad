@@ -231,12 +231,13 @@ if pln.propOpt.runVMAT
     sequencing.propVMAT = pln.propOpt.VMAToptions;
     
     resultGUI.apertureInfo = matRad_sequencing2ApertureInfo(sequencing,stf);
-    resultGUI.apertureInfo.numPhases = dij.numPhases;
     
     if pln.propOpt.run4D
         % before this, apertureInfo is just a regular 3D version, i.e., no
         % cells anywhere
         resultGUI.apertureInfo.run4D = pln.propOpt.run4D;
+        
+        resultGUI.apertureInfo.numPhases = dij.numPhases;
         
         % this gives cells in the shapes and the vector
         resultGUI.apertureInfo = matRad_doDAD(resultGUI.apertureInfo,stf);
@@ -255,7 +256,6 @@ if pln.propOpt.runVMAT
     %optimize delivery
     resultGUI = matRad_optDelivery(resultGUI,0);
     resultGUI.apertureInfo = matRad_maxLeafSpeed(resultGUI.apertureInfo);
-    fprintf('\nLeaf speed turned off for now!\n');
     
     sequencing.w = resultGUI.apertureInfo.bixelWeights;
     

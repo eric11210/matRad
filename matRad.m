@@ -74,7 +74,7 @@ clc
 %load PROSTATE.mat
 %load LIVER.mat
 %load BOXPHANTOM.mat
-load lungPatient0_3DVMAT
+load lungPatient0_rep
 
 % meta information for treatment plan
 
@@ -88,7 +88,7 @@ pln.propStf.bixelWidth = 5;
 
 % dose calculation settings
 pln.propDoseCalc.memorySaverPhoton          = false;
-pln.propDoseCalc.vmc                        = true;
+pln.propDoseCalc.vmc                        = false;
 pln.propDoseCalc.vmcOptions.source          = 'phsp';
 pln.propDoseCalc.vmcOptions.phspBaseName    = '5x5_at_50cm';
 pln.propDoseCalc.vmcOptions.SCD             = 500;
@@ -111,11 +111,11 @@ pln.propOpt.VMAToptions.continuousAperture = true;
 
 pln.propOpt.VMAToptions.startingAngle = -180;
 pln.propOpt.VMAToptions.finishingAngle = 180;
-pln.propOpt.VMAToptions.maxGantryAngleSpacing = 4;      % Max gantry angle spacing for dose calculation
-pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing = 4;      % Max gantry angle spacing for DAO
-pln.propOpt.VMAToptions.maxFMOGantryAngleSpacing = 28;      % Max gantry angle spacing for FMO
+pln.propOpt.VMAToptions.maxGantryAngleSpacing = 90;      % Max gantry angle spacing for dose calculation
+pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing = 180;      % Max gantry angle spacing for DAO
+pln.propOpt.VMAToptions.maxFMOGantryAngleSpacing = 180;      % Max gantry angle spacing for FMO
 
-pln.propOpt.run4D = false;
+pln.propOpt.run4D = true;
 pln.propOpt.prop4D.singlePhaseFMO = true;
 % multi-phase FMO hasn't been implemented fully (would have to do changes in FMO and leaf
 % sequencing - probably better only for fluence, not DAO).

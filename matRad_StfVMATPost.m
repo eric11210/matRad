@@ -44,7 +44,7 @@ fprintf('matRad: VMAT post-processing (1/2)... ');
 IandFTimeInd = 1;
 DAODoseAngleBorders = zeros(2*numel(pln.propStf.DAOGantryAngles),1);
 offset = 1;
-timeFacIndOffset = 0;
+timeFacIndOffset = 1;
 
 for i = 1:length(pln.propStf.gantryAngles)
     
@@ -137,14 +137,18 @@ for i = 1:length(pln.propStf.gantryAngles)
             stf(i).propVMAT.timeFac(3) = (stf(i).propVMAT.DAOAngleBorderCentreDiff(2)-stf(i).propVMAT.doseAngleBorderCentreDiff(2))/stf(i).propVMAT.DAOAngleBordersDiff;
             
             % keep entries with a non-0 timeFac
-            keepInd     = stf(i).propVMAT.timeFac ~= 0;
-            keepIndSum  = cumsum(keepInd);
+            delInd     = stf(i).propVMAT.timeFac == 0;
             
             % write timeFacInd
-            stf(i).propVMAT.timeFacInd = zeros(1,3);
-            stf(i).propVMAT.timeFacInd(keepInd) = keepIndSum(keepInd)+timeFacIndOffset;
+            stf(i).propVMAT.timeFacInd          = [timeFacIndOffset-1 timeFacIndOffset timeFacIndOffset+1];
+            stf(i).propVMAT.timeFacInd(delInd)  = 0;
             
-            timeFacIndOffset = timeFacIndOffset+nnz(keepInd);
+            % update offset
+            if delInd(3)
+                timeFacIndOffset = timeFacIndOffset+1;
+            else
+                timeFacIndOffset = timeFacIndOffset+2;
+            end
             
         else
             %These are the factors that relate the total time in the
