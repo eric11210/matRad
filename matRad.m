@@ -74,7 +74,6 @@ clc
 %load PROSTATE.mat
 %load LIVER.mat
 %load BOXPHANTOM.mat
-%load('CONTAINS CONSTRAINTS.mat')
 load lungPatient0_3DVMAT
 
 % meta information for treatment plan
