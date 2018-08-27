@@ -34,7 +34,12 @@ VmcOptions.run.version = pln.propDoseCalc.vmcOptions.version;
 % rel_Dose_cutoff = 10^(-3), ncase = 500000/bixel
 switch pln.propDoseCalc.vmcOptions.version
     case 'Carleton'
-        VmcOptions.run.absCalibrationFactorVmc  = 1;
+        switch pln.propDoseCalc.vmcOptions.source
+            case 'phsp'
+                load('CALIBRATION_PHANTOM_TOH_VMC.mat','d_50mm','d_50mm_error')
+                VmcOptions.run.absCalibrationFactorVmc      = 1./d_50mm;
+                VmcOptions.run.absCalibrationFactorVmc_err  = d_50mm_error./(d_50mm.^2);
+        end
     case 'dkfz'
         VmcOptions.run.absCalibrationFactorVmc  = 99.818252282632300;
 end
@@ -43,12 +48,13 @@ end
 
 VmcOptions.source.myName       = 'some_source';                                         % name of source
 VmcOptions.source.monitorUnits = 1;
-if strcmp(pln.propDoseCalc.vmcOptions.source,'beamlet')
+switch pln.propDoseCalc.vmcOptions.source
+    case 'beamlet'
     VmcOptions.source.spectrum     = fullfile(runsPath,'spectra','var_6MV.spectrum');   % energy spectrum source (only used if no mono-Energy given)
     VmcOptions.source.charge       = 0;                                                 % charge (-1,0,1)
     VmcOptions.source.type         = 'beamlet';
     
-elseif strcmp(pln.propDoseCalc.vmcOptions.source,'phsp')
+    case 'phsp'
     VmcOptions.source.particleType  = 2;
     VmcOptions.source.type          = 'phsp';
 end
