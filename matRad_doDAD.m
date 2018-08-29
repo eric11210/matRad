@@ -203,8 +203,3 @@ for i = 1:numel(apertureInfo.beam)
         end
     end
 end
-
-
-% we have to update the apertureVector so that it contains the information
-% about all the other phases
-[apertureInfo.apertureVector, apertureInfo.mappingMx, apertureInfo.limMx] = matRad_daoApertureInfo2Vec(apertureInfo);

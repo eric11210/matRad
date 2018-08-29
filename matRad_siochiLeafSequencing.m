@@ -48,8 +48,6 @@ if nargin < 5
     visBool = 0;
 end
 
-sequencing.runVMAT = pln.propOpt.runVMAT;
-
 numOfBeams = numel(stf);
 
 if visBool
@@ -224,45 +222,19 @@ end
 
 if pln.propOpt.runVMAT
     
+    % do arc sequencing
     sequencing.beam = matRad_arcSequencing(sequencing.beam,stf,pln,dij.weightToMU);
-
-    sequencing.weightToMU = dij.weightToMU;
-    sequencing.preconditioner = pln.propOpt.preconditioner;
-    sequencing.propVMAT = pln.propOpt.VMAToptions;
     
-    resultGUI.apertureInfo = matRad_sequencing2ApertureInfo(sequencing,stf);
-    
+    % carry variables
+    sequencing.weightToMU       = dij.weightToMU;
     if pln.propOpt.run4D
-        % before this, apertureInfo is just a regular 3D version, i.e., no
-        % cells anywhere
-        resultGUI.apertureInfo.run4D = pln.propOpt.run4D;
-        
-        resultGUI.apertureInfo.numPhases = dij.numPhases;
-        
-        % this gives cells in the shapes and the vector
-        %% MAYBE WE SHOULD DO DAD IN SEQ2APINFO? THEN WE CAN PUT TIMEIND THERE PROPERLY
-        resultGUI.apertureInfo = matRad_doDAD(resultGUI.apertureInfo,stf);
-        
+        sequencing.numPhases = dij.numPhases;
+    else
+        sequencing.numPhases = 1;
     end
     
-    % store transition probabilities in apertureInfo
-    % TEMP only
-    doit = false;
-    for i = 1:numel(resultGUI.apertureInfo.beam)
-        if resultGUI.apertureInfo.propVMAT.beam(i).DAOBeam || doit
-            transitionMask = true(resultGUI.apertureInfo.numPhases,resultGUI.apertureInfo.numPhases);
-            
-            resultGUI.apertureInfo.propVMAT.beam(i).transitions                     = repmat(1:resultGUI.apertureInfo.numPhases,[resultGUI.apertureInfo.numPhases 1]);
-            resultGUI.apertureInfo.propVMAT.beam(i).transitions(~transitionMask)    = 0;
-        end
-        if resultGUI.apertureInfo.propVMAT.beam(i).DAOBeam
-            doit = resultGUI.apertureInfo.propVMAT.beam(i).timeFac(3) ~= 0;
-        else
-            doit = false;
-        end
-    end
-    resultGUI.apertureInfo.propVMAT.numLeafSpeedConstraint      = nnz([resultGUI.apertureInfo.propVMAT.beam.transitions]);
-    resultGUI.apertureInfo.propVMAT.numLeafSpeedConstraintDAO   = nnz([resultGUI.apertureInfo.propVMAT.beam([resultGUI.apertureInfo.propVMAT.beam.DAOBeam]).transitions]);
+    % get apertureInfo
+    resultGUI.apertureInfo = matRad_sequencing2ApertureInfo(sequencing,stf,pln);
     
     %matRad_daoVec2ApertureInfo will interpolate subchildren gantry
     %segments
@@ -281,7 +253,7 @@ else
     sequencing.weightToMU = dij.weightToMU;
     sequencing.preconditioner = pln.propOpt.preconditioner;
     
-    resultGUI.apertureInfo = matRad_sequencing2ApertureInfo(sequencing,stf);
+    resultGUI.apertureInfo = matRad_sequencing2ApertureInfo(sequencing,stf,pln);
     
     resultGUI.apertureInfo = matRad_daoVec2ApertureInfo(resultGUI.apertureInfo,resultGUI.apertureInfo.apertureVector);
 end
@@ -295,7 +267,6 @@ resultGUI.w          = sequencing.w;
 resultGUI.wSequenced = sequencing.w;
 
 resultGUI.sequencing   = sequencing;
-
 
 options.numOfScenarios = dij.numOfScenarios;
 options.bioOpt = 'none';

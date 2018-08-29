@@ -1,4 +1,4 @@
-function apertureInfo = matRad_sequencing2ApertureInfo(sequencing,stf)
+function apertureInfo = matRad_sequencing2ApertureInfo(sequencing,stf,pln)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % matRad function to generate a shape info struct based on the result of
 % multileaf collimator sequencing
@@ -14,19 +14,19 @@ function apertureInfo = matRad_sequencing2ApertureInfo(sequencing,stf)
 %   apertureInfo: matRad aperture weight and shape info struct
 %
 % References
-%   
+%
 %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Copyright 2015 the matRad development team. 
-% 
-% This file is part of the matRad project. It is subject to the license 
-% terms in the LICENSE file found in the top-level directory of this 
-% distribution and at https://github.com/e0404/matRad/LICENSES.txt. No part 
-% of the matRad project, including this file, may be copied, modified, 
-% propagated, or distributed except according to the terms contained in the 
+% Copyright 2015 the matRad development team.
+%
+% This file is part of the matRad project. It is subject to the license
+% terms in the LICENSE file found in the top-level directory of this
+% distribution and at https://github.com/e0404/matRad/LICENSES.txt. No part
+% of the matRad project, including this file, may be copied, modified,
+% propagated, or distributed except according to the terms contained in the
 % LICENSE file.
 %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -47,7 +47,7 @@ totalNumOfShapes = sum([sequencing.beam.numOfShapes]);
 vectorOffset = totalNumOfShapes + 1; % used for bookkeeping in the vector for optimization
 bixOffset = 1; %used for gradient calculations
 
-if sequencing.runVMAT
+if pln.propOpt.runVMAT
     totalNumOfOptBixels = 0;
     totalNumOfLeafPairs = 0;
 end
@@ -65,12 +65,12 @@ for i=1:size(stf,2)
     Z = rayPos_bev(3,:)';
     
     % create ray-map
-    maxX = max(X); minX = min(X);    
+    maxX = max(X); minX = min(X);
     maxZ = max(Z); minZ = min(Z);
     
     dimX = (maxX-minX)/stf(i).bixelWidth + 1;
     dimZ = (maxZ-minZ)/stf(i).bixelWidth + 1;
-
+    
     rayMap = zeros(dimZ,dimX);
     
     % get indices for x and z positions
@@ -79,7 +79,7 @@ for i=1:size(stf,2)
     
     % get indices in the ray-map
     indInRay = zPos + (xPos-1)*dimZ;
-
+    
     % fill ray-map
     rayMap(indInRay) = 1;
     
@@ -102,7 +102,7 @@ for i=1:size(stf,2)
         lim_l(l) = (lim_lInd-1)*bixelWidth + minX - 1/2*bixelWidth;
         lim_r(l) = (lim_rInd-1)*bixelWidth + minX + 1/2*bixelWidth;
     end
-        
+    
     % get leaf positions for all shapes
     % leaf positions can be extracted from the shapes created in Sequencing
     for m = 1:sequencing.beam(i).numOfShapes
@@ -164,14 +164,14 @@ for i=1:size(stf,2)
             
         end
         
-        if sequencing.runVMAT
+        if pln.propOpt.runVMAT
             apertureInfo.beam(i).shape{1}(m).MURate = sequencing.beam(i).MURate;
         end
         
         apertureInfo.beam(i).shape{1}(m).jacobiScale = 1;
         k = k+1;
         
-        if sequencing.propVMAT.continuousAperture
+        if pln.propOpt.VMAToptions.continuousAperture
             apertureInfo.beam(i).shape{1}(m).vectorOffset = [vectorOffset vectorOffset+dimZ];
             
             % update index for bookkeeping
@@ -183,27 +183,27 @@ for i=1:size(stf,2)
             vectorOffset = vectorOffset + dimZ;
         end
     end
-        
-    % z-coordinates of active leaf pairs        
+    
+    % z-coordinates of active leaf pairs
     % get z-coordinates from bixel positions
     leafPairPos = unique(Z);
-        
+    
     % find upmost and downmost leaf pair
     topLeafPairPos = maxZ;
     bottomLeafPairPos = minZ;
     
     topLeafPair = centralLeafPair - topLeafPairPos/bixelWidth;
     bottomLeafPair = centralLeafPair - bottomLeafPairPos/bixelWidth;
-        
+    
     % create bool map of active leaf pairs
     isActiveLeafPair = zeros(numOfMLCLeafPairs,1);
     isActiveLeafPair(topLeafPair:bottomLeafPair) = 1;
-        
+    
     % create MLC window
     % getting the dimensions of the MLC in order to be able to plot the
     % shapes using physical coordinates
     MLCWindow = [minX-bixelWidth/2 maxX+bixelWidth/2 ...
-                    minZ-bixelWidth/2 maxZ+bixelWidth/2];
+        minZ-bixelWidth/2 maxZ+bixelWidth/2];
     
     % save data for each beam
     apertureInfo.beam(i).numOfShapes = sequencing.beam(i).numOfShapes;
@@ -218,7 +218,7 @@ for i=1:size(stf,2)
     apertureInfo.beam(i).MLCWindow = MLCWindow;
     apertureInfo.beam(i).gantryAngle = stf(i).gantryAngle;
     
-    if sequencing.runVMAT
+    if pln.propOpt.runVMAT
         
         apertureInfo.beam(i).bixOffset = bixOffset;
         bixOffset = bixOffset+apertureInfo.beam(i).numOfActiveLeafPairs;
@@ -255,7 +255,7 @@ for i=1:size(stf,2)
                 apertureInfo.propVMAT.beam(i).FMOAngleBordersDiff = stf(i).propVMAT.FMOAngleBordersDiff;
             end
             
-            if sequencing.propVMAT.continuousAperture
+            if pln.propOpt.VMAToptions.continuousAperture
                 apertureInfo.propVMAT.beam(i).timeFacInd = stf(i).propVMAT.timeFacInd;
                 apertureInfo.propVMAT.beam(i).doseAngleDAO = stf(i).propVMAT.doseAngleDAO;
             end
@@ -267,7 +267,7 @@ for i=1:size(stf,2)
             apertureInfo.propVMAT.beam(i).lastDAOIndex = stf(i).propVMAT.lastDAOIndex;
             apertureInfo.propVMAT.beam(i).nextDAOIndex = stf(i).propVMAT.nextDAOIndex;
             
-            if sequencing.propVMAT.continuousAperture
+            if pln.propOpt.VMAToptions.continuousAperture
                 apertureInfo.propVMAT.beam(i).fracFromLastDAO_I = stf(i).propVMAT.fracFromLastDAO_I;
                 apertureInfo.propVMAT.beam(i).fracFromLastDAO_F = stf(i).propVMAT.fracFromLastDAO_F;
                 apertureInfo.propVMAT.beam(i).fracFromNextDAO_I = stf(i).propVMAT.fracFromNextDAO_I;
@@ -278,112 +278,70 @@ for i=1:size(stf,2)
 end
 
 % save global data
-apertureInfo.runVMAT = sequencing.runVMAT;
-apertureInfo.run4D = false; % for now
-apertureInfo.numPhases = 1; % for now
-apertureInfo.preconditioner = sequencing.preconditioner;
-apertureInfo.bixelWidth = bixelWidth;
-apertureInfo.numOfMLCLeafPairs = numOfMLCLeafPairs;
-apertureInfo.totalNumOfBixels = totalNumOfBixels;
-apertureInfo.totalNumOfShapes = sum([apertureInfo.beam.numOfShapes]);
+apertureInfo.runVMAT            = pln.propOpt.runVMAT;
+apertureInfo.preconditioner     = pln.propOpt.preconditioner;
+apertureInfo.run4D              = pln.propOpt.run4D;
+apertureInfo.numPhases          = sequencing.numPhases;
+apertureInfo.bixelWidth         = bixelWidth;
+apertureInfo.numOfMLCLeafPairs  = numOfMLCLeafPairs;
+apertureInfo.totalNumOfBixels   = totalNumOfBixels;
+apertureInfo.totalNumOfShapes   = sum([apertureInfo.beam.numOfShapes]);
 
 if isfield(sequencing,'weightToMU')
     apertureInfo.weightToMU = sequencing.weightToMU;
 end
-if sequencing.runVMAT
+if pln.propOpt.runVMAT
     
     tempStruct = apertureInfo.propVMAT.beam;
-    apertureInfo.propVMAT = sequencing.propVMAT;
+    apertureInfo.propVMAT = pln.propOpt.VMAToptions;
     apertureInfo.propVMAT.beam = tempStruct;
     
     apertureInfo.totalNumOfOptBixels = totalNumOfOptBixels;
     apertureInfo.doseTotalNumOfLeafPairs = sum([apertureInfo.beam(:).numOfActiveLeafPairs]);
     
-    
     if apertureInfo.propVMAT.continuousAperture
         apertureInfo.totalNumOfLeafPairs = sum(reshape([apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).doseAngleDAO],2,[]),1)*[apertureInfo.beam([apertureInfo.propVMAT.beam.DAOBeam]).numOfActiveLeafPairs]';
-        
-        timeFac = [apertureInfo.propVMAT.beam.timeFac]';
-        deleteInd = timeFac == 0;
-        timeFac(deleteInd) = [];
-        
-        timeFacInd = [apertureInfo.propVMAT.beam.timeFacInd];
-        timeFacInd(deleteInd) = [];
-        
-        apertureInfo.propVMAT.numLeafSpeedConstraint = max(timeFacInd);
-        apertureInfo.propVMAT.numLeafSpeedTimeEffect = numel(timeFac);
-        
-        %%%%% DELETE THIS?
-        shapeInd = 1;
-        for i = 1:numel(apertureInfo.beam)
-            if apertureInfo.propVMAT.beam(i).DAOBeam
-                
-                apertureInfo.propVMAT.beam(i).initialLeftLeafInd = apertureInfo.beam(i).shape{1}(1).vectorOffset:(apertureInfo.beam(i).shape{1}(1).vectorOffset+dimZ-1);
-                apertureInfo.propVMAT.beam(i).finalLeftLeafInd = (apertureInfo.beam(i).shape{1}(1).vectorOffset+dimZ):(apertureInfo.beam(i).shape{1}(1).vectorOffset+2*dimZ-1);
-                
-                apertureInfo.propVMAT.beam(i).initialRightLeafInd = apertureInfo.propVMAT.beam(i).initialLeftLeafInd+apertureInfo.totalNumOfLeafPairs;
-                apertureInfo.propVMAT.beam(i).finalRightLeafInd = apertureInfo.propVMAT.beam(i).finalLeftLeafInd+apertureInfo.totalNumOfLeafPairs;
-                
-                apertureInfo.propVMAT.beam(i).timeInd = repmat(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2+shapeInd,1,apertureInfo.beam(1).numOfActiveLeafPairs);
-                
-                if apertureInfo.propVMAT.beam(i).timeFac(1) ~= 0
-                    % some of the time for this optimized angle "leaks"
-                    % into a previous dose angle arc (where we need to
-                    % constrain leaf speed)
-                    
-                    % the initial leaves here act as final leaves for the
-                    % previous angle
-                    finalLeftLeafInd = [apertureInfo.propVMAT.beam(i).initialLeftLeafInd apertureInfo.propVMAT.beam(i).finalLeftLeafInd];
-                    finalRightLeafInd = [apertureInfo.propVMAT.beam(i).initialRightLeafInd apertureInfo.propVMAT.beam(i).finalRightLeafInd];
-                    
-                    % part of the optimized time is used for the leaf speed
-                    % calc
-                    apertureInfo.propVMAT.beam(i).timeInd = [repmat(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2+shapeInd,1,apertureInfo.beam(1).numOfActiveLeafPairs) apertureInfo.propVMAT.beam(i).timeInd];
-                else
-                    finalLeftLeafInd = apertureInfo.propVMAT.beam(i).finalLeftLeafInd;
-                    finalRightLeafInd = apertureInfo.propVMAT.beam(i).finalRightLeafInd;
-                end
-                
-                if apertureInfo.propVMAT.beam(i).timeFac(3) ~= 0
-                    % some of the time for this optimized angle "leaks"
-                    % into a next dose angle arc (where we need to
-                    % constrain leaf speed)
-                    
-                    initialLeftLeafInd = [apertureInfo.propVMAT.beam(i).initialLeftLeafInd apertureInfo.propVMAT.beam(i).finalLeftLeafInd];
-                    initialRightLeafInd = [apertureInfo.propVMAT.beam(i).initialRightLeafInd apertureInfo.propVMAT.beam(i).finalRightLeafInd];
-                    
-                    % part of the optimized time is used for the leaf speed
-                    % calc
-                    apertureInfo.propVMAT.beam(i).timeInd = [apertureInfo.propVMAT.beam(i).timeInd repmat(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2+shapeInd,1,apertureInfo.beam(1).numOfActiveLeafPairs)];
-                else
-                    initialLeftLeafInd = apertureInfo.propVMAT.beam(i).initialLeftLeafInd;
-                    initialRightLeafInd = apertureInfo.propVMAT.beam(i).initialRightLeafInd;
-                end
-                
-                apertureInfo.propVMAT.beam(i).initialLeftLeafInd = initialLeftLeafInd;
-                apertureInfo.propVMAT.beam(i).initialRightLeafInd = initialRightLeafInd;
-                apertureInfo.propVMAT.beam(i).finalLeftLeafInd = finalLeftLeafInd;
-                apertureInfo.propVMAT.beam(i).finalRightLeafInd = finalRightLeafInd;
-                
-                shapeInd = shapeInd+1;
-            end
-        end
     else
         apertureInfo.totalNumOfLeafPairs = totalNumOfLeafPairs;
     end
     
-    % create vectors for optimization
-    
+    % fix instances of leaf touching
     apertureInfo = matRad_leafTouching(apertureInfo);
-    [apertureInfo.apertureVector, apertureInfo.mappingMx, apertureInfo.limMx] = matRad_daoApertureInfo2Vec(apertureInfo);
+    
+    if pln.propOpt.run4D
+        apertureInfo = matRad_doDAD(apertureInfo,stf);
+        
+        % store transition probabilities in apertureInfo
+        % move to separate function later??? (use Markov chain to determine
+        % mask)
+        interpGetsTrans = false;
+        for i = 1:numel(apertureInfo.beam)
+            if apertureInfo.propVMAT.beam(i).DAOBeam || interpGetsTrans
+                
+                transitionMask = true(apertureInfo.numPhases,apertureInfo.numPhases);
+                
+                apertureInfo.propVMAT.beam(i).transitions                     = repmat(1:apertureInfo.numPhases,[apertureInfo.numPhases 1]);
+                apertureInfo.propVMAT.beam(i).transitions(~transitionMask)    = 0;
+            end
+            if apertureInfo.propVMAT.beam(i).DAOBeam
+                interpGetsTrans = apertureInfo.propVMAT.beam(i).timeFac(3) ~= 0;
+            else
+                interpGetsTrans = false;
+            end
+        end
+        
+        % count number of transitions
+        apertureInfo.propVMAT.numLeafSpeedConstraint      = nnz([apertureInfo.propVMAT.beam.transitions]);
+        apertureInfo.propVMAT.numLeafSpeedConstraintDAO   = nnz([apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).transitions]);
+    end
     
 else
     apertureInfo.totalNumOfLeafPairs = sum([apertureInfo.beam.numOfShapes]*[apertureInfo.beam.numOfActiveLeafPairs]');
     apertureInfo.doseTotalNumOfLeafPairs = apertureInfo.totalNumOfLeafPairs;
-    
-    % create vectors for optimization
-    [apertureInfo.apertureVector, apertureInfo.mappingMx, apertureInfo.limMx] = matRad_daoApertureInfo2Vec(apertureInfo);
 end
+
+% create vectors for optimization
+[apertureInfo.apertureVector, apertureInfo.mappingMx, apertureInfo.limMx] = matRad_daoApertureInfo2Vec(apertureInfo);
 
 end
 
