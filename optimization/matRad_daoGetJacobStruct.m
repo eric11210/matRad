@@ -208,7 +208,118 @@ if ~apertureInfo.runVMAT
 else
     
     if apertureInfo.propVMAT.continuousAperture
+        % set up
+        n = apertureInfo.beam(1).numOfActiveLeafPairs;
+        indInSparseVec  = (1:n);
+        indInConVec     = (1:n);
+        shapeInd        = 1;
         
+        % sparse matrix
+        numElem     = n.*(apertureInfo.propVMAT.numLeafSpeedConstraintDAO*6+(apertureInfo.propVMAT.numLeafSpeedConstraint-apertureInfo.propVMAT.numLeafSpeedConstraintDAO)*8);
+        i_sparse    = zeros(numElem,1);
+        j_sparse    = zeros(numElem,1);
+        s_sparse    = ones(numElem,1);
+        
+        for i = 1:numel(apertureInfo.beam)
+            % loop over beams
+            
+            if ~isempty(apertureInfo.propVMAT.beam(i).transitions)
+                for phase_I = 1:apertureInfo.numPhases
+                    % loop over initial phases
+                    
+                    transitions = apertureInfo.propVMAT.beam(i).transitions(phase_I,:);
+                    transitions(transitions == 0) = [];
+                    
+                    for phase_F = transitions
+                        % loop over possible final phases
+                        
+                        % get vector indices
+                        if apertureInfo.propVMAT.beam(i).DAOBeam
+                            % if it's a DAO beam, use own vector offset
+                            vectorIx_LI = apertureInfo.beam(i).shape{phase_I}(1).vectorOffset(1) + ((1:n)-1);
+                            vectorIx_LF = apertureInfo.beam(i).shape{phase_F}(1).vectorOffset(2) + ((1:n)-1);
+                        else
+                            % otherwise, use vector offset of previous and next
+                            % beams
+                            vectorIx_LI = apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_I}(1).vectorOffset(2) + ((1:n)-1);
+                            vectorIx_LF = apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_F}(1).vectorOffset(1) + ((1:n)-1);
+                        end
+                        vectorIx_RI = vectorIx_LI+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
+                        vectorIx_RF = vectorIx_LF+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
+                        
+                        % calc jacobs
+                        
+                        % wrt initial leaf positions (left, then right)
+                        i_sparse(indInSparseVec)    = indInConVec;
+                        j_sparse(indInSparseVec)    = vectorIx_LI;
+                        indInSparseVec              = indInSparseVec+n;
+                        
+                        i_sparse(indInSparseVec)    = indInConVec+apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs;
+                        j_sparse(indInSparseVec)    = vectorIx_RI;
+                        indInSparseVec              = indInSparseVec+n;
+                        
+                        % wrt final leaf positions (left, then right)
+                        i_sparse(indInSparseVec)    = indInConVec;
+                        j_sparse(indInSparseVec)    = vectorIx_LF;
+                        indInSparseVec              = indInSparseVec+n;
+                        
+                        i_sparse(indInSparseVec)    = indInConVec+apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs;
+                        j_sparse(indInSparseVec)    = vectorIx_RF;
+                        indInSparseVec              = indInSparseVec+n;
+                        
+                        % wrt time (left, then right)
+                        % how we do this depends on if it's a DAO beam or
+                        % not
+                        if apertureInfo.propVMAT.beam(i).DAOBeam
+                            % if it is, then speeds only depend on its own
+                            % time
+                            i_sparse(indInSparseVec)    = indInConVec;
+                            j_sparse(indInSparseVec)    = apertureInfo.propVMAT.beam(i).timeInd;
+                            indInSparseVec              = indInSparseVec+n;
+                            
+                            i_sparse(indInSparseVec)    = indInConVec+apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs;
+                            j_sparse(indInSparseVec)    = apertureInfo.propVMAT.beam(i).timeInd;
+                            indInSparseVec              = indInSparseVec+n;
+                            
+                        else
+                            % otherwise, speed depends on time of DAO
+                            % before and DAO after
+                            
+                            % before
+                            i_sparse(indInSparseVec)    = indInConVec;
+                            j_sparse(indInSparseVec)    = apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).timeInd;
+                            indInSparseVec              = indInSparseVec+n;
+                            
+                            i_sparse(indInSparseVec)    = indInConVec+apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs;
+                            j_sparse(indInSparseVec)    = apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).timeInd;
+                            indInSparseVec              = indInSparseVec+n;
+                            
+                            % after
+                            i_sparse(indInSparseVec)    = indInConVec;
+                            j_sparse(indInSparseVec)    = apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).timeInd;
+                            indInSparseVec              = indInSparseVec+n;
+                            
+                            i_sparse(indInSparseVec)    = indInConVec+apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs;
+                            j_sparse(indInSparseVec)    = apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).timeInd;
+                            indInSparseVec              = indInSparseVec+n;
+                            
+                        end
+                        
+                        
+                        % update offset
+                        indInConVec = indInConVec+n;
+                    end
+                end
+                
+                % increment shapeInd only for beams which have transtion
+                % defined
+                shapeInd = shapeInd+1;
+            end
+        end
+        
+        jacobStruct_lfspd = sparse(i_sparse,j_sparse,s_sparse,2*apertureInfo.beam(1).numOfActiveLeafPairs*apertureInfo.propVMAT.numLeafSpeedConstraint,numel(apertureInfo.apertureVector));
+        
+        %{
         % get index values for the jacobian
         % variable index
         initialLeftLeafInd = [apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).initialLeftLeafInd];
@@ -234,7 +345,9 @@ else
         
         s = ones(1,(4*apertureInfo.propVMAT.numLeafSpeedConstraint+2*apertureInfo.propVMAT.numLeafSpeedTimeEffect)*apertureInfo.beam(1).numOfActiveLeafPairs);
         
-        jacobStruct_lfspd = sparse(i,j,s,2*apertureInfo.beam(1).numOfActiveLeafPairs*apertureInfo.propVMAT.numLeafSpeedConstraint,numel(apertureInfo.apertureVector));
+        jacobStruct_lfspd = zeros(2*apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs,numel(apertureInfo.apertureVector));
+        %jacobStruct_lfspd = sparse(i,j,s,2*apertureInfo.beam(1).numOfActiveLeafPairs*apertureInfo.propVMAT.numLeafSpeedConstraint,numel(apertureInfo.apertureVector));
+        %}
     else
         
         i = sort(repmat(1:(apertureInfo.totalNumOfShapes-1),1,2));

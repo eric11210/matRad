@@ -240,11 +240,29 @@ if pln.propOpt.runVMAT
         resultGUI.apertureInfo.numPhases = dij.numPhases;
         
         % this gives cells in the shapes and the vector
+        %% MAYBE WE SHOULD DO DAD IN SEQ2APINFO? THEN WE CAN PUT TIMEIND THERE PROPERLY
         resultGUI.apertureInfo = matRad_doDAD(resultGUI.apertureInfo,stf);
         
-        % store transition probabilities in apertureInfo
-        resultGUI.apertureInfo.prop4D.transitionMask = ones(resultGUI.apertureInfo.numPhases,numel(resultGUI.apertureInfo.beam));
     end
+    
+    % store transition probabilities in apertureInfo
+    % TEMP only
+    doit = false;
+    for i = 1:numel(resultGUI.apertureInfo.beam)
+        if resultGUI.apertureInfo.propVMAT.beam(i).DAOBeam || doit
+            transitionMask = true(resultGUI.apertureInfo.numPhases,resultGUI.apertureInfo.numPhases);
+            
+            resultGUI.apertureInfo.propVMAT.beam(i).transitions                     = repmat(1:resultGUI.apertureInfo.numPhases,[resultGUI.apertureInfo.numPhases 1]);
+            resultGUI.apertureInfo.propVMAT.beam(i).transitions(~transitionMask)    = 0;
+        end
+        if resultGUI.apertureInfo.propVMAT.beam(i).DAOBeam
+            doit = resultGUI.apertureInfo.propVMAT.beam(i).timeFac(3) ~= 0;
+        else
+            doit = false;
+        end
+    end
+    resultGUI.apertureInfo.propVMAT.numLeafSpeedConstraint      = nnz([resultGUI.apertureInfo.propVMAT.beam.transitions]);
+    resultGUI.apertureInfo.propVMAT.numLeafSpeedConstraintDAO   = nnz([resultGUI.apertureInfo.propVMAT.beam([resultGUI.apertureInfo.propVMAT.beam.DAOBeam]).transitions]);
     
     %matRad_daoVec2ApertureInfo will interpolate subchildren gantry
     %segments

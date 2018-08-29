@@ -313,7 +313,8 @@ if sequencing.runVMAT
         apertureInfo.propVMAT.numLeafSpeedConstraint = max(timeFacInd);
         apertureInfo.propVMAT.numLeafSpeedTimeEffect = numel(timeFac);
         
-        j = 1;
+        %%%%% DELETE THIS?
+        shapeInd = 1;
         for i = 1:numel(apertureInfo.beam)
             if apertureInfo.propVMAT.beam(i).DAOBeam
                 
@@ -323,7 +324,7 @@ if sequencing.runVMAT
                 apertureInfo.propVMAT.beam(i).initialRightLeafInd = apertureInfo.propVMAT.beam(i).initialLeftLeafInd+apertureInfo.totalNumOfLeafPairs;
                 apertureInfo.propVMAT.beam(i).finalRightLeafInd = apertureInfo.propVMAT.beam(i).finalLeftLeafInd+apertureInfo.totalNumOfLeafPairs;
                 
-                apertureInfo.propVMAT.beam(i).timeInd = repmat(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2+j,1,apertureInfo.beam(1).numOfActiveLeafPairs);
+                apertureInfo.propVMAT.beam(i).timeInd = repmat(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2+shapeInd,1,apertureInfo.beam(1).numOfActiveLeafPairs);
                 
                 if apertureInfo.propVMAT.beam(i).timeFac(1) ~= 0
                     % some of the time for this optimized angle "leaks"
@@ -337,7 +338,7 @@ if sequencing.runVMAT
                     
                     % part of the optimized time is used for the leaf speed
                     % calc
-                    apertureInfo.propVMAT.beam(i).timeInd = [repmat(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2+j,1,apertureInfo.beam(1).numOfActiveLeafPairs) apertureInfo.propVMAT.beam(i).timeInd];
+                    apertureInfo.propVMAT.beam(i).timeInd = [repmat(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2+shapeInd,1,apertureInfo.beam(1).numOfActiveLeafPairs) apertureInfo.propVMAT.beam(i).timeInd];
                 else
                     finalLeftLeafInd = apertureInfo.propVMAT.beam(i).finalLeftLeafInd;
                     finalRightLeafInd = apertureInfo.propVMAT.beam(i).finalRightLeafInd;
@@ -353,7 +354,7 @@ if sequencing.runVMAT
                     
                     % part of the optimized time is used for the leaf speed
                     % calc
-                    apertureInfo.propVMAT.beam(i).timeInd = [apertureInfo.propVMAT.beam(i).timeInd repmat(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2+j,1,apertureInfo.beam(1).numOfActiveLeafPairs)];
+                    apertureInfo.propVMAT.beam(i).timeInd = [apertureInfo.propVMAT.beam(i).timeInd repmat(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2+shapeInd,1,apertureInfo.beam(1).numOfActiveLeafPairs)];
                 else
                     initialLeftLeafInd = apertureInfo.propVMAT.beam(i).initialLeftLeafInd;
                     initialRightLeafInd = apertureInfo.propVMAT.beam(i).initialRightLeafInd;
@@ -364,7 +365,7 @@ if sequencing.runVMAT
                 apertureInfo.propVMAT.beam(i).finalLeftLeafInd = finalLeftLeafInd;
                 apertureInfo.propVMAT.beam(i).finalRightLeafInd = finalRightLeafInd;
                 
-                j = j+1;
+                shapeInd = shapeInd+1;
             end
         end
     else

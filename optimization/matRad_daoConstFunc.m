@@ -66,7 +66,10 @@ else
     timeDoseBorderAngles_rep = repmat(timeDoseBorderAngles,apertureInfo.numPhases,1);
     
     if apertureInfo.propVMAT.continuousAperture
-        
+        % Using the dynamic fluence calculation, we have the leaf positions in
+        % the vector be the leaf positions at the borders of the Dij arcs (for optimized angles only).
+        % Therefore we must also use the times between the borders of the Dij
+        % arc (for optimized angles only).
         timeFac = [apertureInfo.propVMAT.beam.timeFac]';
         deleteInd = timeFac == 0;
         timeFac(deleteInd) = [];
@@ -77,15 +80,70 @@ else
         j = repelem(1:apertureInfo.totalNumOfShapes,1,3);
         j(deleteInd) = [];
         
-        timeFacMatrix = sparse(i,j,timeFac,2*apertureInfo.totalNumOfShapes-1,apertureInfo.totalNumOfShapes);
+        timeFacMatrix = sparse(i,j,timeFac,max(i),apertureInfo.totalNumOfShapes);
         timeBNOptAngles = timeFacMatrix*timeDAOBorderAngles;
         
-        leftLeafDiff = diff(reshape(leftLeafPos,apertureInfo.beam(1).numOfActiveLeafPairs,[]),1,2);
-        rightLeafDiff = diff(reshape(rightLeafPos,apertureInfo.beam(1).numOfActiveLeafPairs,[]),1,2);
+        % prep
+        leftLeafSpeed   = zeros(apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs,1);
+        rightLeafSpeed  = zeros(apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs,1);
+        
+        offset      = 0;
+        shapeInd    = 1;
+        
+        for i = 1:numel(apertureInfo.beam)
+            % loop over beams
+            n = apertureInfo.beam(i).numOfActiveLeafPairs;
+            
+            if ~isempty(apertureInfo.propVMAT.beam(i).transitions)
+                for phase_I = 1:apertureInfo.numPhases
+                    % loop over initial phases
+                    
+                    transitions = apertureInfo.propVMAT.beam(i).transitions(phase_I,:);
+                    transitions(transitions == 0) = [];
+                    
+                    for phase_F = transitions
+                        % loop over possible final phases
+                        
+                        % get vector indices
+                        if apertureInfo.propVMAT.beam(i).DAOBeam
+                            % if it's a DAO beam, use own vector offset
+                            vectorIx_LI = apertureInfo.beam(i).shape{phase_I}(1).vectorOffset(1) + ((1:n)-1);
+                            vectorIx_LF = apertureInfo.beam(i).shape{phase_F}(1).vectorOffset(2) + ((1:n)-1);
+                        else
+                            % otherwise, use vector offset of previous and next
+                            % beams
+                            vectorIx_LI = apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_I}(1).vectorOffset(2) + ((1:n)-1);
+                            vectorIx_LF = apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_F}(1).vectorOffset(1) + ((1:n)-1);
+                        end
+                        vectorIx_RI = vectorIx_LI+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
+                        vectorIx_RF = vectorIx_LF+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
+                        
+                        % extract leaf positions, time
+                        leftLeafPos_I   = apertureInfoVec(vectorIx_LI);
+                        rightLeafPos_I  = apertureInfoVec(vectorIx_RI);
+                        leftLeafPos_F   = apertureInfoVec(vectorIx_LF);
+                        rightLeafPos_F  = apertureInfoVec(vectorIx_RF);
+                        t               = timeBNOptAngles(shapeInd);
+                        
+                        % determine indices
+                        indInConVec = offset+(1:n);
+                        
+                        % calc speeds
+                        leftLeafSpeed(indInConVec)      = abs(leftLeafPos_F-leftLeafPos_I)./t;
+                        rightLeafSpeed(indInConVec)     = abs(rightLeafPos_F-rightLeafPos_I)./t;
+                        
+                        % update offset
+                        offset = offset+n;
+                    end
+                end
                 
-        % values of leaf speeds in an arc surrounding the optimized angles
-        c_lfspd = reshape(abs([leftLeafDiff rightLeafDiff])./ ...
-            repmat(timeBNOptAngles',apertureInfo.beam(1).numOfActiveLeafPairs,2),2*apertureInfo.beam(1).numOfActiveLeafPairs*numel(timeBNOptAngles),1);
+                % increment shapeInd only for beams which have transtion
+                % defined
+                shapeInd = shapeInd+1;
+            end
+        end
+        
+        c_lfspd = [leftLeafSpeed; rightLeafSpeed];
     else
         
         i = sort(repmat(1:(apertureInfo.totalNumOfShapes-1),1,2));
@@ -113,7 +171,6 @@ else
     
     % concatenate
     c = [c_dao; c_lfspd; c_dosrt; c_dos];
-    
     
 end
 

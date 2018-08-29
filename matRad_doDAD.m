@@ -35,6 +35,7 @@ function apertureInfo = matRad_doDAD(apertureInfo,stf)
 % LICENSE file.
 %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+shapeInd = 1;
 for i = 1:numel(apertureInfo.beam)
     
     % leafPairPos_phase1 is the z-position of each leaf (in phase 1 or P)
@@ -142,6 +143,10 @@ for i = 1:numel(apertureInfo.beam)
             % phase
             apertureInfo.beam(i).shape{phase}(j).vectorOffset = apertureInfo.beam(i).shape{phase}(j).vectorOffset + (apertureInfo.numPhases-1)*apertureInfo.totalNumOfShapes + (phase-1)*apertureInfo.totalNumOfLeafPairs;
         end
+        
+        %% TEMP
+        apertureInfo.propVMAT.beam(i).timeInd = apertureInfo.numPhases*(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)+shapeInd;
+        shapeInd = shapeInd+1;
     end
 end
 
