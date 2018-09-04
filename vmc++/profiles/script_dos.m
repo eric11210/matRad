@@ -14,5 +14,7 @@ d = permute(d,[2 1 3]);
 dError = reshape(bixelDoseError,[351 351 351]);
 dError = permute(dError,[2 1 3]);
 
+rel = d./dError;
+
 % read in reversed
 % reverse x-y

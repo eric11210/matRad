@@ -21,6 +21,8 @@ function dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst,calcDoseDirect)
 %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+dij.radiationMode = pln.radiationMode;
+
 % default: dose influence matrix computation
 if ~exist('calcDoseDirect','var')
     calcDoseDirect = false;
@@ -43,6 +45,9 @@ dij.resolution         = ct.resolution;
 dij.dimensions         = ct.cubeDim;
 dij.numOfScenarios     = 1;
 dij.numOfRaysPerBeam   = [stf(:).numOfRays];
+dij.weightToMU         = 100;
+dij.scaleFactor        = 1;
+dij.memorySaverPhoton  = pln.propDoseCalc.memorySaverPhoton;
 dij.totalNumOfBixels   = sum([stf(:).totalNumOfBixels]);
 dij.totalNumOfRays     = sum(dij.numOfRaysPerBeam);
 
@@ -120,7 +125,7 @@ fprintf('matRad: VMC++ photon dose calculation...\n');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 for i = 1:dij.numOfBeams % loop over all beams
     
-    fprintf(['Beam ' num2str(i) ' of ' num2str(dij.numOfBeams) ': \n']);
+    fprintf('Beam %d of %d ...',i,dij.numOfBeams);
     
     % remember beam and bixel number
     if calcDoseDirect
@@ -128,8 +133,6 @@ for i = 1:dij.numOfBeams % loop over all beams
         dij.rayNum(i)     = i;
         dij.bixelNum(i)   = i;
     end
-    
-    bixelsPerBeam = 0;
     
     if strcmp(pln.propDoseCalc.vmcOptions.source,'phsp')
         % set angle-specific vmc++ parameters
@@ -243,13 +246,6 @@ for i = 1:dij.numOfBeams % loop over all beams
             
             for k = 1:currNumOfParMCSim
                 readCounter     = readCounter+1;
-                bixelsPerBeam   = bixelsPerBeam+1;
-                
-                % Display progress and update text only 200 times
-                if mod(bixelsPerBeam,max(1,round(stf(i).totalNumOfBixels/200))) == 0
-                    matRad_progress(bixelsPerBeam/max(1,round(stf(i).totalNumOfBixels/200)),...
-                        floor(stf(i).totalNumOfBixels/max(1,round(stf(i).totalNumOfBixels/200))));
-                end
                 
                 % update waitbar
                 waitbar(writeCounter/dij.totalNumOfBixels);
@@ -295,6 +291,8 @@ for i = 1:dij.numOfBeams % loop over all beams
         end
         
     end
+    
+    fprintf('Done!\n');
 end
 
 %% delete temporary files

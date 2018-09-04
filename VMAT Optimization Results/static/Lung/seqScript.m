@@ -4,14 +4,23 @@
 %close all
 
 % meta information for treatment plan
-load lungPatient0_tenPhases_3DVMAT.mat
+load lungPatient0_3DVMAT.mat
 
 % meta information for treatment plan
 
 pln.radiationMode   = 'photons';   % either photons / protons / carbon
 pln.machine         = 'Generic';
 
-pln.propDoseCalc.memorySaverPhoton = false;
+% dose calculation settings
+pln.propDoseCalc.memorySaverPhoton          = false;
+pln.propDoseCalc.vmc                        = true;
+pln.propDoseCalc.vmcOptions.source          = 'phsp';
+pln.propDoseCalc.vmcOptions.phspBaseName    = '5x5_at_50cm';
+pln.propDoseCalc.vmcOptions.SCD             = 500;
+pln.propDoseCalc.vmcOptions.dumpDose        = 1;
+pln.propDoseCalc.vmcOptions.version         = 'Carleton';
+pln.propDoseCalc.vmcOptions.nCasePerBixel   = 5000;
+pln.propDoseCalc.vmcOptions.numOfParMCSim   = 8;
 
 % beam geometry settings
 pln.propStf.bixelWidth = 5;
@@ -45,7 +54,7 @@ stf = matRad_generateStf(ct,cst,pln);
 
 % calc Dij
 t0 = tic;
-dij = matRad_calcPhotonDose(ct,stf,pln,cst);
+dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
 tDij = toc(t0);
 
 % inverse planning for imrt

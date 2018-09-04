@@ -318,7 +318,10 @@ if pln.propOpt.runVMAT
         for i = 1:numel(apertureInfo.beam)
             if apertureInfo.propVMAT.beam(i).DAOBeam || interpGetsTrans
                 
-                transitionMask = true(apertureInfo.numPhases,apertureInfo.numPhases);
+                transitionMask = rand(apertureInfo.numPhases,apertureInfo.numPhases);
+                transitionMask = transitionMask > 0.5;
+                %transitionMask = true(apertureInfo.numPhases,apertureInfo.numPhases);
+                %transitionMask = eye(apertureInfo.numPhases,apertureInfo.numPhases);
                 
                 apertureInfo.propVMAT.beam(i).transitions                     = repmat(1:apertureInfo.numPhases,[apertureInfo.numPhases 1]);
                 apertureInfo.propVMAT.beam(i).transitions(~transitionMask)    = 0;
