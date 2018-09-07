@@ -44,15 +44,16 @@ centralLeafPair = ceil(numOfMLCLeafPairs/2);
 bixelIndOffset = 0; % used for creation of bixel index maps
 totalNumOfBixels = sum([stf(:).totalNumOfBixels]);
 totalNumOfShapes = sum([sequencing.beam.numOfShapes]);
+weightOffset = 1;
 vectorOffset = totalNumOfShapes + 1; % used for bookkeeping in the vector for optimization
 bixOffset = 1; %used for gradient calculations
 
 if pln.propOpt.runVMAT
     totalNumOfOptBixels = 0;
     totalNumOfLeafPairs = 0;
+    
+    apertureInfo.propVMAT.jacobT = zeros(sum([sequencing.beam.numOfShapes]),numel(sequencing.beam));
 end
-
-k = 1;
 
 % loop over all beams
 for i=1:size(stf,2)
@@ -169,7 +170,6 @@ for i=1:size(stf,2)
         end
         
         apertureInfo.beam(i).shape{1}(m).jacobiScale = 1;
-        k = k+1;
         
         if pln.propOpt.VMAToptions.continuousAperture
             apertureInfo.beam(i).shape{1}(m).vectorOffset = [vectorOffset vectorOffset+dimZ];
@@ -182,6 +182,8 @@ for i=1:size(stf,2)
             % update index for bookkeeping
             vectorOffset = vectorOffset + dimZ;
         end
+        apertureInfo.beam(i).shape{1}(m).weightOffset = weightOffset;
+        weightOffset = weightOffset+1;
     end
     
     % z-coordinates of active leaf pairs
@@ -248,6 +250,7 @@ for i=1:size(stf,2)
             
             apertureInfo.propVMAT.beam(i).lastDAOIndex = stf(i).propVMAT.lastDAOIndex;
             apertureInfo.propVMAT.beam(i).nextDAOIndex = stf(i).propVMAT.nextDAOIndex;
+            apertureInfo.propVMAT.beam(i).DAOIndex = stf(i).propVMAT.DAOIndex;
             
             if apertureInfo.propVMAT.beam(i).FMOBeam
                 apertureInfo.propVMAT.beam(i).FMOAngleBorders = stf(i).propVMAT.FMOAngleBorders;
@@ -259,6 +262,8 @@ for i=1:size(stf,2)
                 apertureInfo.propVMAT.beam(i).timeFacInd = stf(i).propVMAT.timeFacInd;
                 apertureInfo.propVMAT.beam(i).doseAngleDAO = stf(i).propVMAT.doseAngleDAO;
             end
+            
+            apertureInfo.propVMAT.jacobT(stf(i).propVMAT.DAOIndex,i) = stf(i).propVMAT.timeFacCurr;
             
         else
             apertureInfo.propVMAT.beam(i).fracFromLastDAO = stf(i).propVMAT.fracFromLastDAO;
@@ -273,6 +278,9 @@ for i=1:size(stf,2)
                 apertureInfo.propVMAT.beam(i).fracFromNextDAO_I = stf(i).propVMAT.fracFromNextDAO_I;
                 apertureInfo.propVMAT.beam(i).fracFromNextDAO_F = stf(i).propVMAT.fracFromNextDAO_F;
             end
+            
+            apertureInfo.propVMAT.jacobT(stf(stf(i).propVMAT.lastDAOIndex).propVMAT.DAOIndex,i) = stf(stf(i).propVMAT.lastDAOIndex).propVMAT.timeFacCurr.*stf(i).propVMAT.timeFracFromLastDAO.*stf(i).propVMAT.doseAngleBordersDiff./stf(stf(i).propVMAT.lastDAOIndex).propVMAT.doseAngleBordersDiff;
+            apertureInfo.propVMAT.jacobT(stf(stf(i).propVMAT.nextDAOIndex).propVMAT.DAOIndex,i) = stf(stf(i).propVMAT.nextDAOIndex).propVMAT.timeFacCurr.*stf(i).propVMAT.timeFracFromNextDAO.*stf(i).propVMAT.doseAngleBordersDiff./stf(stf(i).propVMAT.lastDAOIndex).propVMAT.doseAngleBordersDiff;
         end
     end
 end
@@ -292,9 +300,11 @@ if isfield(sequencing,'weightToMU')
 end
 if pln.propOpt.runVMAT
     
-    tempStruct = apertureInfo.propVMAT.beam;
+    tempStruct_beam = apertureInfo.propVMAT.beam;
+    tempStruct_jacobT = apertureInfo.propVMAT.jacobT;
     apertureInfo.propVMAT = pln.propOpt.VMAToptions;
-    apertureInfo.propVMAT.beam = tempStruct;
+    apertureInfo.propVMAT.beam = tempStruct_beam;
+    apertureInfo.propVMAT.jacobT = tempStruct_jacobT;
     
     apertureInfo.totalNumOfOptBixels = totalNumOfOptBixels;
     apertureInfo.doseTotalNumOfLeafPairs = sum([apertureInfo.beam(:).numOfActiveLeafPairs]);
@@ -314,17 +324,35 @@ if pln.propOpt.runVMAT
         % store transition probabilities in apertureInfo
         % move to separate function later??? (use Markov chain to determine
         % mask)
+        apertureInfo.propVMAT.qij = rand(apertureInfo.numPhases,apertureInfo.numPhases);
+        for i = 1:apertureInfo.numPhases
+            apertureInfo.propVMAT.qij(i,i) = 0;
+            apertureInfo.propVMAT.qij(i,i) = -sum(apertureInfo.propVMAT.qij(i,:),2);
+        end
+        apertureInfo.propVMAT.initProb  = rand(1,apertureInfo.numPhases);
+        apertureInfo.propVMAT.initProb  = apertureInfo.propVMAT.initProb./sum(apertureInfo.propVMAT.initProb);
+        
+        fileName = apertureInfo.propVMAT.machineConstraintFile;
+        try
+            load(fileName,'machine');
+        catch
+            error(['Could not find the following machine file: ' fileName ]);
+        end
+        
         interpGetsTrans = false;
         for i = 1:numel(apertureInfo.beam)
+            
+            maxTime = apertureInfo.propVMAT.beam(i).doseAngleBordersDiff./machine.constraints.gantryRotationSpeed(1);
+            [Pij_transT,~,~,~] = matRad_transAndTProb(apertureInfo.propVMAT.qij,apertureInfo.propVMAT.initProb,maxTime,maxTime);
+            transMask = Pij_transT > 0.01;
+            
+            apertureInfo.propVMAT.beam(i).transMask             = repmat(1:apertureInfo.numPhases,[apertureInfo.numPhases 1]);
+            apertureInfo.propVMAT.beam(i).transMask(~transMask) = 0;
+            
             if apertureInfo.propVMAT.beam(i).DAOBeam || interpGetsTrans
                 
-                transitionMask = rand(apertureInfo.numPhases,apertureInfo.numPhases);
-                transitionMask = transitionMask > 0.5;
-                %transitionMask = true(apertureInfo.numPhases,apertureInfo.numPhases);
-                %transitionMask = eye(apertureInfo.numPhases,apertureInfo.numPhases);
-                
-                apertureInfo.propVMAT.beam(i).transitions                     = repmat(1:apertureInfo.numPhases,[apertureInfo.numPhases 1]);
-                apertureInfo.propVMAT.beam(i).transitions(~transitionMask)    = 0;
+                apertureInfo.propVMAT.beam(i).leafConstMask             = repmat(1:apertureInfo.numPhases,[apertureInfo.numPhases 1]);
+                apertureInfo.propVMAT.beam(i).leafConstMask(~transMask) = 0;
             end
             if apertureInfo.propVMAT.beam(i).DAOBeam
                 interpGetsTrans = apertureInfo.propVMAT.beam(i).timeFac(3) ~= 0;
@@ -334,8 +362,9 @@ if pln.propOpt.runVMAT
         end
         
         % count number of transitions
-        apertureInfo.propVMAT.numLeafSpeedConstraint      = nnz([apertureInfo.propVMAT.beam.transitions]);
-        apertureInfo.propVMAT.numLeafSpeedConstraintDAO   = nnz([apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).transitions]);
+        apertureInfo.propVMAT.numLeafSpeedConstraint      = nnz([apertureInfo.propVMAT.beam.leafConstMask]);
+        apertureInfo.propVMAT.numLeafSpeedConstraintDAO   = nnz([apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).leafConstMask]);
+        
     end
     
 else

@@ -223,11 +223,11 @@ else
         for i = 1:numel(apertureInfo.beam)
             % loop over beams
             
-            if ~isempty(apertureInfo.propVMAT.beam(i).transitions)
+            if ~isempty(apertureInfo.propVMAT.beam(i).leafConstMask)
                 for phase_I = 1:apertureInfo.numPhases
                     % loop over initial phases
                     
-                    transitions = apertureInfo.propVMAT.beam(i).transitions(phase_I,:);
+                    transitions = apertureInfo.propVMAT.beam(i).leafConstMask(phase_I,:);
                     transitions(transitions == 0) = [];
                     
                     for phase_F = transitions

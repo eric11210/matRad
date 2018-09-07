@@ -40,8 +40,7 @@ function stf = matRad_StfVMATPost(stf,pln,masterRayPosBEV,masterTargetPointBEV,S
 
 fprintf('matRad: VMAT post-processing (1/2)... ');
 
-% NEW
-IandFTimeInd = 1;
+numDAO = 1;
 DAODoseAngleBorders = zeros(2*numel(pln.propStf.DAOGantryAngles),1);
 offset = 1;
 timeFacIndOffset = 1;
@@ -117,6 +116,9 @@ for i = 1:length(pln.propStf.gantryAngles)
             stf(i).propVMAT.lastDAOIndex = find(pln.propStf.gantryAngles == pln.propStf.DAOGantryAngles(DAOIndex-1));
             stf(i).propVMAT.nextDAOIndex = find(pln.propStf.gantryAngles == pln.propStf.DAOGantryAngles(DAOIndex+1));
         end
+        
+        stf(i).propVMAT.DAOIndex = numDAO;
+        numDAO = numDAO+1;
         
         stf(i).propVMAT.DAOAngleBorderCentreDiff = [stf(i).gantryAngle-stf(i).propVMAT.DAOAngleBorders(1) stf(i).propVMAT.DAOAngleBorders(2)-stf(i).gantryAngle];
         stf(i).propVMAT.DAOAngleBordersDiff = sum(stf(i).propVMAT.DAOAngleBorderCentreDiff);

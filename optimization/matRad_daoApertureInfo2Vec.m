@@ -113,7 +113,7 @@ end
 
 %% 4. create additional information for later use
 if nargout > 1
-    %FIX MAPPINGMX AND LIMMX
+    
     mappingMx = NaN * ones(vecLength,5);
     limMx = NaN * ones(vecLength,2);
     
