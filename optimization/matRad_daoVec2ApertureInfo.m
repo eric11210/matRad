@@ -89,15 +89,9 @@ end
 % element in the apertureVector (aperture weight or leaf position)
 % store as a vector for now, convert to sparse matrix later
 
-if updatedInfo.propVMAT.continuousAperture
-    optBixelFactor = 5;
-    % For optimized beams: 5 = (1 from weights) + (2 from left leaf positions (I and F)) + (2 from
-    % right leaf positions (I and F))
-else
-    optBixelFactor = 3;
-    % For optimized beams: 3 = (1 from weights) + (1 from left leaf positions) + (1 from
-    % right leaf positions )
-end
+optBixelFactor = 7;
+% For optimized beams: 5 = (1 from weights) + (3 from left leaf positions (I, M, and F)) + (3 from
+% right leaf positions (I, M, and F))
 
 if updatedInfo.runVMAT
     intBixelFactor = 2*optBixelFactor+2;
@@ -124,9 +118,6 @@ bixelJApVec_j(:) = {zeros(1,bixelJApVec_sz)};
 % offset
 bixelJApVec_offset = cell(apertureInfo.numPhases,1);
 bixelJApVec_offset(:) = {0};
-% sqrtSumGradSq
-sumGradSq = cell(apertureInfo.numPhases,1);
-sumGradSq(:) = {0};
 
 
 
@@ -194,11 +185,7 @@ for i = 1:numel(updatedInfo.beam)
                 if ~updatedInfo.propVMAT.continuousAperture
                     % extract left and right leaf positions from shape vector
                     vectorIx_L = updatedInfo.beam(i).shape{phase}(j).vectorOffset + ((1:n)-1);
-                    vectorIx_LI = vectorIx_L;
-                    vectorIx_LF = vectorIx_L;
                     vectorIx_R = vectorIx_L+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
-                    vectorIx_RI = vectorIx_R;
-                    vectorIx_RF = vectorIx_R;
                     leftLeafPos  = apertureInfoVect(vectorIx_L);
                     rightLeafPos = apertureInfoVect(vectorIx_R);
                     
@@ -307,8 +294,12 @@ for i = 1:numel(updatedInfo.beam)
     
     for j = 1:numOfShapes
         
+        % shapeMap
         shapeMap = cell(updatedInfo.numPhases,1);
         shapeMap(:) = {zeros(size(updatedInfo.beam(i).bixelIndMap))};
+        % sumGradSq
+        sumGradSq = cell(apertureInfo.numPhases,1);
+        sumGradSq(:) = {0};
         
         for phase_I = 1:apertureInfo.numPhases
             
@@ -339,8 +330,7 @@ for i = 1:numel(updatedInfo.beam)
                 variables.phase_F           = phase_F;
                 variables.weightFactor_I    = weightFactor_I;
                 variables.weightFactor_F    = weightFactor_F;
-                %variables.probability       = P_T.*P_transT;
-                variables.probability       = 1;%./(apertureInfo.numPhases.^2);
+                variables.probability       = P_T.*P_transT;
                 variables.probability_dTVec = sum(updatedInfo.propVMAT.jacobT(:,1:(i-1)),2).*P_T_dot.*+P_transT + updatedInfo.propVMAT.jacobT(:,i).*P_T.*P_transT_dot;
                 
                 variables.weight_I          = updatedInfo.beam(i).shape{phase_I}(j).weight;
@@ -356,14 +346,19 @@ for i = 1:numel(updatedInfo.beam)
                     variables.jacobiScale_F = updatedInfo.beam(i).shape{phase_F}(1).jacobiScale;
                     
                     vectorIndices.DAOindex      = nnz([updatedInfo.propVMAT.beam(1:i).DAOBeam]);
-                    vectorIndices.vectorIx_LI   = updatedInfo.beam(i).shape{phase_I}(j).vectorOffset(1) + ((1:n)-1);
-                    vectorIndices.vectorIx_LF   = updatedInfo.beam(i).shape{phase_F}(j).vectorOffset(2) + ((1:n)-1);
-                    vectorIndices.vectorIx_RI   = vectorIndices.vectorIx_LI+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
-                    vectorIndices.vectorIx_RF   = vectorIndices.vectorIx_LF+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
+                    if updatedInfo.propVMAT.continuousAperture
+                        vectorIndices.vectorIx_LI   = updatedInfo.beam(i).shape{phase_I}(j).vectorOffset(1) + ((1:n)-1);
+                        vectorIndices.vectorIx_LF   = updatedInfo.beam(i).shape{phase_F}(j).vectorOffset(2) + ((1:n)-1);
+                        vectorIndices.vectorIx_RI   = vectorIndices.vectorIx_LI+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
+                        vectorIndices.vectorIx_RF   = vectorIndices.vectorIx_LF+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
+                    else
+                        vectorIndices.vectorIx_LI   = updatedInfo.beam(i).shape{phase_I}(j).vectorOffset + ((1:n)-1);
+                        vectorIndices.vectorIx_LF   = updatedInfo.beam(i).shape{phase_F}(j).vectorOffset + ((1:n)-1);
+                        vectorIndices.vectorIx_RI   = vectorIndices.vectorIx_LI+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
+                        vectorIndices.vectorIx_RF   = vectorIndices.vectorIx_LF+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
+                    end
                 else
                     
-                    % evaluate this for 4D formalism!! may not need the
-                    % last, next business!
                     variables.weight_last_I = updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_I}(j).weight;
                     variables.weight_last_F = updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_F}(j).weight;
                     variables.weight_next_I = updatedInfo.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_I}(j).weight;
@@ -396,10 +391,17 @@ for i = 1:numel(updatedInfo.beam)
                     vectorIndices.DAOindex_last = updatedInfo.propVMAT.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).DAOIndex;
                     vectorIndices.DAOindex_next = updatedInfo.propVMAT.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).DAOIndex;
                     
-                    vectorIndices.vectorIx_LF_last  = updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_I}(j).vectorOffset(2) + ((1:n)-1);
-                    vectorIndices.vectorIx_LI_next  = updatedInfo.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_F}(j).vectorOffset(1) + ((1:n)-1);
-                    vectorIndices.vectorIx_RF_last  = vectorIndices.vectorIx_LF_last+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
-                    vectorIndices.vectorIx_RI_next  = vectorIndices.vectorIx_LI_next+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
+                    if updatedInfo.propVMAT.continuousAperture
+                        vectorIndices.vectorIx_LF_last  = updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_I}(j).vectorOffset(2) + ((1:n)-1);
+                        vectorIndices.vectorIx_LI_next  = updatedInfo.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_F}(j).vectorOffset(1) + ((1:n)-1);
+                        vectorIndices.vectorIx_RF_last  = vectorIndices.vectorIx_LF_last+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
+                        vectorIndices.vectorIx_RI_next  = vectorIndices.vectorIx_LI_next+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
+                    else
+                        vectorIndices.vectorIx_LF_last  = updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_I}(j).vectorOffset + ((1:n)-1);
+                        vectorIndices.vectorIx_LI_next  = updatedInfo.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_F}(j).vectorOffset + ((1:n)-1);
+                        vectorIndices.vectorIx_RF_last  = vectorIndices.vectorIx_LF_last+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
+                        vectorIndices.vectorIx_RI_next  = vectorIndices.vectorIx_LI_next+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
+                    end
                 end
                 
                 counters.bixelJApVec_offset = bixelJApVec_offset;
@@ -412,17 +414,13 @@ for i = 1:numel(updatedInfo.beam)
                 bixelJApVec_offset = counters.bixelJApVec_offset;
                 
                 % update shapeMap
-                if isfield(updatedInfo.beam(i).shape{phase_I}(j),'shapeMap')
-                    updatedInfo.beam(i).shape{phase_I}(j).shapeMap = updatedInfo.beam(i).shape{phase_I}(j).shapeMap+shapeMap{phase_I};
-                else
-                    updatedInfo.beam(i).shape{phase_I}(j).shapeMap = shapeMap{phase_I};
-                end
+                updatedInfo.beam(i).shape{phase_I}(j).shapeMap = shapeMap{phase_I};
+                updatedInfo.beam(i).shape{phase_F}(j).shapeMap = shapeMap{phase_F};
+                % update sumGradSq
+                % FIX THIS FOR INTERPOLATED ANGLES???
+                updatedInfo.beam(i).shape{phase_I}(j).sumGradSq = sumGradSq{phase_I};
+                updatedInfo.beam(i).shape{phase_F}(j).sumGradSq = sumGradSq{phase_F};
                 
-                if isfield(updatedInfo.beam(i).shape{phase_F}(j),'shapeMap')
-                    updatedInfo.beam(i).shape{phase_F}(j).shapeMap = updatedInfo.beam(i).shape{phase_F}(j).shapeMap+shapeMap{phase_F};
-                else
-                    updatedInfo.beam(i).shape{phase_F}(j).shapeMap = shapeMap{phase_F};
-                end
             end
         end
     end
@@ -433,19 +431,6 @@ updatedInfo.bixelWeights = w;
 updatedInfo.apertureVector = apertureInfoVect;
 updatedInfo.bixelJApVec = cell(apertureInfo.numPhases,1);
 for phase = 1:apertureInfo.numPhases
-    
-    for i = 1:numel(updatedInfo.beam)
-        if updatedInfo.runVMAT
-            numOfShapes = 1;
-        else
-            numOfShapes = updatedInfo.beam(i).numOfShapes;
-        end
-        
-        for j = 1:numOfShapes
-            updatedInfo.beam(i).shape{phase}(j).shapeMap = updatedInfo.beam(i).shape{phase}(j).shapeMap./max(updatedInfo.beam(i).shape{phase}(j).shapeMap(:));
-            updatedInfo.beam(i).shape{phase}(j).sqrtSumGradSq = sqrt(sumGradSq{phase_I});
-        end
-    end
     
     deleteInd_i = isnan(bixelJApVec_i{phase});
     deleteInd_j = bixelJApVec_j{phase} == 0;

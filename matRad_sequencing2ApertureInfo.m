@@ -86,7 +86,7 @@ for i=1:size(stf,2)
     
     % create map of bixel indices
     bixelIndMap = NaN * ones(dimZ,dimX);
-    bixelIndMap(indInRay) = [1:stf(i).numOfRays] + bixelIndOffset;
+    bixelIndMap(indInRay) = (1:stf(i).numOfRays) + bixelIndOffset;
     bixelIndOffset = bixelIndOffset + stf(i).numOfRays;
     
     % store physical position of first entry in bixelIndMap

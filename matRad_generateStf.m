@@ -141,8 +141,7 @@ if pln.propOpt.runVMAT || (pln.propDoseCalc.vmc && strcmp(pln.propDoseCalc.vmcOp
     %arrays per gantry angle.  In order to do VMAT, it is easier to have
     %the same MLC range and dij calculation for every possible beam/gantry
     %angle.
-    masterRayPosBEV = zeros(1,3);
-    masterTargetPointBEV = zeros(0,3);
+    masterRayPosBEV = zeros(0,3);
     
     if pln.propOpt.run4D
         masterRayPosBEV_phase1 = zeros(0,3);
@@ -247,7 +246,7 @@ for i = 1:length(pln.propStf.gantryAngles)
              x_loc = x(z == uniZ(j));
              x_min = min(x_loc);
              x_max = max(x_loc);
-             x = [x; [x_min:pln.propStf.bixelWidth:x_max]'];
+             x = [x; (x_min:pln.propStf.bixelWidth:x_max)'];
              y = [y; zeros((x_max-x_min)/pln.propStf.bixelWidth+1,1)];
              z = [z; uniZ(j)*ones((x_max-x_min)/pln.propStf.bixelWidth+1,1)];             
          end
@@ -264,7 +263,7 @@ for i = 1:length(pln.propStf.gantryAngles)
                  x_loc = x(z == uniZ(j));
                  x_min = min(x_loc);
                  x_max = max(x_loc);
-                 x = [x; [x_min:pln.propStf.bixelWidth:x_max]'];
+                 x = [x; (x_min:pln.propStf.bixelWidth:x_max)'];
                  y = [y; zeros((x_max-x_min)/pln.propStf.bixelWidth+1,1)];
                  z = [z; uniZ(j)*ones((x_max-x_min)/pln.propStf.bixelWidth+1,1)];
              end
@@ -484,10 +483,8 @@ for i = 1:length(pln.propStf.gantryAngles)
         % For vmc++ with phsp, masterRayPosBEV is useful to have (phsp definition
         numOfRays = stf(i).numOfRays;
         rayPosBEV = reshape([stf(i).ray(:).rayPos_bev]',3,numOfRays)';
-        targetPointBEV = reshape([stf(i).ray(:).targetPoint_bev]',3,numOfRays)';
         
         masterRayPosBEV = union(masterRayPosBEV,rayPosBEV,'rows');
-        masterTargetPointBEV = union(masterTargetPointBEV,targetPointBEV,'rows');
         
         if pln.propOpt.run4D
             masterRayPosBEV_phase1 = union(masterRayPosBEV_phase1,rayPos_phase1,'rows');
@@ -644,6 +641,43 @@ end
 %% VMAT
 
 if pln.propOpt.runVMAT
+    
+    % ensure all bixels in a row are on
+    
+    % masterRayPosBEV
+    x = masterRayPosBEV(:,1);
+    y = masterRayPosBEV(:,2);
+    z = masterRayPosBEV(:,3);
+    uniZ = unique(z);
+    for j = 1:numel(uniZ)
+        x_loc = x(z == uniZ(j));
+        x_min = min(x_loc);
+        x_max = max(x_loc);
+        x = [x; (x_min:pln.propStf.bixelWidth:x_max)'];
+        y = [y; zeros((x_max-x_min)/pln.propStf.bixelWidth+1,1)];
+        z = [z; uniZ(j)*ones((x_max-x_min)/pln.propStf.bixelWidth+1,1)];
+    end
+    
+    masterRayPosBEV = [x,y,z];
+    masterRayPosBEV = unique(masterRayPosBEV,'rows');
+    masterTargetPointBEV = [2*masterRayPosBEV(:,1) SAD*ones(size(masterRayPosBEV,1),1) 2*masterRayPosBEV(:,3)];
+    
+    % masterRayPosBEV_phase1
+    x = masterRayPosBEV_phase1(:,1);
+    y = masterRayPosBEV_phase1(:,2);
+    z = masterRayPosBEV_phase1(:,3);
+    uniZ = unique(z);
+    for j = 1:numel(uniZ)
+        x_loc = x(z == uniZ(j));
+        x_min = min(x_loc);
+        x_max = max(x_loc);
+        x = [x; (x_min:pln.propStf.bixelWidth:x_max)'];
+        y = [y; zeros((x_max-x_min)/pln.propStf.bixelWidth+1,1)];
+        z = [z; uniZ(j)*ones((x_max-x_min)/pln.propStf.bixelWidth+1,1)];
+    end
+    
+    masterRayPosBEV_phase1 = [x,y,z];
+    masterRayPosBEV_phase1 = unique(masterRayPosBEV_phase1,'rows');
     
     % post-processing function for VMAT
     stf = matRad_StfVMATPost(stf,pln,masterRayPosBEV,masterTargetPointBEV,SAD,machine);
