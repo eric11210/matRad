@@ -68,11 +68,11 @@ rightLeafPos_F  = variables.rightLeafPos_F;
 
 probability         = variables.probability;
 probability_dTVec   = variables.probability_dTVec;
+tIx_Vec             = vectorIndices.tIx_Vec;
 
 bixelJApVec_offset = counters.bixelJApVec_offset;
 
 totalNumOfShapes = vectorIndices.totalNumOfShapes;
-timeOffset = vectorIndices.timeOffset;
 
 
 %% sort out order, set up calculation of bixel weight and gradients
@@ -143,8 +143,10 @@ if calcOptions.saveJacobian
         vectorIx_LI_next = vectorIndices.vectorIx_LI_next;
         vectorIx_RF_last = vectorIndices.vectorIx_RF_last;
         vectorIx_RI_next = vectorIndices.vectorIx_RI_next;
-        DAOindex_last = vectorIndices.DAOindex_last;
-        DAOindex_next = vectorIndices.DAOindex_next;
+        DAOindex_last   = vectorIndices.DAOindex_last;
+        DAOindex_next   = vectorIndices.DAOindex_next;
+        tIx_last        = vectorIndices.tIx_last;
+        tIx_next        = vectorIndices.tIx_next;
         
         tempL = vectorIx_LF_last;
         tempR = vectorIx_RF_last;
@@ -463,23 +465,29 @@ if calcOptions.saveJacobian
         bixelJApVec_offset_temp = bixelJApVec_offset_temp+numSaveBixel;
         
         % wrt last time
-        bixelJApVec_vec{phase_I}(bixelJApVec_offset_temp+(1:numSaveBixel)) = (doseAngleBordersDiff.*timeFacCurr_last) ...
+        bixelJApVec_vec{phase_I}(bixelJApVec_offset_temp+(1:numSaveBixel)) = weightFactor_I.*probability.*(doseAngleBordersDiff.*timeFacCurr_last) ...
             .*(-fracFromLastDAO.*timeFracFromNextDAO.*(weight_last_I./doseAngleBordersDiff_next).*(time_next./time_last.^2) ...
             +(1-fracFromLastDAO).*timeFracFromLastDAO.*(weight_next_I./doseAngleBordersDiff_last).*(1./time_next)) ...
             * shapeMap(shapeMapIx);
-        bixelJApVec_i{phase_I}(bixelJApVec_offset_temp+(1:numSaveBixel)) = DAOindex_last+timeOffset;
+        bixelJApVec_i{phase_I}(bixelJApVec_offset_temp+(1:numSaveBixel)) = tIx_last;
         bixelJApVec_j{phase_I}(bixelJApVec_offset_temp+(1:numSaveBixel)) = bixelIndMap(shapeMapIx);
         bixelJApVec_offset_temp = bixelJApVec_offset_temp+numSaveBixel;
         
         % wrt next time
-        bixelJApVec_vec{phase_I}(bixelJApVec_offset_temp+(1:numSaveBixel)) = (doseAngleBordersDiff.*timeFacCurr_next) ...
+        bixelJApVec_vec{phase_I}(bixelJApVec_offset_temp+(1:numSaveBixel)) = weightFactor_I.*probability.*(doseAngleBordersDiff.*timeFacCurr_next) ...
             .*(fracFromLastDAO.*timeFracFromNextDAO.*(weight_last_I./doseAngleBordersDiff_next).*(1./time_last) ...
             -(1-fracFromLastDAO).*timeFracFromLastDAO.*(weight_next_I./doseAngleBordersDiff_last).*(time_last./time_next.^2)) ...
             * shapeMap(shapeMapIx);
-        bixelJApVec_i{phase_I}(bixelJApVec_offset_temp+(1:numSaveBixel)) = DAOindex_next+timeOffset;
+        bixelJApVec_i{phase_I}(bixelJApVec_offset_temp+(1:numSaveBixel)) = tIx_next;
         bixelJApVec_j{phase_I}(bixelJApVec_offset_temp+(1:numSaveBixel)) = bixelIndMap(shapeMapIx);
         bixelJApVec_offset_temp = bixelJApVec_offset_temp+numSaveBixel;
     end
+    
+    % wrt times (probability)
+    bixelJApVec_vec{phase_I}(bixelJApVec_offset_temp+(1:numSaveBixel*totalNumOfShapes)) = weight_I.*weightFactor_I.*shapeMap(shapeMapIx)*probability_dTVec';
+    bixelJApVec_i{phase_I}(bixelJApVec_offset_temp+(1:numSaveBixel*totalNumOfShapes)) = ones(numSaveBixel,1)*tIx_Vec;
+    bixelJApVec_j{phase_I}(bixelJApVec_offset_temp+(1:numSaveBixel*totalNumOfShapes)) = bixelIndMap(shapeMapIx)*ones(1,totalNumOfShapes);
+    bixelJApVec_offset_temp = bixelJApVec_offset_temp+numSaveBixel*totalNumOfShapes;
     
     % update counters
     bixelJApVec_offset{phase_I} = bixelJApVec_offset_temp;
@@ -762,23 +770,29 @@ if calcOptions.saveJacobian
         bixelJApVec_offset_temp = bixelJApVec_offset_temp+numSaveBixel;
         
         % wrt last time
-        bixelJApVec_vec{phase_F}(bixelJApVec_offset_temp+(1:numSaveBixel)) = (doseAngleBordersDiff.*timeFacCurr_last) ...
-            .*(-fracFromLastDAO.*timeFracFromNextDAO.*(weight_last_I./doseAngleBordersDiff_next).*(time_next./time_last.^2) ...
-            +(1-fracFromLastDAO).*timeFracFromLastDAO.*(weight_next_I./doseAngleBordersDiff_last).*(1./time_next)) ...
+        bixelJApVec_vec{phase_F}(bixelJApVec_offset_temp+(1:numSaveBixel)) = weightFactor_F.*probability.*(doseAngleBordersDiff.*timeFacCurr_last) ...
+            .*(-fracFromLastDAO.*timeFracFromNextDAO.*(weight_last_F./doseAngleBordersDiff_next).*(time_next./time_last.^2) ...
+            +(1-fracFromLastDAO).*timeFracFromLastDAO.*(weight_next_F./doseAngleBordersDiff_last).*(1./time_next)) ...
             * shapeMap(shapeMapIx);
-        bixelJApVec_i{phase_F}(bixelJApVec_offset_temp+(1:numSaveBixel)) = DAOindex_last+timeOffset;
+        bixelJApVec_i{phase_F}(bixelJApVec_offset_temp+(1:numSaveBixel)) = tIx_last;
         bixelJApVec_j{phase_F}(bixelJApVec_offset_temp+(1:numSaveBixel)) = bixelIndMap(shapeMapIx);
         bixelJApVec_offset_temp = bixelJApVec_offset_temp+numSaveBixel;
         
         % wrt next time
-        bixelJApVec_vec{phase_F}(bixelJApVec_offset_temp+(1:numSaveBixel)) = (doseAngleBordersDiff.*timeFacCurr_next) ...
-            .*(fracFromLastDAO.*timeFracFromNextDAO.*(weight_last_I./doseAngleBordersDiff_next).*(1./time_last) ...
-            -(1-fracFromLastDAO).*timeFracFromLastDAO.*(weight_next_I./doseAngleBordersDiff_last).*(time_last./time_next.^2)) ...
+        bixelJApVec_vec{phase_F}(bixelJApVec_offset_temp+(1:numSaveBixel)) = weightFactor_F.*probability.*(doseAngleBordersDiff.*timeFacCurr_next) ...
+            .*(fracFromLastDAO.*timeFracFromNextDAO.*(weight_last_F./doseAngleBordersDiff_next).*(1./time_last) ...
+            -(1-fracFromLastDAO).*timeFracFromLastDAO.*(weight_next_F./doseAngleBordersDiff_last).*(time_last./time_next.^2)) ...
             * shapeMap(shapeMapIx);
-        bixelJApVec_i{phase_F}(bixelJApVec_offset_temp+(1:numSaveBixel)) = DAOindex_next+timeOffset;
+        bixelJApVec_i{phase_F}(bixelJApVec_offset_temp+(1:numSaveBixel)) = tIx_next;
         bixelJApVec_j{phase_F}(bixelJApVec_offset_temp+(1:numSaveBixel)) = bixelIndMap(shapeMapIx);
         bixelJApVec_offset_temp = bixelJApVec_offset_temp+numSaveBixel;
     end
+    
+    % wrt times (probability)
+    bixelJApVec_vec{phase_F}(bixelJApVec_offset_temp+(1:numSaveBixel*totalNumOfShapes)) = weight_F.*weightFactor_F.*shapeMap(shapeMapIx)*probability_dTVec';
+    bixelJApVec_i{phase_F}(bixelJApVec_offset_temp+(1:numSaveBixel*totalNumOfShapes)) = ones(numSaveBixel,1)*tIx_Vec;
+    bixelJApVec_j{phase_F}(bixelJApVec_offset_temp+(1:numSaveBixel*totalNumOfShapes)) = bixelIndMap(shapeMapIx)*ones(1,totalNumOfShapes);
+    bixelJApVec_offset_temp = bixelJApVec_offset_temp+numSaveBixel*totalNumOfShapes;
     
     % update counters
     bixelJApVec_offset{phase_F} = bixelJApVec_offset_temp;

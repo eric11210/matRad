@@ -54,8 +54,8 @@ for i = 1:length(pln.propStf.gantryAngles)
     
     % Indicate if this beam is to be included in DOA/FMO or not. All beams
     % are still considered in dose calc for objective function in DAO
-    stf(i).propVMAT.FMOBeam = any(pln.propStf.FMOGantryAngles==pln.propStf.gantryAngles(i));
-    stf(i).propVMAT.DAOBeam = any(pln.propStf.DAOGantryAngles==pln.propStf.gantryAngles(i));
+    stf(i).propVMAT.FMOBeam = any(abs(pln.propStf.FMOGantryAngles - pln.propStf.gantryAngles(i)) < 1e-6);
+    stf(i).propVMAT.DAOBeam = any(abs(pln.propStf.DAOGantryAngles - pln.propStf.gantryAngles(i)) < 1e-6);
     
     %% Determine different angle borders
     
@@ -92,29 +92,29 @@ for i = 1:length(pln.propStf.gantryAngles)
         
         %optAngleBorders are the angular borders over which an optimized control point
         %has influence
-        DAOIndex = find(pln.propStf.DAOGantryAngles == pln.propStf.gantryAngles(i));
+        DAOIndex = find(abs(pln.propStf.DAOGantryAngles - pln.propStf.gantryAngles(i)) < 1e-8);
         
         if DAOIndex == 1
             stf(i).propVMAT.DAOAngleBorders = [pln.propOpt.VMAToptions.startingAngle (pln.propStf.DAOGantryAngles(DAOIndex+1)+pln.propStf.DAOGantryAngles(DAOIndex))/2];
             
             lastDAOIndex = i;
-            nextDAOIndex = find(pln.propStf.gantryAngles == pln.propStf.DAOGantryAngles(DAOIndex+1));
+            nextDAOIndex = find(abs(pln.propStf.gantryAngles - pln.propStf.DAOGantryAngles(DAOIndex+1)) < 1e-8);
             
-            stf(i).propVMAT.lastDAOIndex = i;
-            stf(i).propVMAT.nextDAOIndex = find(pln.propStf.gantryAngles == pln.propStf.DAOGantryAngles(DAOIndex+1));
+            stf(i).propVMAT.lastDAOIndex = lastDAOIndex;
+            stf(i).propVMAT.nextDAOIndex = nextDAOIndex;
         elseif DAOIndex == length(pln.propStf.DAOGantryAngles)
             stf(i).propVMAT.DAOAngleBorders = [(pln.propStf.DAOGantryAngles(DAOIndex-1)+pln.propStf.DAOGantryAngles(DAOIndex))/2 pln.propOpt.VMAToptions.finishingAngle];
             
-            stf(i).propVMAT.lastDAOIndex = find(pln.propStf.gantryAngles == pln.propStf.DAOGantryAngles(DAOIndex-1));
+            stf(i).propVMAT.lastDAOIndex = find(abs(pln.propStf.gantryAngles - pln.propStf.DAOGantryAngles(DAOIndex-1)) < 1e-8);
             stf(i).propVMAT.nextDAOIndex = i;
         else
             stf(i).propVMAT.DAOAngleBorders = ([pln.propStf.DAOGantryAngles(DAOIndex-1) pln.propStf.DAOGantryAngles(DAOIndex+1)]+pln.propStf.DAOGantryAngles(DAOIndex))/2;
             
             lastDAOIndex = i;
-            nextDAOIndex = find(pln.propStf.gantryAngles == pln.propStf.DAOGantryAngles(DAOIndex+1));
+            nextDAOIndex = find(abs(pln.propStf.gantryAngles - pln.propStf.DAOGantryAngles(DAOIndex+1)) < 1e-8);
             
-            stf(i).propVMAT.lastDAOIndex = find(pln.propStf.gantryAngles == pln.propStf.DAOGantryAngles(DAOIndex-1));
-            stf(i).propVMAT.nextDAOIndex = find(pln.propStf.gantryAngles == pln.propStf.DAOGantryAngles(DAOIndex+1));
+            stf(i).propVMAT.lastDAOIndex = lastDAOIndex;
+            stf(i).propVMAT.nextDAOIndex = nextDAOIndex;
         end
         
         stf(i).propVMAT.DAOIndex = numDAO;
@@ -182,7 +182,7 @@ for i = 1:length(pln.propStf.gantryAngles)
     if stf(i).propVMAT.FMOBeam
         % FMOAngleBorders are the angular borders over which an optimized
         % control point has influence
-        FMOIndex = find(pln.propStf.FMOGantryAngles == pln.propStf.gantryAngles(i));
+        FMOIndex = find(abs(pln.propStf.FMOGantryAngles - pln.propStf.gantryAngles(i)) < 1e-8);
         
         if FMOIndex == 1
             

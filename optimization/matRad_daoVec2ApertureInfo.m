@@ -57,7 +57,6 @@ updatedInfo.apertureVector = apertureInfoVect;
 mlcOptions.bixelWidth = apertureInfo.bixelWidth;
 calcOptions.continuousAperture = updatedInfo.propVMAT.continuousAperture;
 vectorIndices.totalNumOfShapes = apertureInfo.totalNumOfShapes;
-vectorIndices.timeOffset = (apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases;
 
 w = cell(apertureInfo.numPhases,1);
 w(:) = {zeros(apertureInfo.totalNumOfBixels,1)};
@@ -103,6 +102,10 @@ else
     % For interpolated beams: multiply this number times 2 (influenced by the
     % one before and the one after)
 end
+
+% for the time (probability) gradients
+optBixelFactor = optBixelFactor+apertureInfo.totalNumOfShapes;
+intBixelFactor = intBixelFactor+apertureInfo.totalNumOfShapes;
 
 bixelJApVec_sz = (updatedInfo.totalNumOfOptBixels*optBixelFactor+(updatedInfo.totalNumOfBixels-updatedInfo.totalNumOfOptBixels)*intBixelFactor)*apertureInfo.numPhases*2;
 
@@ -331,7 +334,8 @@ for i = 1:numel(updatedInfo.beam)
                 variables.weightFactor_I    = weightFactor_I;
                 variables.weightFactor_F    = weightFactor_F;
                 variables.probability       = P_T.*P_transT;
-                variables.probability_dTVec = sum(updatedInfo.propVMAT.jacobT(:,1:(i-1)),2).*P_T_dot.*+P_transT + updatedInfo.propVMAT.jacobT(:,i).*P_T.*P_transT_dot;
+                variables.probability_dTVec = sum(updatedInfo.propVMAT.jacobT(:,1:(i-1)),2).*P_T_dot.*P_transT + updatedInfo.propVMAT.jacobT(:,i).*P_T.*P_transT_dot;
+                vectorIndices.tIx_Vec       = (apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+(1:apertureInfo.totalNumOfShapes);
                 
                 variables.weight_I          = updatedInfo.beam(i).shape{phase_I}(j).weight;
                 variables.weight_F          = updatedInfo.beam(i).shape{phase_F}(j).weight;
@@ -345,7 +349,7 @@ for i = 1:numel(updatedInfo.beam)
                     variables.jacobiScale_I = updatedInfo.beam(i).shape{phase_I}(1).jacobiScale;
                     variables.jacobiScale_F = updatedInfo.beam(i).shape{phase_F}(1).jacobiScale;
                     
-                    vectorIndices.DAOindex      = nnz([updatedInfo.propVMAT.beam(1:i).DAOBeam]);
+                    vectorIndices.DAOindex      = updatedInfo.propVMAT.beam(i).DAOIndex;
                     if updatedInfo.propVMAT.continuousAperture
                         vectorIndices.vectorIx_LI   = updatedInfo.beam(i).shape{phase_I}(j).vectorOffset(1) + ((1:n)-1);
                         vectorIndices.vectorIx_LF   = updatedInfo.beam(i).shape{phase_F}(j).vectorOffset(2) + ((1:n)-1);
@@ -390,6 +394,8 @@ for i = 1:numel(updatedInfo.beam)
                     
                     vectorIndices.DAOindex_last = updatedInfo.propVMAT.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).DAOIndex;
                     vectorIndices.DAOindex_next = updatedInfo.propVMAT.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).DAOIndex;
+                    vectorIndices.tIx_last      = (apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+updatedInfo.propVMAT.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).DAOIndex;
+                    vectorIndices.tIx_next      = (apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+updatedInfo.propVMAT.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).DAOIndex;
                     
                     if updatedInfo.propVMAT.continuousAperture
                         vectorIndices.vectorIx_LF_last  = updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_I}(j).vectorOffset(2) + ((1:n)-1);
