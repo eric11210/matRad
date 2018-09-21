@@ -40,8 +40,6 @@ if nargin < 6
 end
 
 recalc.apertureInfo = apertureInfo;
-recalc.apertureInfo.propVMAT.recalcContAperture = recalc.continuousAperture;
-
 
 %recalculate dose with finer gantry angles
 %to do this, we need Dij matrices at these new angles
@@ -145,12 +143,9 @@ if ~recalc.interpNew || ~recalc.dijNew
     end
 end
 
-if recalc.continuousAperture
-    recalc.apertureInfo =  matRad_daoVec2ApertureInfo_VMATrecalcDynamic(recalc.apertureInfo,recalc.apertureInfo.apertureVector);
-else
-    recalc.apertureInfo =  matRad_daoVec2ApertureInfo(recalc.apertureInfo,recalc.apertureInfo.apertureVector);
-end
-
+% rename to something else? matRad_daoVec2ApertureInfo_recalc?
+recalc.apertureInfo.propVMAT.continuousAperture = recalc.continuousAperture;
+recalc.apertureInfo =  matRad_daoVec2ApertureInfo_VMATrecalcDynamic(recalc.apertureInfo,recalc.apertureInfo.apertureVector);
 
 if calcDoseDirect
     clear global

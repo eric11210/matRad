@@ -67,8 +67,6 @@ rightLeafPos_I  = variables.rightLeafPos_I;
 rightLeafPos_F  = variables.rightLeafPos_F;
 
 probability         = variables.probability;
-probability_dTVec   = variables.probability_dTVec;
-tIx_Vec             = vectorIndices.tIx_Vec;
 
 bixelJApVec_offset = counters.bixelJApVec_offset;
 
@@ -89,6 +87,9 @@ rightLeafPosF = max([rightLeafPos_I,rightLeafPos_F],[],2);
 
 if calcOptions.saveJacobian
     % only need these variables for the Jacobian
+    
+    probability_dTVec   = variables.probability_dTVec;
+    tIx_Vec             = vectorIndices.tIx_Vec;
     
     if calcOptions.DAOBeam
         jacobiScale_I = variables.jacobiScale_I;

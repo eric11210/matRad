@@ -61,7 +61,7 @@ for angularRes = angularResS
     fname = sprintf('%.1f degrees, dyn + interp.mat',angularRes);
     load(fname);
     for j = 1:numel(recalc.apertureInfo.beam)
-        fluence_YY(:,:,i) = fluence_YY(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).weight*recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
+        fluence_YY(:,:,i) = fluence_YY(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
         weight_YY(i) = weight_YY(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
     end
     %obj_YY(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,recalc.apertureInfo,dij,cst_Over,options);
@@ -77,7 +77,7 @@ for angularRes = angularResS
     percVErr5_YN(i) = 100*nnz(abs(dose-refDose)./refDose >= 0.05 & V_TargAndNorm)./nnz(V_TargAndNorm);
     percVErr10_YN(i) = 100*nnz(abs(dose-refDose)./refDose >= 0.10 & V_TargAndNorm)./nnz(V_TargAndNorm);
     for j = 1:numel(recalc.apertureInfo.beam)
-        fluence_YN(:,:,i) = fluence_YN(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).weight*recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
+        fluence_YN(:,:,i) = fluence_YN(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
         weight_YN(i) = weight_YN(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
     end
     %obj_YN(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,recalc.apertureInfo,dij,cst_Over,options);
@@ -87,7 +87,7 @@ for angularRes = angularResS
     fname = sprintf('%.1f degrees, Ndyn + interp.mat',angularRes);
     load(fname);
     for j = 1:numel(recalc.apertureInfo.beam)
-        fluence_NY(:,:,i) = fluence_NY(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).weight*recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
+        fluence_NY(:,:,i) = fluence_NY(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
         weight_NY(i) = weight_NY(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
     end
     %obj_NY(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,recalc.apertureInfo,dij,cst_Over,options);
@@ -97,7 +97,7 @@ for angularRes = angularResS
     fname = sprintf('%.1f degrees, dyn + interp oldDij.mat',angularRes);
     load(fname);
     for j = 1:numel(recalc.apertureInfo.beam)
-        fluence_YY_oldDij(:,:,i) = fluence_YY_oldDij(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).weight*recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
+        fluence_YY_oldDij(:,:,i) = fluence_YY_oldDij(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
         weight_YY_oldDij(i) = weight_YY_oldDij(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
     end
     %obj_NY(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,recalc.apertureInfo,dij,cst_Over,options);
@@ -106,7 +106,7 @@ for angularRes = angularResS
     fname = sprintf('%.1f degrees, Ndyn + Ninterp.mat',angularRes);
     load(fname);
     for j = 1:numel(recalc.apertureInfo.beam)
-        fluence_NN(:,:,i) = fluence_NN(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).weight*recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
+        fluence_NN(:,:,i) = fluence_NN(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
         weight_NN(i) = weight_NN(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
     end
     %obj_NN(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,recalc.apertureInfo,dij,cst_Over,options);

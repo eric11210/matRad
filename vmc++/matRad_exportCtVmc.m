@@ -1,4 +1,4 @@
-function matRad_exportCtVmc(ct,filename,isocenter)
+function matRad_exportCtVmc(ct,filename)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % matRad binary CT export for vmc++
 % 
@@ -21,15 +21,15 @@ fid = fopen(filename,'w');
 fwrite(fid,ct.cubeDim([2 1 3]),'int32');
 
 % write voxel corner location in cm in physical cs with ct cube corner at [.5 .5 .5]
-X = [.5:(ct.cubeDim(2)+.5)]*ct.resolution.x/10;
-Y = [.5:(ct.cubeDim(1)+.5)]*ct.resolution.y/10;
-Z = [.5:(ct.cubeDim(3)+.5)]*ct.resolution.z/10;
+X = (0.5:(ct.cubeDim(2)+0.5))*ct.resolution.x/10;
+Y = (0.5:(ct.cubeDim(1)+0.5))*ct.resolution.y/10;
+Z = (0.5:(ct.cubeDim(3)+0.5))*ct.resolution.z/10;
 
 % correct for isocenter
 % isocenter should only be non-zero for phsp sources
-X = X-isocenter(1)/10;
-Y = Y-isocenter(2)/10;
-Z = Z-isocenter(3)/10;
+X = X;
+Y = Y;
+Z = Z;
 
 fwrite(fid,X,'float32');
 fwrite(fid,Y,'float32');

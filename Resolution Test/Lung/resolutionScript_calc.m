@@ -1,11 +1,20 @@
-load lungPatient0_tenPhases_3DVMAT.mat
+load lungPatient0_3DVMAT.mat
 
 % meta information for treatment plan
 
 pln.radiationMode   = 'photons';   % either photons / protons / carbon
 pln.machine         = 'Generic';
 
-pln.propDoseCalc.memorySaverPhoton = false;
+% dose calculation settings
+pln.propDoseCalc.memorySaverPhoton          = false;
+pln.propDoseCalc.vmc                        = true;
+pln.propDoseCalc.vmcOptions.source          = 'phsp';
+pln.propDoseCalc.vmcOptions.phspBaseName    = '5x5_at_50cm';
+pln.propDoseCalc.vmcOptions.SCD             = 500;
+pln.propDoseCalc.vmcOptions.dumpDose        = 1;
+pln.propDoseCalc.vmcOptions.version         = 'Carleton';
+pln.propDoseCalc.vmcOptions.nCasePerBixel   = 1000;
+pln.propDoseCalc.vmcOptions.numOfParMCSim   = 8;
 
 % beam geometry settings
 pln.propStf.bixelWidth = 5;
@@ -38,6 +47,9 @@ pln = matRad_VMATGantryAngles(pln,cst,ct);
 load('Results.mat');
 
 angularResS = [0.5 1 2 4];
+%angularResS = [4];
+
+oldDir = pwd;
 
 for angularRes = angularResS
     %for each angular resolution, proceed from the best approximation to
@@ -54,6 +66,7 @@ for angularRes = angularResS
     recalc.dijNew = true;
     
     recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo);
+    cd(oldDir);
     save(fname,'resultGUI','recalc');
     
     
@@ -66,6 +79,7 @@ for angularRes = angularResS
     recalc.dijNew = false;
     
     recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo);
+    cd(oldDir);
     save(fname,'resultGUI','recalc');
     
     
@@ -90,6 +104,7 @@ for angularRes = angularResS
     recalc.dijNew = true;
     
     recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo);
+    cd(oldDir);
     save(fname,'resultGUI','recalc');
     
     
@@ -101,6 +116,7 @@ for angularRes = angularResS
     recalc.dijNew = true;
     
     recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo);
+    cd(oldDir);
     save(fname,'resultGUI','recalc');
     
     

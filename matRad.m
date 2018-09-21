@@ -43,7 +43,7 @@ pln.propStf.isoCenter       = ones(pln.propStf.numOfBeams,1) * matRad_getIsoCent
 
 % dose calculation settings
 pln.propDoseCalc.memorySaverPhoton          = false;
-pln.propDoseCalc.vmc                        = true;
+pln.propDoseCalc.vmc                        = false;
 pln.propDoseCalc.vmcOptions.source          = 'phsp';
 pln.propDoseCalc.vmcOptions.phspBaseName    = '5x5_at_50cm';
 pln.propDoseCalc.vmcOptions.SCD             = 500;
@@ -74,7 +74,7 @@ clc
 %load PROSTATE.mat
 %load LIVER.mat
 %load BOXPHANTOM.mat
-load lungPatient0_rep
+load lungPatient0_3DVMAT
 
 % meta information for treatment plan
 
@@ -88,7 +88,7 @@ pln.propStf.bixelWidth = 5;
 
 % dose calculation settings
 pln.propDoseCalc.memorySaverPhoton          = false;
-pln.propDoseCalc.vmc                        = false;
+pln.propDoseCalc.vmc                        = true;
 pln.propDoseCalc.vmcOptions.source          = 'phsp';
 pln.propDoseCalc.vmcOptions.phspBaseName    = '5x5_at_50cm';
 pln.propDoseCalc.vmcOptions.SCD             = 500;

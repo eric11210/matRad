@@ -662,27 +662,27 @@ if pln.propOpt.runVMAT
     masterRayPosBEV = unique(masterRayPosBEV,'rows');
     masterTargetPointBEV = [2*masterRayPosBEV(:,1) SAD*ones(size(masterRayPosBEV,1),1) 2*masterRayPosBEV(:,3)];
     
-    % masterRayPosBEV_phase1
-    x = masterRayPosBEV_phase1(:,1);
-    y = masterRayPosBEV_phase1(:,2);
-    z = masterRayPosBEV_phase1(:,3);
-    uniZ = unique(z);
-    for j = 1:numel(uniZ)
-        x_loc = x(z == uniZ(j));
-        x_min = min(x_loc);
-        x_max = max(x_loc);
-        x = [x; (x_min:pln.propStf.bixelWidth:x_max)'];
-        y = [y; zeros((x_max-x_min)/pln.propStf.bixelWidth+1,1)];
-        z = [z; uniZ(j)*ones((x_max-x_min)/pln.propStf.bixelWidth+1,1)];
-    end
-    
-    masterRayPosBEV_phase1 = [x,y,z];
-    masterRayPosBEV_phase1 = unique(masterRayPosBEV_phase1,'rows');
-    
     % post-processing function for VMAT
     stf = matRad_StfVMATPost(stf,pln,masterRayPosBEV,masterTargetPointBEV,SAD,machine);
     
     if pln.propOpt.run4D
+        
+        % masterRayPosBEV_phase1
+        x = masterRayPosBEV_phase1(:,1);
+        y = masterRayPosBEV_phase1(:,2);
+        z = masterRayPosBEV_phase1(:,3);
+        uniZ = unique(z);
+        for j = 1:numel(uniZ)
+            x_loc = x(z == uniZ(j));
+            x_min = min(x_loc);
+            x_max = max(x_loc);
+            x = [x; (x_min:pln.propStf.bixelWidth:x_max)'];
+            y = [y; zeros((x_max-x_min)/pln.propStf.bixelWidth+1,1)];
+            z = [z; uniZ(j)*ones((x_max-x_min)/pln.propStf.bixelWidth+1,1)];
+        end
+        
+        masterRayPosBEV_phase1 = [x,y,z];
+        masterRayPosBEV_phase1 = unique(masterRayPosBEV_phase1,'rows');
         
         stf = matRad_Stf4DPost(stf,masterRayPosBEV,masterRayPosBEV_phase1);
     end

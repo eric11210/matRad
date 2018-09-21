@@ -69,11 +69,13 @@ bixelNum = NaN*ones(dij.totalNumOfBixels,1);
 rayNum   = NaN*ones(dij.totalNumOfBixels,1);
 beamNum  = NaN*ones(dij.totalNumOfBixels,1);
 
-doseTmpContainer = cell(numOfBixelsContainer,dij.numOfScenarios);
+doseTmpContainer        = cell(numOfBixelsContainer,dij.numOfScenarios);
+doseTmpContainerError   = cell(numOfBixelsContainer,dij.numOfScenarios);
 
 % Allocate space for dij.physicalDose sparse matrix
 for i = 1:dij.numOfScenarios
     dij.physicalDose{i} = spalloc(prod(ct.cubeDim),numOfColumnsDij,1);
+    dij.physicalDoseError{i} = spalloc(prod(ct.cubeDim),numOfColumnsDij,1);
 end
 
 % set environment variables for vmc++
@@ -108,6 +110,9 @@ rng(0);
 % get default vmc options
 VmcOptions = matRad_vmcOptions(pln,ct);
 
+% export CT cube as binary file for vmc++
+matRad_exportCtVmc(ct, fullfile(phantomPath, 'matRad_CT.ct'));
+
 % take only voxels inside patient
 V = [cst{:,4}];
 V = unique(vertcat(V{:}));
@@ -137,43 +142,36 @@ for i = 1:dij.numOfBeams % loop over all beams
     if strcmp(pln.propDoseCalc.vmcOptions.source,'phsp')
         % set angle-specific vmc++ parameters
         
-        % export CT cube as binary file for vmc++
-        % for the phsp source, rotations are made around the origin
-        % need to make the origin the isocenter in the CT
-        matRad_exportCtVmc(ct, fullfile(phantomPath, sprintf('matRad_CT_beam%d.ct',i)), stf(i).isoCenter);
-        
         % phsp starts off pointed in the +z direction, with source at -z
-        
         % phsp source gets translated, then rotated (-z, +y, -x) around
-        % origin
+        % 0, then pushed to isocenter
         
-        % a) correct for the source to collimator distance and change units mm -> cm
-        translation = [0 0 pln.propDoseCalc.vmcOptions.SCD + stf(i).sourcePoint_bev(2)]/10;
+        % correct for the source to collimator distance and change units mm -> cm
+        translation = stf(i).isoCenter/10+[0 0 pln.propDoseCalc.vmcOptions.SCD + stf(i).sourcePoint_bev(2)]/10;
         
-        % b) determine vmc++ rotation angles from gantry and couch
+        % enter in isocentre
+        isocenter = stf(i).isoCenter/10;
+        
+        % determine vmc++ rotation angles from gantry and couch
         % angles
         angles = matRad_matRad2vmcSourceAngles(stf(i).gantryAngle,stf(i).couchAngle);
         
-        % c) set vmc++ parameters
-        VmcOptions.source.translation = translation;
-        VmcOptions.source.angles = angles;
-        
-    else
-        % export CT cube as binary file for vmc++
-        
-        % use dummy isocenter
-        matRad_exportCtVmc(ct, fullfile(phantomPath, sprintf('matRad_CT_beam%d.ct',i)), [0 0 0]);
+        % set vmc++ parameters
+        VmcOptions.source.translation   = translation;
+        VmcOptions.source.isocenter     = isocenter;
+        VmcOptions.source.angles        = angles;
     end
     
     % use beam-specific CT name
-    VmcOptions.geometry.XyzGeometry.CtFile  = strrep(fullfile(runsPath,'phantoms',sprintf('matRad_CT_beam%d.ct',i)),'\','/'); % path of density matrix (only needed if input method is 'CT-PHANTOM')
+    VmcOptions.geometry.XyzGeometry.CtFile  = strrep(fullfile(runsPath,'phantoms','matRad_CT.ct'),'\','/'); % path of density matrix (only needed if input method is 'CT-PHANTOM')
     
     for j = 1:stf(i).numOfRays % loop over all rays / for photons we only have one bixel per ray!
         
         writeCounter = writeCounter + 1;
 
         % create different seeds for every bixel
-        VmcOptions.McControl.rngSeeds = [randi(30000),randi(30000)];
+        %VmcOptions.McControl.rngSeeds = [randi(30000),randi(30000)];
+        VmcOptions.McControl.rngSeeds = [1991 2018];
 
         % remember beam and bixel number
         if ~calcDoseDirect
@@ -258,17 +256,20 @@ for i = 1:dij.numOfBeams % loop over all beams
                     case 'dkfz'
                         filename = sprintf('%s%d_%s.dos',outfile(1:idx(2)),k,VmcOptions.scoringOptions.outputOptions.name);
                 end
-                [bixelDose,~] = matRad_readDoseVmc(fullfile(runsPath,filename),VmcOptions);
+                [bixelDose,bixelDoseError] = matRad_readDoseVmc(fullfile(runsPath,filename),VmcOptions);
 
                 % apply relative dose cutoff
-                doseCutoff                        = VmcOptions.run.relDoseCutoff*max(bixelDose);
-                bixelDose(bixelDose < doseCutoff) = 0;
+                doseCutoff                              = VmcOptions.run.relDoseCutoff*max(bixelDose);
+                bixelDoseError(bixelDose < doseCutoff)  = 0;
+                bixelDose(bixelDose < doseCutoff)       = 0;
 
                 % apply absolute calibration factor
-                bixelDose = bixelDose*VmcOptions.run.absCalibrationFactorVmc;
+                bixelDoseError  = sqrt((VmcOptions.run.absCalibrationFactorVmc.*bixelDoseError).^2+(bixelDose.*VmcOptions.run.absCalibrationFactorVmc_err).^2);
+                bixelDose       = bixelDose*VmcOptions.run.absCalibrationFactorVmc;
 
                 % Save dose for every bixel in cell array
-                doseTmpContainer{mod(readCounter-1,numOfBixelsContainer)+1,1} = sparse(V,1,bixelDose(V),dij.numOfVoxels,1);
+                doseTmpContainer{mod(readCounter-1,numOfBixelsContainer)+1,1}       = sparse(V,1,bixelDose(V),dij.numOfVoxels,1);
+                doseTmpContainerError{mod(readCounter-1,numOfBixelsContainer)+1,1}  = sparse(V,1,bixelDoseError(V),dij.numOfVoxels,1);
                 
                 % save computation time and memory by sequentially filling the 
                 % sparse matrix dose.dij from the cell array
@@ -276,7 +277,8 @@ for i = 1:dij.numOfBeams % loop over all beams
                     if calcDoseDirect
                         if isfield(stf(beamNum(readCounter)).ray(rayNum(readCounter)),'weight')
                             % score physical dose
-                            dij.physicalDose{1}(:,i) = dij.physicalDose{1}(:,i) + stf(beamNum(readCounter)).ray(rayNum(readCounter)).weight * doseTmpContainer{1,1};
+                            dij.physicalDose{1}(:,i)        = dij.physicalDose{1}(:,i) + stf(beamNum(readCounter)).ray(rayNum(readCounter)).weight{1} * doseTmpContainer{1,1};
+                            dij.physicalDoseError{1}(:,i)   = sqrt(dij.physicalDoseError{1}(:,i).^2 + (stf(beamNum(readCounter)).ray(rayNum(readCounter)).weight{1} * doseTmpContainerError{1,1}).^2);
                         else
                             error(['No weight available for beam ' num2str(beamNum(readCounter)) ', ray ' num2str(rayNum(readCounter))]);
                         end
@@ -284,6 +286,9 @@ for i = 1:dij.numOfBeams % loop over all beams
                         % fill entire dose influence matrix
                         dij.physicalDose{1}(:,(ceil(readCounter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:readCounter) = ...
                             [doseTmpContainer{1:mod(readCounter-1,numOfBixelsContainer)+1,1}];
+                        
+                        dij.physicalDoseError{1}(:,(ceil(readCounter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:readCounter) = ...
+                            [doseTmpContainerError{1:mod(readCounter-1,numOfBixelsContainer)+1,1}];
                     end
                 end
             end

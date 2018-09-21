@@ -44,31 +44,13 @@ updatedInfo = apertureInfo;
 
 updatedInfo.apertureVector = apertureInfoVect;
 
-shapeInd = 1;
-
 % options for bixel and Jacobian calculation
 mlcOptions.bixelWidth = apertureInfo.bixelWidth;
 calcOptions.continuousAperture = updatedInfo.propVMAT.continuousAperture;
 vectorIndices.totalNumOfShapes = apertureInfo.totalNumOfShapes;
-vectorIndices.timeOffset = (apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases;
 
 w = cell(apertureInfo.numPhases,1);
 w(:) = {zeros(apertureInfo.totalNumOfBixels,1)};
-% dummy
-bixelJApVec_vec = cell(apertureInfo.numPhases,1);
-bixelJApVec_i = cell(apertureInfo.numPhases,1);
-bixelJApVec_j = cell(apertureInfo.numPhases,1);
-
-
-%change this to eliminate the first unused entries (which pertain to the
-%weights of the aprtures, and to make the bixelIndices work when doing VMAT
-%(and we need to potentially interpolate between control points)
-indVect = NaN*ones(2*apertureInfo.doseTotalNumOfLeafPairs,1);
-offset = 0;
-
-% helper function to cope with numerical instabilities through rounding
-round2 = @(a,b) round(a*10^b)/10^b;
-
 
 if updatedInfo.runVMAT && ~all([updatedInfo.propVMAT.beam.DAOBeam])
     j = 1;
@@ -78,23 +60,28 @@ if updatedInfo.runVMAT && ~all([updatedInfo.propVMAT.beam.DAOBeam])
                 % update the shape weight
                 % rescale the weight from the vector using the previous
                 % iteration scaling factor
-                updatedInfo.beam(i).shape{phase}(j).weight = apertureInfoVect(shapeInd)./updatedInfo.beam(i).shape{phase}(j).jacobiScale;
+                updatedInfo.beam(i).shape{phase}(j).weight = apertureInfoVect(updatedInfo.beam(i).shape{phase}(j).weightOffset)./updatedInfo.beam(i).shape{phase}(j).jacobiScale;
                 
                 updatedInfo.beam(i).shape{phase}(j).MU = updatedInfo.beam(i).shape{phase}(j).weight*updatedInfo.weightToMU;
                 if phase == 1
-                    updatedInfo.beam(i).time = apertureInfoVect((updatedInfo.totalNumOfShapes+updatedInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+shapeInd)*updatedInfo.propVMAT.beam(i).timeFacCurr;
+                    updatedInfo.beam(i).time = apertureInfoVect((updatedInfo.totalNumOfShapes+updatedInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+updatedInfo.propVMAT.beam(i).DAOIndex)*updatedInfo.propVMAT.beam(i).timeFacCurr;
                     updatedInfo.beam(i).gantryRot = updatedInfo.propVMAT.beam(i).doseAngleBordersDiff/updatedInfo.beam(i).time;
                 end
                 updatedInfo.beam(i).shape{phase}(j).MURate = updatedInfo.beam(i).shape{phase}(j).MU./updatedInfo.beam(i).time;
-                
-                shapeInd = shapeInd+1;
             end
         end
     end
-    shapeInd = 1;
 end
 
-%Interpolate segment between adjacent optimized gantry angles.
+bixelJApVec_vec = cell(apertureInfo.numPhases,1);
+
+% dummy variables
+bixelJApVec_i = cell(apertureInfo.numPhases,1);
+bixelJApVec_j = cell(apertureInfo.numPhases,1);
+bixelJApVec_offset = cell(apertureInfo.numPhases,1);
+counters.bixelJApVec_offset = bixelJApVec_offset;
+
+% Interpolate segment between adjacent optimized gantry angles.
 % Include in updatedInfo, but NOT the vector (since these are not
 % optimized by DAO).  Also update bixel weights to include these.
 
@@ -105,38 +92,54 @@ end
 
 calcOptions.saveJacobian = false;
 
-% loop over all phases
-for phase = 1:apertureInfo.numPhases
-    % loop over all beams
-    for i = 1:numel(updatedInfo.beam)
+% loop over all beams
+for i = 1:numel(updatedInfo.beam)
+    
+    %posOfRightCornerPixel = apertureInfo.beam(i).posOfCornerBixel(1) + (size(apertureInfo.beam(i).bixelIndMap,2)-1)*apertureInfo.bixelWidth;
+    
+    % pre compute left and right bixel edges
+    edges_l = updatedInfo.beam(i).posOfCornerBixel(1)...
+        + ([1:size(apertureInfo.beam(i).bixelIndMap,2)]-1-1/2)*updatedInfo.bixelWidth;
+    edges_r = updatedInfo.beam(i).posOfCornerBixel(1)...
+        + ([1:size(apertureInfo.beam(i).bixelIndMap,2)]-1+1/2)*updatedInfo.bixelWidth;
+    
+    % get dimensions of 2d matrices that store shape/bixel information
+    n = apertureInfo.beam(i).numOfActiveLeafPairs;
+    
+    %weightFactor_I = updatedInfo.propVMAT.beam(i).doseAngleBorderCentreDiff(1)./updatedInfo.propVMAT.beam(i).doseAngleBordersDiff;
+    %weightFactor_F = updatedInfo.propVMAT.beam(i).doseAngleBorderCentreDiff(2)./updatedInfo.propVMAT.beam(i).doseAngleBordersDiff;
+    
+    % we are necessarily doing VMAT
+    numOfShapes = 1;
+    
+    mlcOptions.lim_l = apertureInfo.beam(i).lim_l;
+    mlcOptions.lim_r = apertureInfo.beam(i).lim_r;
+    mlcOptions.edges_l = edges_l;
+    mlcOptions.edges_r = edges_r;
+    mlcOptions.centres = (edges_l+edges_r)/2;
+    mlcOptions.widths = edges_r-edges_l;
+    mlcOptions.n = n;
+    mlcOptions.numBix = size(apertureInfo.beam(i).bixelIndMap,2);
+    mlcOptions.bixelIndMap = apertureInfo.beam(i).bixelIndMap;
+    calcOptions.DAOBeam = updatedInfo.propVMAT.beam(i).DAOBeam;
+    
+    
+    
+    % loop over all shapes
+    for j = 1:numOfShapes
         
-        %posOfRightCornerPixel = apertureInfo.beam(i).posOfCornerBixel(1) + (size(apertureInfo.beam(i).bixelIndMap,2)-1)*apertureInfo.bixelWidth;
+        % shapeMap
+        shapeMap_I = cell(updatedInfo.numPhases,1);
+        shapeMap_I(:) = {zeros(size(updatedInfo.beam(i).bixelIndMap))};
+        shapeMap_F = cell(updatedInfo.numPhases,1);
+        shapeMap_F(:) = {zeros(size(updatedInfo.beam(i).bixelIndMap))};
+        % sumGradSq
+        sumGradSq = cell(apertureInfo.numPhases,1);
+        sumGradSq(:) = {0};
         
-        % pre compute left and right bixel edges
-        edges_l = updatedInfo.beam(i).posOfCornerBixel(1)...
-            + ([1:size(apertureInfo.beam(i).bixelIndMap,2)]-1-1/2)*updatedInfo.bixelWidth;
-        edges_r = updatedInfo.beam(i).posOfCornerBixel(1)...
-            + ([1:size(apertureInfo.beam(i).bixelIndMap,2)]-1+1/2)*updatedInfo.bixelWidth;
-        
-        % get dimensions of 2d matrices that store shape/bixel information
-        n = apertureInfo.beam(i).numOfActiveLeafPairs;
-        
-        % we are necessarily doing VMAT
-        numOfShapes = 1;
-        
-        mlcOptions.lim_l = apertureInfo.beam(i).lim_l;
-        mlcOptions.lim_r = apertureInfo.beam(i).lim_r;
-        mlcOptions.edges_l = edges_l;
-        mlcOptions.edges_r = edges_r;
-        mlcOptions.centres = (edges_l+edges_r)/2;
-        mlcOptions.widths = edges_r-edges_l;
-        mlcOptions.n = n;
-        mlcOptions.numBix = size(apertureInfo.beam(i).bixelIndMap,2);
-        mlcOptions.bixelIndMap = apertureInfo.beam(i).bixelIndMap;
-        calcOptions.DAOBeam = updatedInfo.propVMAT.beam(i).DAOBeam;
-        
-        % loop over all shapes
-        for j = 1:numOfShapes
+        % loop over all phases
+        for phase = 1:apertureInfo.numPhases
+            
             
             % no need to update weights or anything from the vector, just
             % extract the weights and leaf positions from the apertureInfo
@@ -158,42 +161,64 @@ for phase = 1:apertureInfo.numPhases
             end
             
             %% enter in variables and options
-            variables.phase = phase;
-            counters.bixelJApVec_offset = 0;
             
             %%%%%%%%%%%%%%%%
             %do initial and final arc separately, more accurate
             %calculation
             
             %INITIAL
-            variables.weight            = weight_I;
-            variables.leftLeafPos_I     = updatedInfo.beam(i).shape{phase}(j).leftLeafPos_I;
-            variables.leftLeafPos_F     = updatedInfo.beam(i).shape{phase}(j).leftLeafPos;
-            variables.rightLeafPos_I    = updatedInfo.beam(i).shape{phase}(j).rightLeafPos_I;
-            variables.rightLeafPos_F    = updatedInfo.beam(i).shape{phase}(j).rightLeafPos;
+            variables.weight_I          = weight_I;
+            variables.weight_F          = weight_I;
+            variables.phase_I           = phase;%_I
+            variables.phase_F           = phase;%_I
+            variables.weightFactor_I    = 1/2;
+            variables.weightFactor_F    = 1/2;
+            variables.probability       = 1;
+            
+            if updatedInfo.propVMAT.continuousAperture
+                variables.leftLeafPos_I     = updatedInfo.beam(i).shape{phase}(j).leftLeafPos_I;
+                variables.leftLeafPos_F     = updatedInfo.beam(i).shape{phase}(j).leftLeafPos;
+                variables.rightLeafPos_I    = updatedInfo.beam(i).shape{phase}(j).rightLeafPos_I;
+                variables.rightLeafPos_F    = updatedInfo.beam(i).shape{phase}(j).rightLeafPos;
+            else
+                variables.leftLeafPos_I     = updatedInfo.beam(i).shape{phase}(j).leftLeafPos;
+                variables.leftLeafPos_F     = updatedInfo.beam(i).shape{phase}(j).leftLeafPos;
+                variables.rightLeafPos_I    = updatedInfo.beam(i).shape{phase}(j).rightLeafPos;
+                variables.rightLeafPos_F    = updatedInfo.beam(i).shape{phase}(j).rightLeafPos;
+            end
             
             % calculate bixel weight and derivative in function
-            [w,~,bixelJApVec_i,bixelJApVec_j,~,shapeMap_I,counters] = ...
-                matRad_bixWeightAndGrad(calcOptions,mlcOptions,variables,vectorIndices,counters,w,bixelJApVec_vec,bixelJApVec_i,bixelJApVec_j);
+            [w,~,bixelJApVec_i,bixelJApVec_j,sumGradSq,shapeMap_I,counters] = ...
+                matRad_bixWeightAndGrad(calcOptions,mlcOptions,variables,vectorIndices,counters,w,bixelJApVec_vec,bixelJApVec_i,bixelJApVec_j,sumGradSq,shapeMap_I);
             
             %FINAL
-            variables.weight            = weight_F;
-            variables.leftLeafPos_I     = updatedInfo.beam(i).shape{phase}(j).leftLeafPos;
-            variables.leftLeafPos_F     = updatedInfo.beam(i).shape{phase}(j).leftLeafPos_F;
-            variables.rightLeafPos_I    = updatedInfo.beam(i).shape{phase}(j).rightLeafPos;
-            variables.rightLeafPos_F    = updatedInfo.beam(i).shape{phase}(j).rightLeafPos_F;
+            variables.weight_I          = weight_F;
+            variables.weight_F          = weight_F;
+            variables.phase_I           = phase;%_F
+            variables.phase_F           = phase;%_F
+            variables.weightFactor_I    = 1/2;
+            variables.weightFactor_F    = 1/2;
+            variables.probability       = 1;
+            if updatedInfo.propVMAT.continuousAperture
+                variables.leftLeafPos_I     = updatedInfo.beam(i).shape{phase}(j).leftLeafPos;
+                variables.leftLeafPos_F     = updatedInfo.beam(i).shape{phase}(j).leftLeafPos_F;
+                variables.rightLeafPos_I    = updatedInfo.beam(i).shape{phase}(j).rightLeafPos;
+                variables.rightLeafPos_F    = updatedInfo.beam(i).shape{phase}(j).rightLeafPos_F;
+            else
+                variables.leftLeafPos_I     = updatedInfo.beam(i).shape{phase}(j).leftLeafPos;
+                variables.leftLeafPos_F     = updatedInfo.beam(i).shape{phase}(j).leftLeafPos;
+                variables.rightLeafPos_I    = updatedInfo.beam(i).shape{phase}(j).rightLeafPos;
+                variables.rightLeafPos_F    = updatedInfo.beam(i).shape{phase}(j).rightLeafPos;
+            end
             
             % calculate bixel weight and derivative in function
-            [w,~,bixelJApVec_i,bixelJApVec_j,~,shapeMap_F,counters] = ...
-                matRad_bixWeightAndGrad(calcOptions,mlcOptions,variables,vectorIndices,counters,w,bixelJApVec_vec,bixelJApVec_i,bixelJApVec_j);
+            [w,~,bixelJApVec_i,bixelJApVec_j,sumGradSq,shapeMap_F,counters] = ...
+                matRad_bixWeightAndGrad(calcOptions,mlcOptions,variables,vectorIndices,counters,w,bixelJApVec_vec,bixelJApVec_i,bixelJApVec_j,sumGradSq,shapeMap_F);
             
             % save the tempMap
-            shapeMap = (shapeMap_I.*weight_I+shapeMap_F.*weight_F)./weight;
+            shapeMap = shapeMap_I{phase}+shapeMap_F{phase};
             updatedInfo.beam(i).shape{phase}(j).shapeMap = shapeMap;
             
-            
-            % increment shape index
-            shapeInd = shapeInd +1;
         end
     end
     

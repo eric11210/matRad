@@ -75,14 +75,20 @@ end
 
 % dose calculation
 if strcmp(pln.radiationMode,'photons')
-  dij = matRad_calcPhotonDose(ct,stf,pln,cst,calcDoseDirect);
-  %dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst,5000,4,calcDoseDirect);
+    
+    if pln.propDoseCalc.vmc
+        dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst,calcDoseDirect);
+    else
+        dij = matRad_calcPhotonDose(ct,stf,pln,cst,calcDoseDirect);
+    end
+    
 elseif strcmp(pln.radiationMode,'protons') || strcmp(pln.radiationMode,'carbon')
-  dij = matRad_calcParticleDose(ct,stf,pln,cst,calcDoseDirect);
+    
+    dij = matRad_calcParticleDose(ct,stf,pln,cst,calcDoseDirect);
 end
 
-% calculate cubes; use uniform weights here, weighting with actual fluence 
-% already performed in dij construction 
+% calculate cubes; use uniform weights here, weighting with actual fluence
+% already performed in dij construction
 options.bioOpt          = 'none';
 options.numOfScenarios  = 1;
 resultGUI               = matRad_calcCubes({ones(pln.propStf.numOfBeams,1)},dij,cst,options);

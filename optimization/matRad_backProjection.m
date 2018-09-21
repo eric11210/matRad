@@ -1,4 +1,4 @@
-function d = matRad_backProjection(w,dij,options)
+function [d,dError] = matRad_backProjection(w,dij,options)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % matRad back projection function to calculate the current dose-,effect- or
 % RBExDose- vector based on the dij struct.
@@ -44,6 +44,9 @@ else
     % pre-allocation
     %d = cell(options.numOfScenarios,1);
     d = zeros(dij.numOfVoxels,1);
+    if nargout == 2
+        dError = zeros(dij.numOfVoxels,1);
+    end
     
     % Calculate dose vector
     if isequal(options.bioOpt,'none')
@@ -52,8 +55,14 @@ else
             
             if isfield(dij,'optBixel')
                 d = d+dij.physicalDose{i}(:,dij.optBixel) * (w{i}(dij.optBixel) * dij.scaleFactor);
+                if nargout == 2
+                    dError = sqrt(dError.^2+dij.physicalDoseError{i}(:,dij.optBixel).^2 * (w{i}(dij.optBixel) * dij.scaleFactor).^2);
+                end
             else
                 d = d+dij.physicalDose{i} * (w{i} * dij.scaleFactor);
+                if nargout == 2
+                    dError = sqrt(dError.^2+dij.physicalDoseError{i}.^2 * (w{i} * dij.scaleFactor).^2);
+                end
             end
             
             if dij.memorySaverPhoton

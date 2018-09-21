@@ -51,7 +51,13 @@ end
 % compute physical dose for all beams individually and together
 for i = 1:length(beamInfo)
     % has to be fixed a lot for 4D
-    d = matRad_backProjection(w,dij,options);
+    if isfield(dij,'physicalDoseError')
+        [d,dError] = matRad_backProjection(w,dij,options);
+        
+        resultGUI.(['physicalDoseError', beamInfo(i).suffix]) = reshape(dError,dij.dimensions);
+    else
+        d = matRad_backProjection(w,dij,options);
+    end
     
     resultGUI.(['physicalDose', beamInfo(i).suffix]) = reshape(d,dij.dimensions);
 end
