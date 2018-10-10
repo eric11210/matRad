@@ -38,14 +38,17 @@ end
 
 % give file name to ray
 for i = 1:numel(stf)
-    for j = 1:stf(1).numOfRays
+    
+    for j = 1:stf(i).numOfRays
         
         % find correct bixel
-        bixelInd = all(repelem(stf(1).ray(j).rayPos_bev,numBixels,1) == masterRayPosBEV,2);
+        bixelInd = all(repelem(stf(i).ray(j).rayPos_bev,numBixels,1) == masterRayPosBEV,2);
         % write filename
         stf(i).ray(j).phspFileName = fname_bixels{bixelInd};
     end
 end
+
+% FIX THIS TO GENERATE PHSP FILES FOR ALL BIXELS IN FIELD
 
 if writeFiles
     % only do read/write files if they don't already exist

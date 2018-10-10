@@ -25,12 +25,6 @@ X = (0.5:(ct.cubeDim(2)+0.5))*ct.resolution.x/10;
 Y = (0.5:(ct.cubeDim(1)+0.5))*ct.resolution.y/10;
 Z = (0.5:(ct.cubeDim(3)+0.5))*ct.resolution.z/10;
 
-% correct for isocenter
-% isocenter should only be non-zero for phsp sources
-X = X;
-Y = Y;
-Z = Z;
-
 fwrite(fid,X,'float32');
 fwrite(fid,Y,'float32');
 fwrite(fid,Z,'float32');

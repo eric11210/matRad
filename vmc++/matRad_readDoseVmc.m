@@ -38,7 +38,7 @@ if dump_dose == 2
     bixelDose       = fread(fid, no_regions, 'uint16');
     bixelDose       = bixelDose/65534*dmax; % conversion short integers to floating numbers
     bixelDoseError  = zeros(size(bixelDose));
-elseif dump_dose == 1
+elseif dump_dose == 1 
     bixelDose       = fread(fid, no_regions, 'float32');
     bixelDoseError  = fread(fid, no_regions, 'float32');
 end

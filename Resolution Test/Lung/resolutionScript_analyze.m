@@ -1,12 +1,16 @@
+load lungPatient0_3DVMAT.mat
+
 %this is the reference plan, the most accurate way of calculating dose
 fname = sprintf('0.5 degrees, dyn + interp.mat');
 load(fname)
 refDose = recalc.resultGUI.physicalDose;
+refDoseError = recalc.resultGUI.physicalDoseError;
 
 %refDose for not interpolated, not dynamic
 fname = sprintf('0.5 degrees, Ndyn + Ninterp.mat');
 load(fname)
 refDose_NN = recalc.resultGUI.physicalDose;
+refDoseError_NN = recalc.resultGUI.physicalDoseError;
 
 %refDose for interpolated, dynamic, old Dij
 fname = sprintf('0.5 degrees, dyn + interp oldDij.mat');
@@ -31,6 +35,13 @@ for i = 1:size(cst_Over,1)
 end
 
 angularResS = [0.5 1 2 4];
+
+global D;
+x0 = [1     0   0       0   0]';
+lb = [0     0   -inf    0   -inf]';
+ub = [inf   1   inf     1   inf]';
+A = [0      1   0       1   0];
+b = 1;
 
 %dynamic, interpolated
 
@@ -104,12 +115,28 @@ for angularRes = angularResS
     %for each angular resolution, proceed from the best approximation to
     %the worst
     
-    angularRes = 4;
-    
     %first time, do interpolation and dynamic fluence calculation
     fname = sprintf('%.1f degrees, dyn + interp.mat',angularRes);
     load(fname);
     dose = recalc.resultGUI.physicalDose;
+    doseError = recalc.resultGUI.physicalDoseError;
+    
+    doseDiff = dose-refDose;
+    doseDiffError = sqrt(doseError.^2+refDoseError.^2);
+    delta = doseDiff./doseDiffError;
+    delta(doseDiffError == 0) = 0;
+    delta(deleteInd) = [];
+    delta = delta(:);
+    
+    D = delta;
+    
+    x = fmincon(@minusLogLikelihood,x0,A,b,[],[],lb,ub);
+    sigma_YY(i) = x(1);
+    alpha1_YY(i) = x(2);
+    delta1_YY(i) = x(3);
+    alpha2_YY(i) = x(4);
+    delta2_YY(i) = x(5);
+    
     
     percDiff = 100*abs(dose-refDose)./refDose;
     percDiff(refDose == 0) = 0;
@@ -129,7 +156,7 @@ for angularRes = angularResS
     percVErr10_YY(i) = 100*nnz(abs(dose-refDose)./refDose >= 0.10 & V_TargAndNorm)./nnz(V_TargAndNorm);
     
     for j = 1:numel(recalc.apertureInfo.beam)
-        fluence_YY(:,:,i) = fluence_YY(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).weight*recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
+        fluence_YY(:,:,i) = fluence_YY(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
         weight_YY(i) = weight_YY(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
     end
     %obj_YY(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,recalc.apertureInfo,dij,cst_Over,options);
@@ -155,6 +182,24 @@ for angularRes = angularResS
     fname = sprintf('%.1f degrees, Ndyn + interp.mat',angularRes);
     load(fname);
     dose = recalc.resultGUI.physicalDose;
+    doseError = recalc.resultGUI.physicalDoseError;
+    
+    doseDiff = dose-refDose;
+    doseDiffError = sqrt(doseError.^2+refDoseError.^2);
+    delta = doseDiff./doseDiffError;
+    delta(doseDiffError == 0) = 0;
+    delta(deleteInd) = [];
+    delta = delta(:);
+    
+    D = delta;
+    
+    x = fmincon(@minusLogLikelihood,x0,A,b,[],[],lb,ub);
+    sigma_NY(i) = x(1);
+    alpha1_NY(i) = x(2);
+    delta1_NY(i) = x(3);
+    alpha2_NY(i) = x(4);
+    delta2_NY(i) = x(5);
+    
     
     percDiff = 100*abs(dose-refDose)./refDose;
     percDiff(refDose == 0) = 0;
@@ -173,7 +218,7 @@ for angularRes = angularResS
     percVErr5_NY(i) = 100*nnz(abs(dose-refDose)./refDose >= 0.05 & V_TargAndNorm)./nnz(V_TargAndNorm);
     percVErr10_NY(i) = 100*nnz(abs(dose-refDose)./refDose >= 0.10 & V_TargAndNorm)./nnz(V_TargAndNorm);
     for j = 1:numel(recalc.apertureInfo.beam)
-        fluence_NY(:,:,i) = fluence_NY(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).weight*recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
+        fluence_NY(:,:,i) = fluence_NY(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
         weight_NY(i) = weight_NY(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
     end
     %obj_NY(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,recalc.apertureInfo,dij,cst_Over,options);
@@ -183,6 +228,24 @@ for angularRes = angularResS
     fname = sprintf('%.1f degrees, dyn + interp oldDij.mat',angularRes);
     load(fname);
     dose = recalc.resultGUI.physicalDose;
+    doseError = recalc.resultGUI.physicalDoseError;
+    
+    doseDiff = dose-refDose;
+    doseDiffError = sqrt(doseError.^2+refDoseError.^2);
+    delta = doseDiff./doseDiffError;
+    delta(doseDiffError == 0) = 0;
+    delta(deleteInd) = [];
+    delta = delta(:);
+    
+    D = delta;
+    
+    x = fmincon(@minusLogLikelihood,x0,A,b,[],[],lb,ub);
+    sigma_YY_oldDij(i) = x(1);
+    alpha1_YY_oldDij(i) = x(2);
+    delta1_YY_oldDij(i) = x(3);
+    alpha2_YY_oldDij(i) = x(4);
+    delta2_YY_oldDij(i) = x(5);
+    
     
     percDiff = 100*abs(dose-refDose)./refDose;
     percDiff(refDose == 0) = 0;
@@ -206,7 +269,7 @@ for angularRes = angularResS
     percVErr5_YY_oldDij_itself(i) = 100*nnz(abs(dose-refDose_YY_oldDij)./refDose_YY_oldDij >= 0.05 & V_TargAndNorm)./nnz(V_TargAndNorm);
     percVErr10_YY_oldDij_itself(i) = 100*nnz(abs(dose-refDose_YY_oldDij)./refDose_YY_oldDij >= 0.10 & V_TargAndNorm)./nnz(V_TargAndNorm);
     for j = 1:numel(recalc.apertureInfo.beam)
-        fluence_YY_oldDij(:,:,i) = fluence_YY_oldDij(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).weight*recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
+        fluence_YY_oldDij(:,:,i) = fluence_YY_oldDij(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
         weight_YY_oldDij(i) = weight_YY_oldDij(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
     end
     %obj_NY(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,recalc.apertureInfo,dij,cst_Over,options);
@@ -215,6 +278,25 @@ for angularRes = angularResS
     fname = sprintf('%.1f degrees, Ndyn + Ninterp.mat',angularRes);
     load(fname);
     dose = recalc.resultGUI.physicalDose;
+    doseError = recalc.resultGUI.physicalDoseError;
+    
+    doseDiff = dose-refDose_NN;
+    doseDiffError = sqrt(doseError.^2+refDoseError_NN.^2);
+    delta = doseDiff./doseDiffError;
+    delta(doseDiffError == 0) = 0;
+    delta(deleteInd) = [];
+    delta = delta(:);
+    
+    D = delta;
+    
+    %{
+    x = fmincon(@minusLogLikelihood,x0,A,b,[],[],lb,ub);
+    sigma_NN(i) = x(1);
+    alpha1_NN(i) = x(2);
+    delta1_NN(i) = x(3);
+    alpha2_NN(i) = x(4);
+    delta2_NN(i) = x(5);
+    %}
     
     percDiff = 100*abs(dose-refDose)./refDose;
     percDiff(refDose == 0) = 0;
@@ -238,7 +320,7 @@ for angularRes = angularResS
     percVErr5_NN_itself(i) = 100*nnz(abs(dose-refDose_NN)./refDose_NN >= 0.05 & V_TargAndNorm)./nnz(V_TargAndNorm);
     percVErr10_NN_itself(i) = 100*nnz(abs(dose-refDose_NN)./refDose_NN >= 0.10 & V_TargAndNorm)./nnz(V_TargAndNorm);
     for j = 1:numel(recalc.apertureInfo.beam)
-        fluence_NN(:,:,i) = fluence_NN(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).weight*recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
+        fluence_NN(:,:,i) = fluence_NN(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
         weight_NN(i) = weight_NN(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
     end
     %obj_NN(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,recalc.apertureInfo,dij,cst_Over,options);

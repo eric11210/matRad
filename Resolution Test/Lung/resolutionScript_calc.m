@@ -46,8 +46,7 @@ pln = matRad_VMATGantryAngles(pln,cst,ct);
 % load results
 load('Results.mat');
 
-angularResS = [0.5 1 2 4];
-%angularResS = [4];
+angularResS = [4];
 
 oldDir = pwd;
 
@@ -57,6 +56,7 @@ for angularRes = angularResS
     
     recalc.pln = pln;
     recalc.pln.propOpt.VMAToptions.maxGantryAngleSpacing = angularRes;
+    
     
     %first time, do interpolation and dynamic fluence calculation
     fname = sprintf('%.1f degrees, dyn + interp.mat',angularRes);
