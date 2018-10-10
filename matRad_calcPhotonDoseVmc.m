@@ -257,12 +257,23 @@ for i = 1:dij.numOfBeams % loop over all beams
                         filename = sprintf('%s%d_%s.dos',outfile(1:idx(2)),k,VmcOptions.scoringOptions.outputOptions.name);
                 end
                 [bixelDose,bixelDoseError] = matRad_readDoseVmc(fullfile(runsPath,filename),VmcOptions);
-
-                % apply relative dose cutoff
+                
                 if ~calcDoseDirect
+                    % if not calculating dose directly, sample dose
+                    
                     doseCutoff                              = VmcOptions.run.relDoseCutoff*max(bixelDose);
-                    bixelDoseError(bixelDose < doseCutoff)  = 0;
-                    bixelDose(bixelDose < doseCutoff)       = 0;
+                    %bixelDoseError(bixelDose < doseCutoff)  = 0;
+                    %bixelDose(bixelDose < doseCutoff)       = 0;
+                    
+                    indSample = bixelDose < doseCutoff & bixelDose ~= 0;
+                    r = rand(nnz(indSample),1);
+                    thresRand = bixelDose(indSample)./doseCutoff;
+                    indKeepSampled = r < thresRand;
+                    
+                    indKeep = indSample;
+                    indKeep(indKeep) = indKeepSampled;
+                    bixelDose(indKeep) = doseCutoff;
+                    bixelDose(indSample & ~indKeep) = 0;
                 end
 
                 % apply absolute calibration factor
