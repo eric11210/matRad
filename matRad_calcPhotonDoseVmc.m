@@ -261,19 +261,38 @@ for i = 1:dij.numOfBeams % loop over all beams
                 if ~calcDoseDirect
                     % if not calculating dose directly, sample dose
                     
-                    doseCutoff                              = VmcOptions.run.relDoseCutoff*max(bixelDose);
-                    %bixelDoseError(bixelDose < doseCutoff)  = 0;
-                    %bixelDose(bixelDose < doseCutoff)       = 0;
+                    % determine cutoff
+                    doseCutoff          = VmcOptions.run.relDoseCutoff*max(bixelDose);
                     
+                    % determine which voxels to sample
                     indSample = bixelDose < doseCutoff & bixelDose ~= 0;
                     r = rand(nnz(indSample),1);
+                    
+                    % sample them
                     thresRand = bixelDose(indSample)./doseCutoff;
                     indKeepSampled = r < thresRand;
-                    
                     indKeep = indSample;
                     indKeep(indKeep) = indKeepSampled;
+                    
+                    % coefficients and terms for the error
+                    erfArg = (doseCutoff-bixelDose)./(bixelDoseError.*sqrt(2));
+                    
+                    erfp_coeff  = (bixelDose.*doseCutoff - bixelDose.^2);
+                    erfp_term   = (1+erf(erfArg))./2;
+                    
+                    erfm_coeff  = bixelDoseError.^2;
+                    erfm_term   = (1-erf(erfArg))./2;
+                    
+                    gauss_coeff = bixelDose.*bixelDoseError.^2;
+                    gauss_term  = normpdf(doseCutoff,bixelDose,bixelDoseError);
+                    % clear NaNs from bixelDoseError = 0
+                    gauss_term(isnan(gauss_term)) = 0;
+                    
+                    bixelDoseError = sqrt( erfp_coeff.*erfp_term + erfm_coeff.*erfm_term + gauss_coeff.*gauss_term );
+                    
                     bixelDose(indKeep) = doseCutoff;
                     bixelDose(indSample & ~indKeep) = 0;
+                    
                 end
 
                 % apply absolute calibration factor
@@ -315,7 +334,7 @@ end
 
 %% delete temporary files
 delete(fullfile(VMCPath, 'run_parallel_simulations.bat')); % batch file
-delete(fullfile(phantomPath, 'matRad_CT_beam*.ct'));             % phantom file
+delete(fullfile(phantomPath, 'matRad_CT.ct'));             % phantom file
 for j = 1:maxNumOfParMCSim
     delete(fullfile(runsPath, ['MCpencilbeam_temp_',num2str(mod(j-1,VmcOptions.run.numOfParMCSim)+1),'.vmc'])); % vmc inputfile
     switch pln.propDoseCalc.vmcOptions.version
