@@ -170,8 +170,7 @@ for i = 1:dij.numOfBeams % loop over all beams
         writeCounter = writeCounter + 1;
 
         % create different seeds for every bixel
-        %VmcOptions.McControl.rngSeeds = [randi(30000),randi(30000)];
-        VmcOptions.McControl.rngSeeds = [1991 2018];
+        VmcOptions.McControl.rngSeeds = [randi(30000),randi(30000)];
 
         % remember beam and bixel number
         if ~calcDoseDirect
@@ -258,6 +257,11 @@ for i = 1:dij.numOfBeams % loop over all beams
                 end
                 [bixelDose,bixelDoseError] = matRad_readDoseVmc(fullfile(runsPath,filename),VmcOptions);
                 
+                %{
+                %%% Don't do any sampling, since the correct error is
+                difficult to figure out. We also don't really need it on
+                the Graham cluster.
+                
                 if ~calcDoseDirect
                     % if not calculating dose directly, sample dose
                     
@@ -274,26 +278,11 @@ for i = 1:dij.numOfBeams % loop over all beams
                     indKeep = indSample;
                     indKeep(indKeep) = indKeepSampled;
                     
-                    % coefficients and terms for the error
-                    erfArg = (doseCutoff-bixelDose)./(bixelDoseError.*sqrt(2));
-                    
-                    erfp_coeff  = (bixelDose.*doseCutoff - bixelDose.^2);
-                    erfp_term   = (1+erf(erfArg))./2;
-                    
-                    erfm_coeff  = bixelDoseError.^2;
-                    erfm_term   = (1-erf(erfArg))./2;
-                    
-                    gauss_coeff = bixelDose.*bixelDoseError.^2;
-                    gauss_term  = normpdf(doseCutoff,bixelDose,bixelDoseError);
-                    % clear NaNs from bixelDoseError = 0
-                    gauss_term(isnan(gauss_term)) = 0;
-                    
-                    bixelDoseError = sqrt( erfp_coeff.*erfp_term + erfm_coeff.*erfm_term + gauss_coeff.*gauss_term );
-                    
                     bixelDose(indKeep) = doseCutoff;
                     bixelDose(indSample & ~indKeep) = 0;
                     
                 end
+                %}
 
                 % apply absolute calibration factor
                 bixelDoseError  = sqrt((VmcOptions.run.absCalibrationFactorVmc.*bixelDoseError).^2+(bixelDose.*VmcOptions.run.absCalibrationFactorVmc_err).^2);

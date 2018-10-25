@@ -46,7 +46,7 @@ pln = matRad_VMATGantryAngles(pln,cst,ct);
 % load results
 load('Results.mat');
 
-angularResS = [4];
+angularResS = [0.5 1 2 4];
 
 oldDir = pwd;
 
@@ -70,7 +70,7 @@ for angularRes = angularResS
     save(fname,'resultGUI','recalc');
     
     
-    %{
+    
     %next, do dynamic fluence and interpolation, but using old dij matrices
     fname = sprintf('%.1f degrees, dyn + interp oldDij.mat',angularRes);
     fprintf('%s\n',fname);
@@ -94,7 +94,7 @@ for angularRes = angularResS
     recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo);
     save(fname,'resultGUI','recalc');
     %}
-    %}
+    
     
     %next, do interpolation but no dynamic fluence
     fname = sprintf('%.1f degrees, Ndyn + interp.mat',angularRes);
@@ -107,7 +107,7 @@ for angularRes = angularResS
     cd(oldDir);
     save(fname,'resultGUI','recalc');
     
-    %{
+    
     %finally, do neither interpolation nor dynamic fluence
     fname = sprintf('%.1f degrees, Ndyn + Ninterp.mat',angularRes);
     fprintf('%s\n',fname);
@@ -118,6 +118,6 @@ for angularRes = angularResS
     recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo);
     cd(oldDir);
     save(fname,'resultGUI','recalc');
-    %}
+    
     
 end
