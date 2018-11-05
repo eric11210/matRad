@@ -153,6 +153,14 @@ switch env
         clear -global matRad_global_x matRad_global_d;
 end
 
+if pln.propOpt.preconditioner
+    % revert scaling
+    
+    dij.weightToMU = dij.weightToMU./dij.scaleFactor;
+    resultGUI.apertureInfo.weightToMU = resultGUI.apertureInfo.weightToMU./dij.scaleFactor;
+    optApertureInfoVec(1:apertureInfo.totalNumOfShapes*apertureInfo.numPhases) = optApertureInfoVec(1:apertureInfo.totalNumOfShapes*apertureInfo.numPhases).*dij.scaleFactor;
+end
+
 % update the apertureInfoStruct and calculate bixel weights
 resultGUI.apertureInfo = matRad_daoVec2ApertureInfo(apertureInfo,optApertureInfoVec);
 
@@ -160,15 +168,9 @@ resultGUI.apertureInfo = matRad_daoVec2ApertureInfo(apertureInfo,optApertureInfo
 resultGUI.w    = resultGUI.apertureInfo.bixelWeights;
 resultGUI.wDao = resultGUI.apertureInfo.bixelWeights;
 
-if pln.propOpt.preconditioner
-    % revert scaling
-    
-    dij.weightToMU = dij.weightToMU./dij.scaleFactor;
-    resultGUI.apertureInfo.weightToMU = resultGUI.apertureInfo.weightToMU./dij.scaleFactor;
-    resultGUI.apertureInfo.apertureVector(1:apertureInfo.totalNumOfShapes*apertureInfo.numPhases) = resultGUI.apertureInfo.apertureVector(1:apertureInfo.totalNumOfShapes*apertureInfo.numPhases).*dij.scaleFactor;
-    
-    dij.scaleFactor = 1;
-end
+dij.scaleFactor = 1;
+
+resultGUI.apertureInfo = matRad_preconditionFactors(resultGUI.apertureInfo);
 
 % calc dose and reshape from 1D vector to 3D array
 d = matRad_backProjection(resultGUI.w,dij,options);

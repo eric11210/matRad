@@ -15,11 +15,24 @@ end
 fname_full  = fullfile(phspPath,sprintf('%s.egsphsp1',vmcOptions.phspBaseName));
 fid_full    = fopen(fname_full,'r');
 
+% SAD tp SCD conversion factor
 SAD2SCD = vmcOptions.SCD./stf(1).SAD;
+
 % in cm
 bixelWidth  = stf(1).bixelWidth.*SAD2SCD/10;
 X           = masterRayPosBEV(:,1).*SAD2SCD/10;
 Y           = -masterRayPosBEV(:,3).*SAD2SCD/10; % minus sign necessary since to get from BEAM coord. to DICOM, we do a rotation, NOT reflection
+% fixes 0 going to -0 in the filename
+X(X == 0)   = 0;
+Y(Y == 0)   = 0;
+
+% determine field size of phspBaseName
+cmInd                   = strfind(vmcOptions.phspBaseName,'cm');
+fFieldSize              = str2double(vmcOptions.phspBaseName(1:(cmInd(1)-1)));
+[X_fField, Y_fField]    = meshgrid(-fFieldSize:bixelWidth:fFieldSize,-fFieldSize:bixelWidth:fFieldSize);
+X_fField                = X_fField(:);
+Y_fField                = Y_fField(:);
+numBixels_fField        = numel(Y_fField);
 
 % determine file names, check for existence
 numBixels       = size(masterRayPosBEV,1);
@@ -28,7 +41,7 @@ writeFiles      = false;
 for i = 1:numBixels
     
     % file name
-    fname_bixels{i}         = fullfile(phspPath,sprintf('%s_bixelWidth%f_X%f_Y%f.egsphsp1',vmcOptions.phspBaseName,bixelWidth,X(i),Y(i)));
+    fname_bixels{i}         = fullfile(phspPath,sprintf('%s_bixelWidth%.4f_X%.4f_Y%.4f.egsphsp1',vmcOptions.phspBaseName,bixelWidth,X(i),Y(i)));
     
     if ~exist(fname_bixels{i},'file')
         % if any file doesn't exist, then we want to write new phsp file
@@ -48,21 +61,24 @@ for i = 1:numel(stf)
     end
 end
 
-% FIX THIS TO GENERATE PHSP FILES FOR ALL BIXELS IN FIELD
-
 if writeFiles
     % only do read/write files if they don't already exist
+    if bixelWidth == 0.25
+        %error('ABOUT TO REWRITE PHSP FILES');
+    end
     
     %% extract information from full phsp file, write to bixel files
-    
-    % set up arrays for the bixel phsp files
-    fid_bixels          = cell(numBixels,1);
-    header_bixels       = cell(numBixels,1);
-    firstParticle_bixels   = false(numBixels,1);
     
     % open header of full phsp
     [fid_full, header_full] = getHeader(fid_full);
     mode = char(header_full.MODE_RW(5));
+    
+    % set up arrays for the bixel phsp files
+    fname_bixels            = cell(numBixels_fField,1);
+    header_bixels           = cell(numBixels_fField,1);
+    buffer_bixels           = cell(numBixels_fField,1);
+    firstParticle_bixels    = false(numBixels_fField,1);
+    sizeBuffer              = round((header_full.NPPHSP./numBixels_fField)./10);
     
     % loop through each record in full phsp
     fprintf('matRad: creating bixel phsp files... ');
@@ -72,11 +88,11 @@ if writeFiles
         [fid_full, record] = getRecord(fid_full,mode);
         
         % sort into correct bixel
-        bixelInd = find(sum(abs([X Y]-repelem([record.X record.Y],numBixels,1)) < repelem(bixelWidth/2,numBixels,2),2) == 2,1,'first');
+        bixelInd = find(sum(abs([X_fField Y_fField]-repelem([record.X record.Y],numBixels_fField,1)) < repelem(bixelWidth/2,numBixels_fField,2),2) == 2,1,'first');
         
         if ~isempty(bixelInd)
             
-            if isempty(fid_bixels{bixelInd})
+            if isempty(header_bixels{bixelInd})
                 % if not previously opened, open the file, write the header
                 % the header is just a dummy for now
                 header_bixels{bixelInd}             = header_full;
@@ -86,9 +102,14 @@ if writeFiles
                 header_bixels{bixelInd}.EKMAXPHSP   = 0;
                 header_bixels{bixelInd}.EKMINPHSPE  = 1000;
                 
-                % open file, write header
-                fid_bixels{bixelInd} = fopen(fname_bixels{bixelInd},'W'); % turn this to 'W'?
-                writeHeader(fid_bixels{bixelInd},header_bixels{bixelInd});
+                % determine file name
+                fname_bixels{bixelInd}  = fullfile(phspPath,sprintf('%s_bixelWidth%.4f_X%.4f_Y%.4f.egsphsp1',vmcOptions.phspBaseName,bixelWidth,X_fField(bixelInd),Y_fField(bixelInd)));
+                
+                % write header
+                writeHeader(fname_bixels{bixelInd},header_bixels{bixelInd},0);
+                
+                % create cell array of records
+                buffer_bixels{bixelInd} = cell(sizeBuffer,1);
             end
             
             %% bixel header
@@ -145,8 +166,19 @@ if writeFiles
                 end
             end
             
-            % write the record
-            writeRecord(fid_bixels{bixelInd},record,mode);
+            % put record in buffer
+            bufferInd = mod(header_bixels{bixelInd}.NPPHSP,sizeBuffer);
+            if bufferInd == 0
+                bufferInd = sizeBuffer;
+            end
+            buffer_bixels{bixelInd}{bufferInd} = record;
+            
+            % when buffer gets full ... 
+            if bufferInd == sizeBuffer
+                % ... write then clear buffer
+                writeBuffer(fname_bixels{bixelInd},buffer_bixels{bixelInd},mode);
+                buffer_bixels{bixelInd} = cell(sizeBuffer,1);
+            end
         end
         
         % display progress
@@ -159,20 +191,23 @@ if writeFiles
     
     %% clean up bixel phsp headers
     fprintf('matRad: updating bixel phsp file headers... ');
-    for i = 1:numBixels
+    for i = 1:numBixels_fField
         
         if header_bixels{i}.EKMINPHSPE == 1000
             header_bixels{i}.EKMINPHSPE = 0;
         end
         
-        % seek to beginning of file
-        fseek(fid_bixels{i},0,'bof');
+        % write rest of buffer first
+        writeBuffer(fname_bixels{i},buffer_bixels{i},mode);
         
-        % write updated header
-        writeHeader(fid_bixels{i},header_bixels{i});
+        if exist(fname_bixels{i},'file')
+            % write updated header
+            writeHeader(fname_bixels{i},header_bixels{i},1);
+        else
+            % write header for first time
+            writeHeader(fname_bixels{i},header_bixels{i},0);
+        end
         
-        % close file
-        fclose(fid_bixels{i});
     end
     fprintf('Done!\n')
     
@@ -211,7 +246,15 @@ end
 
 end
 
-function writeHeader(fid,header)
+function writeHeader(fname,header,rewrite)
+
+if rewrite
+    fid = fopen(fname,'r+');
+else
+    fid = fopen(fname,'w');
+end
+
+fseek(fid,0,'bof');
 
 fwrite(fid,header.MODE_RW,'uint8');
 fwrite(fid,header.NPPHSP,'int32');
@@ -220,6 +263,8 @@ fwrite(fid,header.EKMAXPHSP,'float32');
 fwrite(fid,header.EKMINPHSPE,'float32');
 fwrite(fid,header.NINCPHSP,'float32');
 fwrite(fid,header.garbage,'int8');
+
+fclose(fid);
 
 end
 
@@ -236,5 +281,20 @@ fwrite(fid,record.WT,'float32');
 if mode == 2
     fwrite(fid,record.ZLAST,'float32');
 end
+
+end
+
+function writeBuffer(fname,buffer,mode)
+
+fid = fopen(fname,'r+');
+fseek(fid,0,'eof');
+
+numRecords = sum(~cellfun(@isempty,buffer));
+
+for i = 1:numRecords
+    writeRecord(fid,buffer{i},mode);
+end
+
+fclose(fid);
 
 end

@@ -55,6 +55,8 @@ if pln.propOpt.runVMAT
     apertureInfo.propVMAT.jacobT = zeros(sum([sequencing.beam.numOfShapes]),numel(sequencing.beam));
 end
 
+apertureInfo.jacobiScale = ones(totalNumOfShapes.*sequencing.numPhases,1);
+
 % loop over all beams
 for i=1:size(stf,2)
     

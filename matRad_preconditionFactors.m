@@ -35,9 +35,7 @@ function apertureInfo = matRad_preconditionFactors(apertureInfo)
 % This is the dij scaling factor which will be applied during DAO.  It is
 % given by the dividing the mean of the actual aperture weights by the
 % bixel width.  This factor will divide all of the aperture weights.
-dijScaleFactor = mean(apertureInfo.apertureVector(1:apertureInfo.totalNumOfShapes*apertureInfo.numPhases))/(apertureInfo.bixelWidth);
-
-apertureInfo.jacobiScale = zeros(apertureInfo.totalNumOfShapes*apertureInfo.numPhases,1);
+dijScaleFactor = mean(apertureInfo.apertureVector(1:(apertureInfo.totalNumOfShapes.*apertureInfo.numPhases))./apertureInfo.jacobiScale)/(apertureInfo.bixelWidth);
 
 for i = 1:numel(apertureInfo.beam)
     
@@ -57,10 +55,10 @@ for i = 1:numel(apertureInfo.beam)
                 % The variables corresponding to the aperture weights will be
                 % multiplied by this number, which will decrease the gradients.
                 
-                if ~apertureInfo.propVMAT.continuousAperture
-                    apertureInfo.beam(i).shape{phase}(j).jacobiScale = (dijScaleFactor.*apertureInfo.bixelWidth./apertureInfo.beam(i).shape{phase}(j).weight).*sqrt(sum(apertureInfo.beam(i).shape{phase}(j).shapeMap(:).^2));
-                else
+                if apertureInfo.runVMAT
                     apertureInfo.beam(i).shape{phase}(j).jacobiScale = (dijScaleFactor./apertureInfo.beam(i).shape{phase}(j).weight).*sqrt(sum(apertureInfo.beam(i).shape{phase}(j).shapeMap(:).^2)./apertureInfo.beam(i).shape{phase}(j).sumGradSq);
+                else
+                    apertureInfo.beam(i).shape{phase}(j).jacobiScale = (dijScaleFactor.*apertureInfo.bixelWidth./apertureInfo.beam(i).shape{phase}(j).weight).*sqrt(sum(apertureInfo.beam(i).shape{phase}(j).shapeMap(:).^2));
                 end
                 apertureInfo.jacobiScale(apertureInfo.beam(i).shape{phase}(j).weightOffset) = apertureInfo.beam(i).shape{phase}(j).jacobiScale;
                 
