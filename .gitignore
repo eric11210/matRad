@@ -13,3 +13,4 @@ vmc++/lib/*
 vmc++/run/*
 vmc++/compressed/*
 vmc++/conf/*
+vmc++/src/*

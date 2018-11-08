@@ -1,0 +1,161 @@
+ # Input file for the ICCR 2000 18 MV photon beam benchmark.
+ #
+
+ :start scoring options:
+ ########################
+
+ start in geometry: xyz               ! All particles from the source to 
+                                      ! enter a geometry with name xyz
+
+ :start dose options:
+ --------------------
+
+ score in geometries:  xyz            ! We want a dose calculation in the 
+                                      ! geometry named xyz
+ score dose to water:  no             ! We want real dose. If set to yes, 
+                                      ! "dose to water" will be calculated
+
+ :stop dose options:
+ --------------------
+
+ :start output options xyz:
+ --------------------------
+
+ dump dose:  1                    ! i.e. don't produce a dose dump.
+                                  ! if set to 1 => dump a binary file in .dos
+
+ #scan xo:    0,0,-15  -15,0,0   0,-15,0         ! print 2 dose profiles (in .prof0 and .prof1)
+ #scan uo:    0,0,1  1,0,0   0,1,0         ! the first is a depth dose curve (along the 
+                                  ! z direction), the second a x-profile at 
+                                  ! 5 cm depth.
+                                  ! You may have as many as you wish profiles
+
+ :stop output options xyz:
+ --------------------------
+
+ :stop scoring options:
+ ######################
+
+ :start geometry:
+ ################
+
+ :start def_tetra geometry:
+ ####################
+
+ my name = xyz                   ! Every geometry needs a name. This one has 
+                                 ! the very original name 'xyz'.
+
+ method of input = MMC-PHANTOM
+ phantom file    = C:/Users/eric/Documents/GitHub/matRad/vmc++/run/phantoms/testDeformation_allDirections_def.ct
+
+ deformation field = C:/Users/eric/Documents/GitHub/matRad/vmc++/run/vectors/testDeformation_allDirections_def.vectors
+
+ my name = xyz                   ! Every geometry needs a name. This one has 
+
+:stop def_tetra geometry:
+ ###################
+
+ :stop geometry:
+ ###############
+
+ :start general source:
+
+ monitor units some_source = 1  ! I.e. the source named 'some_source' to deliver
+                                ! 1 MU. This is necessary for deciding how
+                                ! many particles to run from each source (in 
+                                ! a multiple source irradiation) and can also
+                                ! be used for normalization purposes.
+
+ isocenter some_source = 0 0 0
+
+ angles some_source = 90 0 0
+
+ translation some_source = 0 0 0
+
+:start simple source:
+ ####################
+
+ my name = some_source          ! every source needs a name
+ spectrum = var_6MV.spectrum   ! A 18 MV spectrum defined in 
+                                ! $vmc_home/spectra/var_18MV.spectrum
+ charge       =  0              ! photons
+ collimator x =  10.0           ! 1.5 cm collimation in x
+ collimator y =  10.0           ! 1.5 cm collimation in y
+ isocenter    = 0 0 0           ! The isocenter 
+ isodistance  = 100             ! source to isocenter distance
+ gantry angle = 0               ! the various angles
+ couch angle =  0 
+ collimator angle = 0 
+
+ :stop simple source:
+ ###################
+
+ :stop general source:
+
+ :start MC Parameter:
+ ####################
+
+ automatic parameter = yes      ! Don't touch this
+
+ spin = 0                       ! spin effects not included. May be 
+                                ! 1 (a simplistic spin implementation)
+                                ! or 2 (full treatment a la EGSnrc)
+ #
+ # New: when automatic parameters are used, VMC++ decides which brems
+ #      transport mode to use (1 or 2) based on the radiative yield in
+ #      the medium with the highest scattering power.
+ #
+
+
+ :stop MC Parameter:
+ ####################
+
+ :start MC Control:
+ #=================
+
+ ncase  =  1000000              ! Number of particles to run
+ rng seeds = 1991 2018          ! Initial rng seeds. Usefull if one wanted 
+                                ! to parallelize the simulation => use a 
+                                ! different input for the second number for 
+                                ! each calc (or use the same input file 
+                                ! for each run but use the -j command line 
+                                ! option to change the initial rng seed.
+
+
+ :stop MC Control:
+ #=================
+
+ :start variance reduction:
+ ##########################
+
+ repeat history   = 0.041       ! Leave this as is for photon beams.
+ split photons = 1
+ photon split factor = -80
+
+ :stop variance reduction:
+ #########################
+
+ :start quasi:
+ ##############
+
+ base      =  2     ! Don't touch this.
+ dimension =  60
+ skip      =  1
+
+ :stop quasi:
+ ############
+
+ :start smoothing options:
+ use smoothing = 0               ! i.e. don't use smoothing, set to 1 to turn
+                                 ! smoothing on.
+ maximum 1D window = 3           ! the maximum smoothing window size in 1D
+                                 ! should not be set to more than, say, 5.
+                                 ! 3 seems to work best in most cases.
+ maximum 3D window = 2           ! the maximum smoothing window size in 3D
+                                 ! should not be set to more than, say, 4.
+                                 ! 2 seems to work best in most cases.
+ maximum chi2 = 1                ! this should not be changed around
+ interations = 4                 ! number of itarations. 4 works OK in 
+                                 ! most cases, but if the number of voxels 
+                                 ! is relatively small, you may want to 
+                                 ! reduce it.

@@ -9,7 +9,7 @@ pln.machine         = 'Generic';
 pln.propDoseCalc.memorySaverPhoton          = false;
 pln.propDoseCalc.vmc                        = true;
 pln.propDoseCalc.vmcOptions.source          = 'phsp';
-pln.propDoseCalc.vmcOptions.phspBaseName    = '5x5_at_50cm';
+pln.propDoseCalc.vmcOptions.phspBaseName    = '5cmx5cm_SSD50cm';
 pln.propDoseCalc.vmcOptions.SCD             = 500;
 pln.propDoseCalc.vmcOptions.dumpDose        = 1;
 pln.propDoseCalc.vmcOptions.version         = 'Carleton';
@@ -57,7 +57,7 @@ for angularRes = angularResS
     recalc.pln = pln;
     recalc.pln.propOpt.VMAToptions.maxGantryAngleSpacing = angularRes;
     
-    
+    %{
     %first time, do interpolation and dynamic fluence calculation
     fname = sprintf('%.1f degrees, dyn + interp.mat',angularRes);
     fprintf('%s\n',fname);
@@ -68,7 +68,7 @@ for angularRes = angularResS
     recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo);
     cd(oldDir);
     save(fname,'resultGUI','recalc');
-    
+    %}
     
     
     %next, do dynamic fluence and interpolation, but using old dij matrices
@@ -95,7 +95,7 @@ for angularRes = angularResS
     save(fname,'resultGUI','recalc');
     %}
     
-    
+    %{
     %next, do interpolation but no dynamic fluence
     fname = sprintf('%.1f degrees, Ndyn + interp.mat',angularRes);
     fprintf('%s\n',fname);
@@ -106,7 +106,7 @@ for angularRes = angularResS
     recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo);
     cd(oldDir);
     save(fname,'resultGUI','recalc');
-    
+    %}
     
     %finally, do neither interpolation nor dynamic fluence
     fname = sprintf('%.1f degrees, Ndyn + Ninterp.mat',angularRes);

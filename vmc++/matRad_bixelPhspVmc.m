@@ -64,7 +64,7 @@ end
 if writeFiles
     % only do read/write files if they don't already exist
     if bixelWidth == 0.25
-        %error('ABOUT TO REWRITE PHSP FILES');
+        error('ABOUT TO REWRITE PHSP FILES');
     end
     
     %% extract information from full phsp file, write to bixel files
