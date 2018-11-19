@@ -6,6 +6,7 @@ load(fname)
 refDose = recalc.resultGUI.physicalDose;
 refDoseError = recalc.resultGUI.physicalDoseError;
 
+%{
 %refDose for not interpolated, not dynamic
 fname = sprintf('0.5 degrees, Ndyn + Ninterp.mat');
 load(fname)
@@ -16,7 +17,7 @@ refDoseError_NN = recalc.resultGUI.physicalDoseError;
 fname = sprintf('0.5 degrees, dyn + interp oldDij.mat');
 load(fname)
 refDose_YY_oldDij = recalc.resultGUI.physicalDose;
-
+%}
 % adjust overlap priorities
 cst_Over = matRad_setOverlapPriorities(cst);
 
@@ -107,7 +108,7 @@ PVHPoints_NY = zeros(numel(angularResS),numPVHPoints);
 PVHPoints_YY_oldDij = zeros(numel(angularResS),numPVHPoints);
 PVHPoints_NN = zeros(numel(angularResS),numPVHPoints);
 
-%deleteInd = ~V_TargAndNorm | refDose < 0.01*max(refDose(:));
+%deleteInd = ~V_TargAndNorm | refDose < 0.5*max(refDose(:));
 deleteInd = ~V_TargAndNorm;
 
 i = 1;
@@ -223,6 +224,8 @@ for angularRes = angularResS
     end
     %obj_NY(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,recalc.apertureInfo,dij,cst_Over,options);
     
+    %{
+    
     %next, do interpolation and dynamic fluence, but using the Dij matrices
     %at the original 4degree resolution
     fname = sprintf('%.1f degrees, dyn + interp oldDij.mat',angularRes);
@@ -325,6 +328,8 @@ for angularRes = angularResS
     end
     %obj_NN(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,recalc.apertureInfo,dij,cst_Over,options);
     
+    
+    %}
     
     i = i+1;
 end

@@ -14,7 +14,7 @@ pln.propDoseCalc.vmcOptions.SCD             = 500;
 pln.propDoseCalc.vmcOptions.dumpDose        = 1;
 pln.propDoseCalc.vmcOptions.version         = 'Carleton';
 pln.propDoseCalc.vmcOptions.nCasePerBixel   = 1000;
-pln.propDoseCalc.vmcOptions.numOfParMCSim   = 8;
+pln.propDoseCalc.vmcOptions.numOfParMCSim   = 128;
 
 % beam geometry settings
 pln.propStf.bixelWidth = 5;
@@ -46,7 +46,7 @@ pln = matRad_VMATGantryAngles(pln,cst,ct);
 % load results
 load('Results.mat');
 
-angularResS = [0.5 1 2 4];
+angularResS = [0.5];
 
 oldDir = pwd;
 
@@ -57,7 +57,7 @@ for angularRes = angularResS
     recalc.pln = pln;
     recalc.pln.propOpt.VMAToptions.maxGantryAngleSpacing = angularRes;
     
-    %{
+    
     %first time, do interpolation and dynamic fluence calculation
     fname = sprintf('%.1f degrees, dyn + interp.mat',angularRes);
     fprintf('%s\n',fname);
@@ -68,9 +68,8 @@ for angularRes = angularResS
     recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo);
     cd(oldDir);
     save(fname,'resultGUI','recalc');
-    %}
     
-    
+    %{
     %next, do dynamic fluence and interpolation, but using old dij matrices
     fname = sprintf('%.1f degrees, dyn + interp oldDij.mat',angularRes);
     fprintf('%s\n',fname);
@@ -81,7 +80,7 @@ for angularRes = angularResS
     recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo);
     cd(oldDir);
     save(fname,'resultGUI','recalc');
-    
+    %}
     
     %{
     %NOT SURE IT MAKES SENSE TO EVER DO THIS
@@ -95,7 +94,7 @@ for angularRes = angularResS
     save(fname,'resultGUI','recalc');
     %}
     
-    %{
+    
     %next, do interpolation but no dynamic fluence
     fname = sprintf('%.1f degrees, Ndyn + interp.mat',angularRes);
     fprintf('%s\n',fname);
@@ -106,8 +105,8 @@ for angularRes = angularResS
     recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo);
     cd(oldDir);
     save(fname,'resultGUI','recalc');
-    %}
     
+    %{
     %finally, do neither interpolation nor dynamic fluence
     fname = sprintf('%.1f degrees, Ndyn + Ninterp.mat',angularRes);
     fprintf('%s\n',fname);
@@ -118,6 +117,6 @@ for angularRes = angularResS
     recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo);
     cd(oldDir);
     save(fname,'resultGUI','recalc');
-    
+    %}
     
 end

@@ -134,7 +134,7 @@
  :start MC Control:
  #=================
 
- ncase  = 10000000              ! Number of particles to run
+ ncase  = 1000000              ! Number of particles to run
  rng seeds = 1802 9373          ! Initial rng seeds. Usefull if one wanted 
                                 ! to parallelize the simulation => use a 
                                 ! different input for the second number for 
