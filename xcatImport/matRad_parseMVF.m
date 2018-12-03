@@ -25,31 +25,31 @@ if ~( round(resRatioX) == resRatioX && round(resRatioY) == resRatioY && round(re
     error('Non-integral ratios of resolutions.  Inexact motion vector mapping may occur.');
 end
 
-for phase = 1:xcatLog.numFrames
+for frame = 1:xcatLog.numFrames
     
-    fprintf('\nPhase %d of %d.\n',phase,xcatLog.numFrames);
+    fprintf('\nFrame %d of %d.\n',frame,xcatLog.numFrames);
     
     %initialize motion vectors
-    ct.motionVecX{phase} = zeros(ct.cubeDim);
-    ct.motionVecY{phase} = zeros(ct.cubeDim);
-    ct.motionVecZ{phase} = zeros(ct.cubeDim);
+    ct.motionVecX{frame} = zeros(ct.cubeDim);
+    ct.motionVecY{frame} = zeros(ct.cubeDim);
+    ct.motionVecZ{frame} = zeros(ct.cubeDim);
     
     %assume no motion for unspecified voxels
     for i = 1:ct.cubeDim(1)
-        ct.motionVecY{phase}(i,:,:) = i;
+        ct.motionVecY{frame}(i,:,:) = i;
     end
     for i = 1:ct.cubeDim(2)
-        ct.motionVecX{phase}(:,i,:) = i;
+        ct.motionVecX{frame}(:,i,:) = i;
     end
     for i = 1:ct.cubeDim(3)
-        ct.motionVecZ{phase}(:,:,i) = i;
+        ct.motionVecZ{frame}(:,:,i) = i;
     end
     
-    if phase == 1 && ~importOptions.repPhase
+    if frame == 1 && ~importOptions.repPhase
         continue
     end
     
-    fnameXcatMVF = fullfile(dirXCAT,sprintf('%s_vec_frame1_to_frame%d.txt',fnameXcatRoot,phase));
+    fnameXcatMVF = fullfile(dirXCAT,sprintf('%s_vec_frame1_to_frame%d.txt',fnameXcatRoot,frame));
     
     fid = fopen(fnameXcatMVF,'r');
     
@@ -90,11 +90,11 @@ for phase = 1:xcatLog.numFrames
             yCoordNewFrame_vox = 1+str2double(tline((spacesInd(8)+1):(spacesInd(9)-1)))./resRatioY-xcatLog.zeroIndPreY;
             zCoordNewFrame_vox = 1+str2double(tline((spacesInd(9)+1):end))./resRatioZ;
             
-            ct.motionVecX{phase}(yCoord_vox,xCoord_vox,zCoord_vox) = xCoordNewFrame_vox;
-            ct.motionVecY{phase}(yCoord_vox,xCoord_vox,zCoord_vox) = yCoordNewFrame_vox;
-            ct.motionVecZ{phase}(yCoord_vox,xCoord_vox,zCoord_vox) = zCoordNewFrame_vox;
+            ct.motionVecX{frame}(yCoord_vox,xCoord_vox,zCoord_vox) = xCoordNewFrame_vox;
+            ct.motionVecY{frame}(yCoord_vox,xCoord_vox,zCoord_vox) = yCoordNewFrame_vox;
+            ct.motionVecZ{frame}(yCoord_vox,xCoord_vox,zCoord_vox) = zCoordNewFrame_vox;
             
-            matRad_progress(i,numel(ct.motionVecX{phase}));
+            matRad_progress(i,numel(ct.motionVecX{frame}));
             i = i+1;
             tline = fgetl(fid);
         else
@@ -104,9 +104,9 @@ for phase = 1:xcatLog.numFrames
         
     end
     
-    tumourPos(phase,1) = interp3(ct.motionVecX{phase},tumourPos(1,1),tumourPos(1,2),tumourPos(1,3));
-    tumourPos(phase,2) = interp3(ct.motionVecY{phase},tumourPos(1,1),tumourPos(1,2),tumourPos(1,3));
-    tumourPos(phase,3) = interp3(ct.motionVecZ{phase},tumourPos(1,1),tumourPos(1,2),tumourPos(1,3));
+    tumourPos(frame,1) = interp3(ct.motionVecX{frame},tumourPos(1,1),tumourPos(1,2),tumourPos(1,3));
+    tumourPos(frame,2) = interp3(ct.motionVecY{frame},tumourPos(1,1),tumourPos(1,2),tumourPos(1,3));
+    tumourPos(frame,3) = interp3(ct.motionVecZ{frame},tumourPos(1,1),tumourPos(1,2),tumourPos(1,3));
     
     fclose(fid);
     

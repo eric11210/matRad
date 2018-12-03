@@ -15,7 +15,7 @@ fprintf('matRad: Converting DICOM to ct struct ... \n');
 
 for frame = 1:xcatLog.numFrames
     
-    fprintf('Phase %d of %d.\n',frame,xcatLog.numFrames);
+    fprintf('Frame %d of %d.\n',frame,xcatLog.numFrames);
     
     ctList = xcatLog.ctList(:,frame);
     
@@ -39,6 +39,11 @@ fprintf('matRad: Importing motion vectors from XCAT files ... \n');
 ct = matRad_parseMVF(ct,xcatLog,importOptions);
 
 fprintf('Done!\n');
+
+%% pad ct and interpolate mvf with zeros from vmc++
+fprintf('matRad: Padding ct and interpolating motion vectors ... \n');
+
+ct = matRad_padCtInterpMvf(ct,xcatLog);
 
 %% Bin ct frames based on tumour motion data from XCAT
 fprintf('matRad: Binning frames into phases ... \n');
