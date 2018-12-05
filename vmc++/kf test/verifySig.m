@@ -15,7 +15,7 @@ Ny = 101;
 Nz = 150;
 
 %% stuff for KF model
-global delta;
+global DELTA;
 parameters_init = [1    0   0       0   0]';
 lb              = [0    0   -inf    0   -inf]';
 ub              = [inf  1   inf     1   inf]';
@@ -80,7 +80,7 @@ deleteInd = dose_simpleSource_seed1 < 0.5.*maxDose_simpleSource | dose_simpleSou
 delta_simpleSource_HD               = delta_simpleSource;
 delta_simpleSource_HD(deleteInd)    = [];
 
-delta = delta_simpleSource_HD;
+DELTA = delta_simpleSource_HD;
 
 parameters_simpleSource = fmincon(@fkModel_minusLogLikelihood,parameters_init,A,b,[],[],lb,ub);
 
@@ -160,7 +160,7 @@ deleteInd = dose_phspSource_seed1 < 0.5.*maxDose_phspSource | dose_phspSource_se
 delta_phspSource_HD               = delta_phspSource;
 delta_phspSource_HD(deleteInd)    = [];
 
-delta = delta_phspSource_HD;
+DELTA = delta_phspSource_HD;
 
 parameters_phspSource = fmincon(@fkModel_minusLogLikelihood,parameters_init,A,b,[],[],lb,ub);
 

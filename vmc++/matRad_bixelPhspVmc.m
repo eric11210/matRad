@@ -211,6 +211,9 @@ if writeFiles
     end
     fprintf('Done!\n')
     
+    % close full phsp
+    fclose(fid_full);
+    
 end
 
 end
