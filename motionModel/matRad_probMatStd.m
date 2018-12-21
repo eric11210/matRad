@@ -1,14 +1,24 @@
-function model = matRad_probMatStd(model,data,options)
+function model = matRad_probMatStd(model,data)
 
 % extract variables from struct
 nSubPhases  = model.indices.nSubPhases;
-nHistories  = options.nHistories;
+nHistories  = 100;%options.nHistories;
 Pij         = model.Pij_deltaTSample;
 nSteps      = numel(data.l_sample);
 l_init      = data.l_sample(1);
 
-Pij_simulatedArray = zeros(nSubPhases,nSubPhases,nHistories);
-Pi_simulatedArray = zeros(nSubPhases,nHistories);
+% set up period histograms
+binEdgesMin = (0:0.5:10)';
+binWidths = 1;
+histT_sample = matRad_periodHist(data.l_sample,data.deltaT_sample,data.indices.nPosSubPhases/2,binEdgesMin,binWidths);
+
+% set up arrays
+histT_simulatedArray    = zeros(numel(binEdgesMin),nHistories);
+Pij_simulatedArray      = zeros(nSubPhases,nSubPhases,nHistories);
+Pi_simulatedArray       = zeros(nSubPhases,nHistories);
+
+% set up simulated data
+data_simulated = data;
 
 for history = 1:nHistories
     
@@ -16,8 +26,11 @@ for history = 1:nHistories
     l_simulated = matRad_runMarkovChain(Pij,nSteps,l_init,false);
     
     % extra probability matrices from the simulated sequence
-    data.l_sample = l_simulated;
-    model_simulated = matRad_generateProbMat(data);
+    data_simulated.l_sample = l_simulated;
+    model_simulated = matRad_generateProbMat(data_simulated);
+    
+    % compute histogram of periods
+    histT_simulatedArray(:,history) = matRad_periodHist(l_simulated,data_simulated.deltaT_sample,data_simulated.indices.nPosSubPhases/2,binEdgesMin,binWidths);
     
     % insert in arrays
     Pij_simulatedArray(:,:,history) = model_simulated.Pij_deltaTSample;

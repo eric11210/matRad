@@ -13,7 +13,7 @@ pln.propDoseCalc.vmcOptions.phspBaseName    = '5cmx5cm_SSD50cm';
 pln.propDoseCalc.vmcOptions.SCD             = 500;
 pln.propDoseCalc.vmcOptions.dumpDose        = 1;
 pln.propDoseCalc.vmcOptions.version         = 'Carleton';
-pln.propDoseCalc.vmcOptions.nCasePerBixel   = 1000;
+pln.propDoseCalc.vmcOptions.nCasePerBixel   = 2000;
 pln.propDoseCalc.vmcOptions.numOfParMCSim   = 128;
 
 % beam geometry settings
@@ -32,9 +32,9 @@ pln.propOpt.VMAToptions.continuousAperture = false;
 
 pln.propOpt.VMAToptions.startingAngle = -180;
 pln.propOpt.VMAToptions.finishingAngle = 180;
-pln.propOpt.VMAToptions.maxGantryAngleSpacing = 4;      % Max gantry angle spacing for dose calculation
-pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing = 4;      % Max gantry angle spacing for DAO
-pln.propOpt.VMAToptions.maxFMOGantryAngleSpacing = 28;      % Max gantry angle spacing for FMO
+pln.propOpt.VMAToptions.maxGantryAngleSpacing = 8;      % Max gantry angle spacing for dose calculation
+pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing = 8;      % Max gantry angle spacing for DAO
+pln.propOpt.VMAToptions.maxFMOGantryAngleSpacing = 40;      % Max gantry angle spacing for FMO
 
 pln.propOpt.run4D = false;
 pln.propOpt.prop4D.singlePhaseFMO = false;
@@ -46,7 +46,7 @@ pln = matRad_VMATGantryAngles(pln,cst,ct);
 % load results
 load('Results.mat');
 
-angularResS = [0.5];
+angularResS = [0.5 1 2 4 8];
 
 oldDir = pwd;
 

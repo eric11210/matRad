@@ -1,8 +1,16 @@
 function model = matRad_generateMotionModel(options)
 
-% read motion data from file
-fprintf('matRad: Reading motion data... ');
-data = matRad_readMotionData(options.fileInfo);
+switch options.data.origin
+    case 'file'
+        % read motion data from file
+        fprintf('matRad: Reading motion data... ');
+        data = matRad_readMotionData(options.data.fileInfo);
+        
+    case 'function'
+        % generate data from function
+        fprintf('matRad: Generating motion data... ');
+        data = matRad_generateMotionData(options.data);
+end
 fprintf('Done!\n')
 
 % process data

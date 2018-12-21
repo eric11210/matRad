@@ -44,6 +44,12 @@ ub = [inf   1   inf     1   inf]';
 A = [0      1   0       1   0];
 b = 1;
 
+global matRad_global_x;
+global matRad_global_d;
+global matRad_global_apertureInfo;
+options.bioOpt = 'none';
+dij = 1;
+
 %dynamic, interpolated
 
 %percentage of the volume with at least a x% error relative to the
@@ -160,7 +166,11 @@ for angularRes = angularResS
         fluence_YY(:,:,i) = fluence_YY(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
         weight_YY(i) = weight_YY(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
     end
-    %obj_YY(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,recalc.apertureInfo,dij,cst_Over,options);
+    
+    matRad_global_x = recalc.apertureInfo.bixelWeights;
+    matRad_global_d = recalc.resultGUI.physicalDose;
+    matRad_global_apertureInfo = recalc.apertureInfo;
+    obj_YY(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,dij,cst_Over,options);
     
     
     %{
@@ -222,7 +232,11 @@ for angularRes = angularResS
         fluence_NY(:,:,i) = fluence_NY(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
         weight_NY(i) = weight_NY(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
     end
-    %obj_NY(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,recalc.apertureInfo,dij,cst_Over,options);
+    
+    matRad_global_x = recalc.apertureInfo.bixelWeights;
+    matRad_global_d = recalc.resultGUI.physicalDose;
+    matRad_global_apertureInfo = recalc.apertureInfo;
+    obj_NY(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,dij,cst_Over,options);
     
     %{
     

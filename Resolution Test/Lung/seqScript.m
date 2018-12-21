@@ -15,7 +15,7 @@ pln.machine         = 'Generic';
 pln.propDoseCalc.memorySaverPhoton          = false;
 pln.propDoseCalc.vmc                        = true;
 pln.propDoseCalc.vmcOptions.source          = 'phsp';
-pln.propDoseCalc.vmcOptions.phspBaseName    = '5x5_at_50cm';
+pln.propDoseCalc.vmcOptions.phspBaseName    = '5cmx5cm_SSD50cm';
 pln.propDoseCalc.vmcOptions.SCD             = 500;
 pln.propDoseCalc.vmcOptions.dumpDose        = 1;
 pln.propDoseCalc.vmcOptions.version         = 'Carleton';
@@ -38,9 +38,9 @@ pln.propOpt.VMAToptions.continuousAperture = false;
 
 pln.propOpt.VMAToptions.startingAngle = -180;
 pln.propOpt.VMAToptions.finishingAngle = 180;
-pln.propOpt.VMAToptions.maxGantryAngleSpacing = 4;      % Max gantry angle spacing for dose calculation
-pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing = 4;      % Max gantry angle spacing for DAO
-pln.propOpt.VMAToptions.maxFMOGantryAngleSpacing = 28;      % Max gantry angle spacing for FMO
+pln.propOpt.VMAToptions.maxGantryAngleSpacing = 8;      % Max gantry angle spacing for dose calculation
+pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing = 8;      % Max gantry angle spacing for DAO
+pln.propOpt.VMAToptions.maxFMOGantryAngleSpacing = 40;      % Max gantry angle spacing for FMO
 
 pln.propOpt.run4D = false;
 pln.propOpt.prop4D.singlePhaseFMO = false;

@@ -12,10 +12,15 @@ nVelPhases          = options.nVelPhases;
 nSubPerPosPhase     = options.nSubPerPosPhase;
 nSubPerVelPhase     = options.nSubPerVelPhase;
 
+%% process data, prepare for binning
+
 % resample data to have consistent sampling interval
 deltaT_sample = mean(diff(t_cut));
 t_sample = (min(t_cut):deltaT_sample:max(t_cut))';
 x_sample = interp1(t_cut,x_cut,t_sample);
+
+% remove mean so data is centred around 0
+x_sample = x_sample-mean(x_sample);
 
 % determine velocity
 v_sample = gradient(x_sample,deltaT_sample);
@@ -33,6 +38,8 @@ vBoundsM = max(abs([vBoundsMax vBoundsMin]));
 % position thresholds, assume asymmetric
 nPosSubPhasesMaxExt = 0;
 nPosSubPhasesMinExt = 0;
+nPosSubPhasesMaxExt_final = 0;
+nPosSubPhasesMinExt_final = 0;
 
 percAbove = 0;
 percBelow = 0;
@@ -71,6 +78,8 @@ percBelow = 100*nnz(x_sample < lMinThres)./numel(x_sample);
 nPosSubPhases = 2*nPosBins;
 xBounds = linspace(xBoundsMax,xBoundsMin,nPosBins+1);
 
+%% bin data
+
 % do position binning
 l_sample = zeros(size(x_sample));
 for posBin = 1:nPosBins
@@ -101,7 +110,7 @@ if ind_maxPeaks(1) < ind_minPeaks(1)
     
     for i = 1:numMinPeaks
         if i+1 > numMaxPeaks
-            l_sample(ind_minPeaks(i):end) = nPhases_sample+1-l_sample(ind_minPeaks(i):end);
+            l_sample(ind_minPeaks(i):end) = nPosSubPhases+1-l_sample(ind_minPeaks(i):end);
             break
         end
         if ind_minPeaks(i) > ind_maxPeaks(i+1)
@@ -182,6 +191,8 @@ end
 
 nSubPhases = nPosSubPhases*nVelSubPhases;
 
+%% conversion indices
+
 % convert from sub phase to position only
 subPhase2PosSubPhase = mod((1:nSubPhases)',nPosSubPhases);
 changeInd = subPhase2PosSubPhase == 0;
@@ -208,14 +219,28 @@ nSubPhasePerPosPhase = accumarray(subPhase2PosPhase,1);
 subPhase2VelPhase = velSubPhase2VelPhase(subPhase2VelSubPhase);
 nSubPhasePerVelPhase = accumarray(subPhase2VelPhase,1);
 
-% convert from sub phase to phase
+%convert from sub phase to phase
 subPhase2Phase = subPhase2PosPhase+(nPosPhases+2).*(subPhase2VelPhase-1);
 nSubPhasePerPhase = accumarray(subPhase2Phase,1);
 
-% put variables in struct
-data.l_sample               = l_sample;
-data.t_sample               = t_sample;
-data.deltaT_sample          = deltaT_sample;
+% convert from position subphase to position
+% remember to duplicate this to have both inhale and exhale
+posSubPhase2Pos = diff(xBounds)./2+xBounds(1:nPosBins);
+posSubPhase2Pos = [posSubPhase2Pos fliplr(posSubPhase2Pos)]';
+
+if options.velBinning
+    % convert from velocity subphase to velocity
+    velSubPhase2Vel = diff(vBounds)./2+vBounds(1:nVelBins);
+    velSubPhase2Vel = velSubPhase2Vel';
+    
+    indices.velSubPhase2Vel         = velSubPhase2Vel;
+end
+
+%% put variables in struct
+data.l_sample                   = l_sample;
+data.t_sample                   = t_sample;
+data.x_sample                   = x_sample;
+data.deltaT_sample              = deltaT_sample;
 
 indices.subPhase2PosSubPhase    = subPhase2PosSubPhase;
 indices.subPhase2VelSubPhase    = subPhase2VelSubPhase;
@@ -232,7 +257,11 @@ indices.subPhase2Phase          = subPhase2Phase;
 indices.nSubPhasePerPhase       = nSubPhasePerPhase;
 
 indices.nSubPhases              = nSubPhases;
+indices.nPosSubPhases           = nPosSubPhases;
+indices.nVelSubPhases           = nVelSubPhases;
 %indices.nPhases                = nPhases;
+
+indices.posSubPhase2Pos         = posSubPhase2Pos;
 
 data.indices    = indices;
 

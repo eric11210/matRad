@@ -32,7 +32,7 @@ function [d,dError] = matRad_backProjection(w,dij,options)
 global matRad_global_x;
 global matRad_global_d;
 
-if isequal(w,matRad_global_x)
+if isequal(w,matRad_global_x) && nargout < 2
     
     % get dose from global variable
     d = matRad_global_d;

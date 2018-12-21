@@ -313,6 +313,62 @@ if pln.propOpt.runVMAT
     
     if apertureInfo.propVMAT.continuousAperture
         apertureInfo.totalNumOfLeafPairs = sum(reshape([apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).doseAngleDAO],2,[]),1)*[apertureInfo.beam([apertureInfo.propVMAT.beam.DAOBeam]).numOfActiveLeafPairs]';
+        
+        shapeInd = 1;
+        for i = 1:numel(apertureInfo.beam)
+            if apertureInfo.propVMAT.beam(i).DAOBeam
+                
+                %apertureInfo.propVMAT.beam(i).initialLeftLeafInd = apertureInfo.beam(i).shape{1}(1).vectorOffset:(apertureInfo.beam(i).shape{1}(1).vectorOffset+dimZ-1);
+                %apertureInfo.propVMAT.beam(i).finalLeftLeafInd = (apertureInfo.beam(i).shape{1}(1).vectorOffset+dimZ):(apertureInfo.beam(i).shape{1}(1).vectorOffset+2*dimZ-1);
+                
+                %apertureInfo.propVMAT.beam(i).initialRightLeafInd = apertureInfo.propVMAT.beam(i).initialLeftLeafInd+apertureInfo.totalNumOfLeafPairs;
+                %apertureInfo.propVMAT.beam(i).finalRightLeafInd = apertureInfo.propVMAT.beam(i).finalLeftLeafInd+apertureInfo.totalNumOfLeafPairs;
+                
+                apertureInfo.propVMAT.beam(i).timeInd = repmat(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2+shapeInd,1,apertureInfo.beam(1).numOfActiveLeafPairs);
+                
+                if apertureInfo.propVMAT.beam(i).timeFac(1) ~= 0
+                    % some of the time for this optimized angle "leaks"
+                    % into a previous dose angle arc (where we need to
+                    % constrain leaf speed)
+                    
+                    % the initial leaves here act as final leaves for the
+                    % previous angle
+                    %finalLeftLeafInd = [apertureInfo.propVMAT.beam(i).initialLeftLeafInd apertureInfo.propVMAT.beam(i).finalLeftLeafInd];
+                    %finalRightLeafInd = [apertureInfo.propVMAT.beam(i).initialRightLeafInd apertureInfo.propVMAT.beam(i).finalRightLeafInd];
+                    
+                    % part of the optimized time is used for the leaf speed
+                    % calc
+                    apertureInfo.propVMAT.beam(i).timeInd = [repmat(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2+shapeInd,1,apertureInfo.beam(1).numOfActiveLeafPairs) apertureInfo.propVMAT.beam(i).timeInd];
+                else
+                    %finalLeftLeafInd = apertureInfo.propVMAT.beam(i).finalLeftLeafInd;
+                    %finalRightLeafInd = apertureInfo.propVMAT.beam(i).finalRightLeafInd;
+                end
+                
+                if apertureInfo.propVMAT.beam(i).timeFac(3) ~= 0
+                    % some of the time for this optimized angle "leaks"
+                    % into a next dose angle arc (where we need to
+                    % constrain leaf speed)
+                    
+                    %initialLeftLeafInd = [apertureInfo.propVMAT.beam(i).initialLeftLeafInd apertureInfo.propVMAT.beam(i).finalLeftLeafInd];
+                    %initialRightLeafInd = [apertureInfo.propVMAT.beam(i).initialRightLeafInd apertureInfo.propVMAT.beam(i).finalRightLeafInd];
+                    
+                    % part of the optimized time is used for the leaf speed
+                    % calc
+                    apertureInfo.propVMAT.beam(i).timeInd = [apertureInfo.propVMAT.beam(i).timeInd repmat(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2+shapeInd,1,apertureInfo.beam(1).numOfActiveLeafPairs)];
+                else
+                    %initialLeftLeafInd = apertureInfo.propVMAT.beam(i).initialLeftLeafInd;
+                    %initialRightLeafInd = apertureInfo.propVMAT.beam(i).initialRightLeafInd;
+                end
+                
+                %apertureInfo.propVMAT.beam(i).initialLeftLeafInd = initialLeftLeafInd;
+                %apertureInfo.propVMAT.beam(i).initialRightLeafInd = initialRightLeafInd;
+                %apertureInfo.propVMAT.beam(i).finalLeftLeafInd = finalLeftLeafInd;
+                %apertureInfo.propVMAT.beam(i).finalRightLeafInd = finalRightLeafInd;
+                
+                shapeInd = shapeInd+1;
+            end
+        end
+        
     else
         apertureInfo.totalNumOfLeafPairs = totalNumOfLeafPairs;
     end
@@ -334,23 +390,29 @@ if pln.propOpt.runVMAT
         apertureInfo.propVMAT.initProb  = rand(1,apertureInfo.numPhases);
         apertureInfo.propVMAT.initProb  = apertureInfo.propVMAT.initProb./sum(apertureInfo.propVMAT.initProb);
         
-        fileName = apertureInfo.propVMAT.machineConstraintFile;
-        try
-            load(fileName,'machine');
-        catch
-            error(['Could not find the following machine file: ' fileName ]);
-        end
+    else
+        apertureInfo.propVMAT.qij       = 0;
+        apertureInfo.propVMAT.initProb  = 1;
+    end
+    
+    fileName = apertureInfo.propVMAT.machineConstraintFile;
+    try
+        load(fileName,'machine');
+    catch
+        error(['Could not find the following machine file: ' fileName ]);
+    end
+    
+    interpGetsTrans = false;
+    for i = 1:numel(apertureInfo.beam)
         
-        interpGetsTrans = false;
-        for i = 1:numel(apertureInfo.beam)
-            
-            maxTime = apertureInfo.propVMAT.beam(i).doseAngleBordersDiff./machine.constraints.gantryRotationSpeed(1);
-            [Pij_transT,~,~,~] = matRad_transAndTProb(apertureInfo.propVMAT.qij,apertureInfo.propVMAT.initProb,maxTime,maxTime);
-            transMask = Pij_transT > 0.01;
-            
-            apertureInfo.propVMAT.beam(i).transMask             = repmat(1:apertureInfo.numPhases,[apertureInfo.numPhases 1]);
-            apertureInfo.propVMAT.beam(i).transMask(~transMask) = 0;
-            
+        maxTime = apertureInfo.propVMAT.beam(i).doseAngleBordersDiff./machine.constraints.gantryRotationSpeed(1);
+        [Pij_transT,~,~,~] = matRad_transAndTProb(apertureInfo.propVMAT.qij,apertureInfo.propVMAT.initProb,maxTime,maxTime);
+        transMask = Pij_transT > 0.01;
+        
+        apertureInfo.propVMAT.beam(i).transMask             = repmat(1:apertureInfo.numPhases,[apertureInfo.numPhases 1]);
+        apertureInfo.propVMAT.beam(i).transMask(~transMask) = 0;
+        
+        if apertureInfo.propVMAT.continuousAperture
             if apertureInfo.propVMAT.beam(i).DAOBeam || interpGetsTrans
                 
                 apertureInfo.propVMAT.beam(i).leafConstMask             = repmat(1:apertureInfo.numPhases,[apertureInfo.numPhases 1]);
@@ -361,11 +423,12 @@ if pln.propOpt.runVMAT
             else
                 interpGetsTrans = false;
             end
+            
+            % count number of transitions
+            apertureInfo.propVMAT.numLeafSpeedConstraint      = nnz([apertureInfo.propVMAT.beam.leafConstMask]);
+            apertureInfo.propVMAT.numLeafSpeedConstraintDAO   = nnz([apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).leafConstMask]);
+            
         end
-        
-        % count number of transitions
-        apertureInfo.propVMAT.numLeafSpeedConstraint      = nnz([apertureInfo.propVMAT.beam.leafConstMask]);
-        apertureInfo.propVMAT.numLeafSpeedConstraintDAO   = nnz([apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).leafConstMask]);
         
     end
     

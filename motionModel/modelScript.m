@@ -1,12 +1,21 @@
-options.fileInfo.p          = 6;
-options.fileInfo.f          = 19;
-options.fileInfo.m          = 1;
-options.fileInfo.processed  = true;
+options.data.origin             = 'file';
+options.data.fileInfo.p         = 6;
+options.data.fileInfo.f         = 19;
+options.data.fileInfo.m         = 1;
+options.data.fileInfo.processed = true;
 
-options.processing.percExtTarg  = 1;
+options.data.origin             = 'function';
+options.data.function           = 'sawtooth';
+options.data.samplingFreq       = 26;
+options.data.totTime            = 600;
+options.data.period             = 5;
+options.data.amplitude          = 1.5;
+%options.data.function           = 'square';
+
+options.processing.percExtTarg  = 0;
 options.processing.nPosPhases   = 10;
 options.processing.nVelPhases   = 10;
-options.processing.velBinning   = true;
+options.processing.velBinning   = false;
 options.convTime.percRMSD_targ  = 1;
 options.std.nHistories          = 10;
 
@@ -23,8 +32,8 @@ for nSubPerPhase = nSubPerPhaseVec
     fprintf('Number of subphases per phase: %d.\n',nSubPerPhase);
     fprintf('Run %d of %d.\n',i,totNumSubPhases);
     
+    options.processing.nSubPerPosPhase = 100;
     options.processing.nSubPerVelPhase = 1;
-    options.processing.nSubPerPosPhase = 10;
     
     model = matRad_generateMotionModel(options);
     

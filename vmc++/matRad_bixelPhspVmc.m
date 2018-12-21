@@ -1,10 +1,5 @@
 function stf = matRad_bixelPhspVmc(stf,masterRayPosBEV,vmcOptions)
 
-% after everything is done and working, add in code to verify if files
-% already exist
-
-
-
 switch vmcOptions.version
     case 'Carleton'
         phspPath = fullfile(fileparts(mfilename('fullpath')), 'run', 'phsp');
