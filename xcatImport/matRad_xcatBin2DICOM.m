@@ -16,6 +16,14 @@ ctList_all = ls(fullfile(dirDICOM,sprintf('%s_Phase*_Slice*.dcm',importOptions.f
 
 xcatLog.ctList = cell(xcatLog.dim.z,xcatLog.numFrames);
 
+% determine the number of frames we're going to generate
+if importOptions.vmcDef
+    % if we're using the vmc++ deformation code, we only need one
+    numFrames = 1;
+else
+    % otherwise we need all of them
+    numFrames = xcatLog.numFrames;
+end
 
 % first determine the padding in the x- and y-direction
 % we need to loop over all phases to ensure that they all get to be the
@@ -26,9 +34,9 @@ zeroIndPreY = xcatLog.dim.y;
 zeroIndPostY = 0;
 
 fprintf('matRad: Determing padding in CT images ... \n');
-for phase = 1:xcatLog.numFrames
+for phase = 1:numFrames
     
-    if importOptions.massConserve
+    if importOptions.massConserve && ~importOptions.vmcDef
         fnameXcatBin = fullfile(dirXCAT,sprintf('%s_atnMC_%d.bin',importOptions.fnameXcatRoot,phase));
     else
         fnameXcatBin = fullfile(dirXCAT,sprintf('%s_atn_%d.bin',importOptions.fnameXcatRoot,phase));
@@ -42,7 +50,7 @@ for phase = 1:xcatLog.numFrames
     
     if importOptions.addTumour
         
-        if importOptions.massConserve
+        if importOptions.massConserve && ~importOptions.vmcDef
             fnameXcatBin = fullfile(dirXCAT,sprintf('%s_tumour_atnMC_%d.bin',importOptions.fnameXcatRoot,phase));
         else
             fnameXcatBin = fullfile(dirXCAT,sprintf('%s_tumour_atn_%d.bin',importOptions.fnameXcatRoot,phase));
@@ -69,7 +77,7 @@ for phase = 1:xcatLog.numFrames
     zeroIndPreY = min(find(sumPhantXZ ~= 0,1,'first')-1,zeroIndPreY);
     zeroIndPostY = max(find(sumPhantXZ ~= 0,1,'last')+1,zeroIndPostY);
     
-    matRad_progress(phase,xcatLog.numFrames);
+    matRad_progress(phase,numFrames);
 end
 
 % save the indices in the xcatLog
@@ -85,11 +93,11 @@ dicomInfo.Width = zeroIndPostX-zeroIndPreX-1;
 dicomInfo.Height = zeroIndPostY-zeroIndPreY-1;
 
 fprintf('matRad: Converting XCAT binaries to DICOM ... \n');
-for phase = 1:xcatLog.numFrames
+for phase = 1:numFrames
     
-    if size(ctList_all,1) ~= xcatLog.numFrames*xcatLog.dim.z
+    if size(ctList_all,1) ~= numFrames*xcatLog.dim.z
         
-        if importOptions.massConserve
+        if importOptions.massConserve && ~importOptions.vmcDef
             fnameXcatBin = fullfile(dirXCAT,sprintf('%s_atnMC_%d.bin',importOptions.fnameXcatRoot,phase));
         else
             fnameXcatBin = fullfile(dirXCAT,sprintf('%s_atn_%d.bin',importOptions.fnameXcatRoot,phase));
@@ -109,7 +117,7 @@ for phase = 1:xcatLog.numFrames
         
         if importOptions.addTumour
             
-            if importOptions.massConserve
+            if importOptions.massConserve && ~importOptions.vmcDef
                 fnameXcatBin = fullfile(dirXCAT,sprintf('%s_tumour_atnMC_%d.bin',importOptions.fnameXcatRoot,phase));
             else
                 fnameXcatBin = fullfile(dirXCAT,sprintf('%s_tumour_atn_%d.bin',importOptions.fnameXcatRoot,phase));
@@ -156,7 +164,7 @@ for phase = 1:xcatLog.numFrames
         
         fnameDICOM = fullfile(dirDICOM,sprintf('%s_Phase%02d_Slice%03d.dcm',importOptions.fnameXcatRoot,phase,slice));
         xcatLog.ctList{slice,phase} = fnameDICOM;
-        if size(ctList_all,1) ~= xcatLog.numFrames*xcatLog.dim.z
+        if size(ctList_all,1) ~= numFrames*xcatLog.dim.z
             % x is R-L, y is A-P, z is I-S
             % original CT, contours:    start @ z = 1165 mm, res = [0.85
             % 0.85 1] mm
@@ -181,7 +189,7 @@ for phase = 1:xcatLog.numFrames
             image = (image-dicomInfo.RescaleIntercept)./dicomInfo.RescaleSlope;
             dicomwrite(uint16(image),fnameDICOM,dicomInfo,'CreateMode','Copy');
             
-            matRad_progress((phase-1)*xcatLog.dim.z+slice,xcatLog.numFrames*xcatLog.dim.z);
+            matRad_progress((phase-1)*xcatLog.dim.z+slice,numFrames*xcatLog.dim.z);
         end
     end
 end

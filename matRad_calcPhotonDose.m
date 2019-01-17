@@ -71,6 +71,12 @@ dij.numOfBeams         = pln.propStf.numOfBeams;
 dij.numOfVoxels        = prod(ct.cubeDim);
 dij.resolution         = ct.resolution;
 dij.dimensions         = ct.cubeDim;
+dij.weightToMU         = 100;
+dij.scaleFactor        = 1;
+dij.memorySaverPhoton  = pln.propDoseCalc.memorySaverPhoton;
+dij.numOfRaysPerBeam   = [stf(:).numOfRays];
+dij.totalNumOfBixels   = sum([stf(:).totalNumOfBixels]);
+dij.totalNumOfRays     = sum(dij.numOfRaysPerBeam);
 if pln.propOpt.run4D
     dij.numOfScenarios     = ct.tumourMotion.numPhases;
     dij.numPhases          = ct.tumourMotion.numPhases;
@@ -80,12 +86,6 @@ else
     dij.numPhases          = 1;
     dij.numFrames          = 1;
 end
-dij.weightToMU         = 100;
-dij.scaleFactor        = 1;
-dij.memorySaverPhoton  = pln.propDoseCalc.memorySaverPhoton;
-dij.numOfRaysPerBeam   = [stf(:).numOfRays];
-dij.totalNumOfBixels   = sum([stf(:).totalNumOfBixels]);
-dij.totalNumOfRays     = sum(dij.numOfRaysPerBeam);
 
 % check if full dose influence data is required
 if calcDoseDirect 
@@ -488,7 +488,7 @@ for i = 1:dij.numOfBeams % loop over all beams
                 end
             end
             
-            % Save dose for every bixel in cell array
+            % determine the phase and normalization factor
             if pln.propOpt.run4D
                 phase = ct.tumourMotion.frames2Phases(k);
                 normFactor = ct.tumourMotion.nFramesPerPhase(phase);
@@ -496,7 +496,8 @@ for i = 1:dij.numOfBeams % loop over all beams
                 phase = 1;
                 normFactor = 1;
             end
-            %doseTmpContainer{mod(counter-1,numOfBixelsContainer)+1,phase} = sparse(V{1}(ix{k}),1,bixelDose,dij.numOfVoxels,1)./ct.tumourMotion.nFramesPerPhase(phase);
+            
+            % Save dose for every bixel in cell array
             doseTmpContainer{mod(counter-1,numOfBixelsContainer)+1,phase} = doseTmpContainer{mod(counter-1,numOfBixelsContainer)+1,phase}+sparse(V{1}(ix{k}),1,bixelDose,dij.numOfVoxels,1)./normFactor;
             % Because it is V{1}(ix{k}), we are calculating the dose on the
             % transformed CT, but bringing back to the reference CT for the

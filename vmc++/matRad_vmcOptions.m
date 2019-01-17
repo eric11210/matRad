@@ -84,12 +84,17 @@ VmcOptions.quasi.skip      = 1;
 %% geometry
 switch pln.propDoseCalc.vmcOptions.version
     case 'Carleton'
-        VmcOptions.geometry.XyzGeometry.methodOfInput = 'MMC-PHANTOM';  % input method ('CT-PHANTOM', 'individual', 'groups')
+        VmcOptions.geometry.Geometry.methodOfInput = 'MMC-PHANTOM';  % input method ('CT-PHANTOM', 'individual', 'groups')
     case 'dkfz'
-        VmcOptions.geometry.XyzGeometry.methodOfInput = 'CT-PHANTOM';   % input method ('CT-PHANTOM', 'individual', 'groups')
+        VmcOptions.geometry.Geometry.methodOfInput = 'CT-PHANTOM';   % input method ('CT-PHANTOM', 'individual', 'groups')
 end
 VmcOptions.geometry.dimensions          = ct.cubeDim;
-VmcOptions.geometry.XyzGeometry.Ct      = 'CT';                         % name of geometry
+VmcOptions.geometry.Geometry.Ct      = 'CT';                         % name of geometry
+if pln.propOpt.run4D
+    VmcOptions.geometry.type = 'def_tetra';
+else
+    VmcOptions.geometry.type = 'XYZ';
+end
 
 %% scoring manager
 VmcOptions.scoringOptions.startInGeometry               = 'CT';            % geometry in which partciles start their transport

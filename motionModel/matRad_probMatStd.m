@@ -1,4 +1,4 @@
-function model = matRad_probMatStd(model,data)
+function model = matRad_probMatStd(model,data,options)
 
 % extract variables from struct
 nSubPhases  = model.indices.nSubPhases;

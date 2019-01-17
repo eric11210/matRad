@@ -94,7 +94,7 @@ pln.propDoseCalc.vmcOptions.phspBaseName    = '5cmx5cm_SSD50cm';
 pln.propDoseCalc.vmcOptions.SCD             = 500;
 pln.propDoseCalc.vmcOptions.dumpDose        = 1;
 pln.propDoseCalc.vmcOptions.version         = 'Carleton';
-pln.propDoseCalc.vmcOptions.nCasePerBixel   = 5000;
+pln.propDoseCalc.vmcOptions.nCasePerBixel   = 500;
 pln.propDoseCalc.vmcOptions.numOfParMCSim   = 8;
 
 

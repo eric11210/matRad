@@ -62,12 +62,16 @@ if importOptions.binFrames2Phases
     ct.motionVecY_new = cell(importOptions.numPhases,1);
     ct.motionVecZ_new = cell(importOptions.numPhases,1);
     
-    for phase = 1:importOptions.numPhases
-        % create new cubes for each phase, that are the frame snapshot
-        % at the representative time t_x_l
-        ct.cube_new{phase} = ct.cube{ind_x_l_XCAT(phase)};
-        ct.cubeHU_new{phase} = ct.cubeHU{ind_x_l_XCAT(phase)};
-        
+    if ~importOptions.vmcDef
+        for phase = 1:importOptions.numPhases
+            % create new cubes for each phase, that are the frame snapshot
+            % at the representative time t_x_l
+            ct.cube_new{phase} = ct.cube{ind_x_l_XCAT(phase)};
+            ct.cubeHU_new{phase} = ct.cubeHU{ind_x_l_XCAT(phase)};
+        end
+    else
+        ct.cube_new = ct.cube;
+        ct.cubeHU_new = ct.cubeHU;
     end
     
     if ~importOptions.keepAllFrames
@@ -76,7 +80,7 @@ if importOptions.binFrames2Phases
             for frame = 1:ct.tumourMotion.numFrames
                 phase = ct.tumourMotion.frames2Phases(frame);
                 
-                if importOptions.averageCT
+                if importOptions.averageCT && ~importOptions.vmcDef
                     if find(ct.tumourMotion.frames2Phases == phase,1,'first') == frame
                         ct.cube_new{phase} = zeros(ct.cubeDim);
                         ct.cubeHU_new{phase} = zeros(ct.cubeDim);

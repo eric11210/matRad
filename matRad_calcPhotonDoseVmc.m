@@ -1,7 +1,7 @@
 function dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst,calcDoseDirect)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % matRad vmc++ photon dose calculation wrapper
-% 
+%
 % call
 %   dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst,calcDoseDirect)
 %
@@ -17,7 +17,7 @@ function dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst,calcDoseDirect)
 %   dij:                        matRad dij struct
 %
 % References
-%   
+%
 %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -32,7 +32,7 @@ end
 % 2 = open in terminal(s)
 verbose = 0;
 
-if ~isdeployed % only if _not_ running as standalone    
+if ~isdeployed % only if _not_ running as standalone
     % add path for optimization functions
     matRadRootDir = fileparts(mfilename('fullpath'));
     addpath(fullfile(matRadRootDir,'vmc++'))
@@ -50,9 +50,18 @@ dij.scaleFactor        = 1;
 dij.memorySaverPhoton  = pln.propDoseCalc.memorySaverPhoton;
 dij.totalNumOfBixels   = sum([stf(:).totalNumOfBixels]);
 dij.totalNumOfRays     = sum(dij.numOfRaysPerBeam);
+if pln.propOpt.run4D
+    dij.numOfScenarios     = ct.tumourMotion.numPhases;
+    dij.numPhases          = ct.tumourMotion.numPhases;
+    dij.numFrames          = ct.tumourMotion.numFrames;
+else
+    dij.numOfScenarios     = 1;
+    dij.numPhases          = 1;
+    dij.numFrames          = 1;
+end
 
 % check if full dose influence data is required
-if calcDoseDirect 
+if calcDoseDirect
     numOfColumnsDij           = length(stf);
     numOfBixelsContainer = 1;
 else
@@ -69,13 +78,19 @@ bixelNum = NaN*ones(dij.totalNumOfBixels,1);
 rayNum   = NaN*ones(dij.totalNumOfBixels,1);
 beamNum  = NaN*ones(dij.totalNumOfBixels,1);
 
-doseTmpContainer        = cell(numOfBixelsContainer,dij.numOfScenarios);
-doseTmpContainerError   = cell(numOfBixelsContainer,dij.numOfScenarios);
+doseTmpContainer        = cell(numOfBixelsContainer,1);
+doseTmpContainerError   = cell(numOfBixelsContainer,1);
 
 % Allocate space for dij.physicalDose sparse matrix
 for i = 1:dij.numOfScenarios
-    dij.physicalDose{i} = spalloc(prod(ct.cubeDim),numOfColumnsDij,1);
-    dij.physicalDoseError{i} = spalloc(prod(ct.cubeDim),numOfColumnsDij,1);
+    dij.physicalDose{i}         = spalloc(prod(ct.cubeDim),numOfColumnsDij,1);
+    dij.physicalDoseError{i}    = spalloc(prod(ct.cubeDim),numOfColumnsDij,1);
+end
+
+% allocate space for doseTmpContainers
+for i = 1:numOfBixelsContainer
+    doseTmpContainer{i}       = spalloc(prod(ct.cubeDim),1,1);
+    doseTmpContainerError{i}  = spalloc(prod(ct.cubeDim),1,1);
 end
 
 % set environment variables for vmc++
@@ -93,7 +108,8 @@ else
             runsPath    = fullfile(VMCPath, 'runs');
     end
     phantomPath = fullfile(runsPath, 'phantoms');
-
+    vectorsPath = fullfile(runsPath, 'vectors');
+    
     setenv('vmc_home',VMCPath);
     setenv('vmc_dir',runsPath);
     setenv('xvmc_dir',VMCPath);
@@ -113,12 +129,13 @@ VmcOptions = matRad_vmcOptions(pln,ct);
 % export CT cube as binary file for vmc++
 matRad_exportCtVmc(ct, fullfile(phantomPath, 'matRad_CT.ct'));
 
+% save CT name
+VmcOptions.geometry.Geometry.CtFile  = strrep(fullfile(phantomPath,'matRad_CT.ct'),'\','/'); % path of density matrix (only needed if input method is 'CT-PHANTOM')
+
 % take only voxels inside patient
 V = [cst{:,4}];
 V = unique(vertcat(V{:}));
 
-writeCounter        = 0;
-readCounter         = 0;
 maxNumOfParMCSim    = 0;
 
 % initialize waitbar
@@ -128,136 +145,150 @@ set(figureWait,'pointer','watch');
 
 fprintf('matRad: VMC++ photon dose calculation...\n');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-for i = 1:dij.numOfBeams % loop over all beams
+for frame = 1:dij.numFrames
+    % loop over all frames first
+    % this is because the .vectors file takes the longest to write, so we
+    % want to have as few writes as possible
     
-    fprintf('Beam %d of %d ...',i,dij.numOfBeams);
+    fprintf('Frame %d of %d ...\n',frame,dij.numFrames);
     
-    % remember beam and bixel number
-    if calcDoseDirect
-        dij.beamNum(i)    = i;
-        dij.rayNum(i)     = i;
-        dij.bixelNum(i)   = i;
+    % reset these after every completed frame
+    writeCounter        = 0;
+    readCounter         = 0;
+    
+    if pln.propOpt.run4D
+        % export vectors cubes as text file for vmc++
+        matRad_exportVectorsVmc(ct,frame,fullfile(vectorsPath, 'matRad_MVF.vectors'));
+        
+        % save vectors name
+        VmcOptions.geometry.Geometry.VectorsFile  = strrep(fullfile(vectorsPath,'matRad_MVF.vectors'),'\','/'); % path of density matrix (only needed if input method is 'CT-PHANTOM')
     end
     
-    if strcmp(pln.propDoseCalc.vmcOptions.source,'phsp')
-        % set angle-specific vmc++ parameters
+    for i = 1:dij.numOfBeams % loop over all beams
         
-        % phsp starts off pointed in the +z direction, with source at -z
-        % phsp source gets translated, then rotated (-z, +y, -x) around
-        % 0, then pushed to isocenter
+        fprintf('Beam %d of %d ...\n',i,dij.numOfBeams);
         
-        % correct for the source to collimator distance and change units mm -> cm
-        translation = stf(i).isoCenter/10+[0 0 pln.propDoseCalc.vmcOptions.SCD + stf(i).sourcePoint_bev(2)]/10;
-        
-        % enter in isocentre
-        isocenter = stf(i).isoCenter/10;
-        
-        % determine vmc++ rotation angles from gantry and couch
-        % angles
-        angles = matRad_matRad2vmcSourceAngles(stf(i).gantryAngle,stf(i).couchAngle);
-        
-        % set vmc++ parameters
-        VmcOptions.source.translation   = translation;
-        VmcOptions.source.isocenter     = isocenter;
-        VmcOptions.source.angles        = angles;
-    end
-    
-    % use beam-specific CT name
-    VmcOptions.geometry.XyzGeometry.CtFile  = strrep(fullfile(runsPath,'phantoms','matRad_CT.ct'),'\','/'); % path of density matrix (only needed if input method is 'CT-PHANTOM')
-    
-    for j = 1:stf(i).numOfRays % loop over all rays / for photons we only have one bixel per ray!
-        
-        writeCounter = writeCounter + 1;
-
-        % create different seeds for every bixel
-        VmcOptions.McControl.rngSeeds = [randi(30000),randi(30000)];
-
-        % remember beam and bixel number
-        if ~calcDoseDirect
-           dij.beamNum(writeCounter)  = i;
-           dij.rayNum(writeCounter)   = j;
-           dij.bixelNum(writeCounter) = j;
-        end
-        beamNum(writeCounter)  = i;
-        rayNum(writeCounter)   = j;
-        bixelNum(writeCounter) = j;
-        
-        % set ray specific vmc++ parameters
-        switch pln.propDoseCalc.vmcOptions.source
-            case 'beamlet'
-                % a) change coordinate system (Isocenter cs-> physical cs) and units mm -> cm
-                rayCorner1 = (stf(i).ray(j).rayCorners_SCD(1,:) + stf(i).isoCenter)/10;
-                rayCorner2 = (stf(i).ray(j).rayCorners_SCD(2,:) + stf(i).isoCenter)/10;
-                rayCorner3 = (stf(i).ray(j).rayCorners_SCD(3,:) + stf(i).isoCenter)/10; %vmc needs only three corners (counter-clockwise)
-                beamSource = (stf(i).sourcePoint + stf(i).isoCenter)/10;
-                
-                % b) swap x and y (CT-standard = [y,x,z])
-                rayCorner1 = rayCorner1([2,1,3]);
-                rayCorner2 = rayCorner2([2,1,3]);
-                rayCorner3 = rayCorner3([2,1,3]);
-                beamSource = beamSource([2,1,3]);
-                
-                % c) set vmc++ parameters
-                VmcOptions.source.monoEnergy                    = stf(i).ray(j).energy;                 % photon energy
-                %VmcOptions.source.monoEnergy                   = []                  ;                  % use photon spectrum
-                VmcOptions.source.beamletEdges                  = [rayCorner1,rayCorner2,rayCorner3];    % counter-clockwise beamlet edges
-                VmcOptions.source.virtualPointSourcePosition    = beamSource;                            % virtual beam source position
-                
-            case 'phsp'
-                % use ray-specific file name for the phsp source (bixelized
-                % phsp)
-                VmcOptions.source.file_name     = strrep(stf(i).ray(j).phspFileName,'\','/');
+        if strcmp(pln.propDoseCalc.vmcOptions.source,'phsp')
+            % set angle-specific vmc++ parameters
+            
+            % phsp starts off pointed in the +z direction, with source at -z
+            % phsp source gets translated, then rotated (-z, +y, -x) around
+            % 0, then pushed to isocenter
+            
+            % correct for the source to collimator distance and change units mm -> cm
+            translation = stf(i).isoCenter/10+[0 0 pln.propDoseCalc.vmcOptions.SCD + stf(i).sourcePoint_bev(2)]/10;
+            
+            % enter in isocentre
+            isocenter = stf(i).isoCenter/10;
+            
+            % determine vmc++ rotation angles from gantry and couch
+            % angles
+            angles = matRad_matRad2vmcSourceAngles(stf(i).gantryAngle,stf(i).couchAngle);
+            
+            % set vmc++ parameters
+            VmcOptions.source.translation   = translation;
+            VmcOptions.source.isocenter     = isocenter;
+            VmcOptions.source.angles        = angles;
         end
         
-        
-        %% create input file with vmc++ parameters
-        outfile = ['MCpencilbeam_temp_',num2str(mod(writeCounter-1,VmcOptions.run.numOfParMCSim)+1)];
-        matRad_createVmcInput(VmcOptions,fullfile(runsPath, [outfile,'.vmc']));
-        
-        % parallelization: only run this block for every numOfParallelMCSimulations!!!
-        if mod(writeCounter,VmcOptions.run.numOfParMCSim) == 0 || writeCounter == dij.totalNumOfBixels
+        for j = 1:stf(i).numOfRays % loop over all rays / for photons we only have one bixel per ray!
             
-            % create batch file (enables parallel processes)
-            if writeCounter == dij.totalNumOfBixels && mod(writeCounter,VmcOptions.run.numOfParMCSim) ~= 0
-                currNumOfParMCSim = mod(writeCounter,VmcOptions.run.numOfParMCSim);
+            writeCounter = writeCounter + 1;
+            
+            % create different seeds for every bixel
+            VmcOptions.McControl.rngSeeds = [randi(30000),randi(30000)];
+            
+            % remember beam and bixel number
+            if calcDoseDirect
+                dij.beamNum(i)    = i;
+                dij.rayNum(i)     = i;
+                dij.bixelNum(i)   = i;
             else
-                currNumOfParMCSim = VmcOptions.run.numOfParMCSim;
-            end
-            matRad_createVmcBatchFile(currNumOfParMCSim,fullfile(VMCPath,'run_parallel_simulations.bat'),verbose);
-            
-            % save max number of executed parallel simulations
-            if currNumOfParMCSim > maxNumOfParMCSim 
-                maxNumOfParMCSim = currNumOfParMCSim;
+                dij.beamNum(writeCounter)  = i;
+                dij.rayNum(writeCounter)   = j;
+                dij.bixelNum(writeCounter) = j;
             end
             
-            %% perform vmc++ simulation
-            current = pwd;
-            cd(VMCPath);
-            if verbose > 0 % only show output if verbose level > 0
-                dos('run_parallel_simulations.bat');
-                fprintf(['Completed ' num2str(writeCounter) ' of ' num2str(dij.totalNumOfBixels) ' beamlets...\n']);
-            else
-                [dummyOut1,dummyOut2] = dos('run_parallel_simulations.bat'); % supress output by assigning dummy output arguments
-            end
-            cd(current);
+            beamNum(writeCounter)  = i;
+            rayNum(writeCounter)   = j;
+            bixelNum(writeCounter) = j;
             
-            for k = 1:currNumOfParMCSim
-                readCounter     = readCounter+1;
+            % set ray specific vmc++ parameters
+            switch pln.propDoseCalc.vmcOptions.source
+                case 'beamlet'
+                    % a) change coordinate system (Isocenter cs-> physical cs) and units mm -> cm
+                    rayCorner1 = (stf(i).ray(j).rayCorners_SCD(1,:) + stf(i).isoCenter)/10;
+                    rayCorner2 = (stf(i).ray(j).rayCorners_SCD(2,:) + stf(i).isoCenter)/10;
+                    rayCorner3 = (stf(i).ray(j).rayCorners_SCD(3,:) + stf(i).isoCenter)/10; %vmc needs only three corners (counter-clockwise)
+                    beamSource = (stf(i).sourcePoint + stf(i).isoCenter)/10;
+                    
+                    % b) swap x and y (CT-standard = [y,x,z])
+                    rayCorner1 = rayCorner1([2,1,3]);
+                    rayCorner2 = rayCorner2([2,1,3]);
+                    rayCorner3 = rayCorner3([2,1,3]);
+                    beamSource = beamSource([2,1,3]);
+                    
+                    % c) set vmc++ parameters
+                    VmcOptions.source.monoEnergy                    = stf(i).ray(j).energy;                 % photon energy
+                    %VmcOptions.source.monoEnergy                   = []                  ;                  % use photon spectrum
+                    VmcOptions.source.beamletEdges                  = [rayCorner1,rayCorner2,rayCorner3];    % counter-clockwise beamlet edges
+                    VmcOptions.source.virtualPointSourcePosition    = beamSource;                            % virtual beam source position
+                    
+                case 'phsp'
+                    % use ray-specific file name for the phsp source (bixelized
+                    % phsp)
+                    VmcOptions.source.file_name     = strrep(stf(i).ray(j).phspFileName,'\','/');
+            end
+            
+            
+            %% create input file with vmc++ parameters
+            outfile = ['MCpencilbeam_temp_',num2str(mod(writeCounter-1,VmcOptions.run.numOfParMCSim)+1)];
+            matRad_createVmcInput(VmcOptions,fullfile(runsPath, [outfile,'.vmc']));
+            
+            % parallelization: only run this block for every numOfParallelMCSimulations!!!
+            if mod(writeCounter,VmcOptions.run.numOfParMCSim) == 0 || writeCounter == dij.totalNumOfBixels
                 
-                % update waitbar
-                waitbar(writeCounter/dij.totalNumOfBixels);
-                
-                %% import calculated dose
-                idx = regexp(outfile,'_');
-                switch pln.propDoseCalc.vmcOptions.version
-                    case 'Carleton'
-                        filename = sprintf('%s%d.dos',outfile(1:idx(2)),k);
-                    case 'dkfz'
-                        filename = sprintf('%s%d_%s.dos',outfile(1:idx(2)),k,VmcOptions.scoringOptions.outputOptions.name);
+                % create batch file (enables parallel processes)
+                if writeCounter == dij.totalNumOfBixels && mod(writeCounter,VmcOptions.run.numOfParMCSim) ~= 0
+                    currNumOfParMCSim = mod(writeCounter,VmcOptions.run.numOfParMCSim);
+                else
+                    currNumOfParMCSim = VmcOptions.run.numOfParMCSim;
                 end
-                [bixelDose,bixelDoseError] = matRad_readDoseVmc(fullfile(runsPath,filename),VmcOptions);
+                matRad_createVmcBatchFile(currNumOfParMCSim,fullfile(VMCPath,'run_parallel_simulations.bat'),verbose);
                 
-                %{
+                % save max number of executed parallel simulations
+                if currNumOfParMCSim > maxNumOfParMCSim
+                    maxNumOfParMCSim = currNumOfParMCSim;
+                end
+                
+                %% perform vmc++ simulation
+                current = pwd;
+                cd(VMCPath);
+                if verbose > 0 % only show output if verbose level > 0
+                    dos('run_parallel_simulations.bat');
+                    fprintf('Completed %d of %d beamlets...\n',writeCounter,dij.totalNumOfBixels);
+                else
+                    [dummyOut1,dummyOut2] = dos('run_parallel_simulations.bat'); % supress output by assigning dummy output arguments
+                end
+                cd(current);
+                
+                for k = 1:currNumOfParMCSim
+                    readCounter     = readCounter+1;
+                    
+                    % update waitbar
+                    waitbar((writeCounter+(frame-1).*dij.totalNumOfBixels)/(dij.numFrames.*dij.totalNumOfBixels));
+                    
+                    %% import calculated dose
+                    idx = regexp(outfile,'_');
+                    switch pln.propDoseCalc.vmcOptions.version
+                        case 'Carleton'
+                            filename = sprintf('%s%d.dos',outfile(1:idx(2)),k);
+                        case 'dkfz'
+                            filename = sprintf('%s%d_%s.dos',outfile(1:idx(2)),k,VmcOptions.scoringOptions.outputOptions.name);
+                    end
+                    [bixelDose,bixelDoseError] = matRad_readDoseVmc(fullfile(runsPath,filename),VmcOptions);
+                    
+                    %{
                 %%% Don't do any sampling, since the correct error is
                 difficult to figure out. We also don't really need it on
                 the Graham cluster.
@@ -282,48 +313,80 @@ for i = 1:dij.numOfBeams % loop over all beams
                     bixelDose(indSample & ~indKeep) = 0;
                     
                 end
-                %}
-
-                % apply absolute calibration factor
-                bixelDoseError  = sqrt((VmcOptions.run.absCalibrationFactorVmc.*bixelDoseError).^2+(bixelDose.*VmcOptions.run.absCalibrationFactorVmc_err).^2);
-                bixelDose       = bixelDose*VmcOptions.run.absCalibrationFactorVmc;
-
-                % Save dose for every bixel in cell array
-                doseTmpContainer{mod(readCounter-1,numOfBixelsContainer)+1,1}       = sparse(V,1,bixelDose(V),dij.numOfVoxels,1);
-                doseTmpContainerError{mod(readCounter-1,numOfBixelsContainer)+1,1}  = sparse(V,1,bixelDoseError(V),dij.numOfVoxels,1);
-                
-                % save computation time and memory by sequentially filling the 
-                % sparse matrix dose.dij from the cell array
-                if mod(readCounter,numOfBixelsContainer) == 0 || readCounter == dij.totalNumOfBixels
-                    if calcDoseDirect
-                        if isfield(stf(beamNum(readCounter)).ray(rayNum(readCounter)),'weight')
-                            % score physical dose
-                            dij.physicalDose{1}(:,i)        = dij.physicalDose{1}(:,i) + stf(beamNum(readCounter)).ray(rayNum(readCounter)).weight{1} * doseTmpContainer{1,1};
-                            dij.physicalDoseError{1}(:,i)   = sqrt(dij.physicalDoseError{1}(:,i).^2 + (stf(beamNum(readCounter)).ray(rayNum(readCounter)).weight{1} * doseTmpContainerError{1,1}).^2);
-                        else
-                            error(['No weight available for beam ' num2str(beamNum(readCounter)) ', ray ' num2str(rayNum(readCounter))]);
-                        end
+                    %}
+                    
+                    % apply absolute calibration factor
+                    bixelDoseError  = sqrt((VmcOptions.run.absCalibrationFactorVmc.*bixelDoseError).^2+(bixelDose.*VmcOptions.run.absCalibrationFactorVmc_err).^2);
+                    bixelDose       = bixelDose*VmcOptions.run.absCalibrationFactorVmc;
+                    
+                    % determine the phase and normalization factor
+                    if pln.propOpt.run4D
+                        phase = ct.tumourMotion.frames2Phases(frame);
+                        normFactor = ct.tumourMotion.nFramesPerPhase(phase);
                     else
-                        % fill entire dose influence matrix
-                        dij.physicalDose{1}(:,(ceil(readCounter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:readCounter) = ...
-                            [doseTmpContainer{1:mod(readCounter-1,numOfBixelsContainer)+1,1}];
+                        phase = 1;
+                        normFactor = 1;
+                    end
+                    
+                    % Save dose for every bixel in cell array
+                    doseTmpContainer{mod(readCounter-1,numOfBixelsContainer)+1}   = doseTmpContainer{mod(readCounter-1,numOfBixelsContainer)+1}+sparse(V,1,bixelDose(V),dij.numOfVoxels,1)./normFactor;
+                    doseTmpContainerError{mod(readCounter-1,numOfBixelsContainer)+1}  = sqrt( doseTmpContainerError{mod(readCounter-1,numOfBixelsContainer)+1}.^2 + (sparse(V,1,bixelDoseError(V),dij.numOfVoxels,1)./normFactor).^2 );
+                    % Because it is V, we are calculating the dose on the
+                    % transformed CT, but bringing back to the reference CT for the
+                    % Dij.  Also, this ensures that even if two different voxels on
+                    % the reference map to the same voxel, we don't need to worry
+                    % about accumulation.
+                    
+                    % save computation time and memory by sequentially filling the
+                    % sparse matrix dose.dij from the cell array
+                    if mod(readCounter,numOfBixelsContainer) == 0 || readCounter == dij.totalNumOfBixels
+                        if calcDoseDirect
+                            if isfield(stf(beamNum(readCounter)).ray(rayNum(readCounter)),'weight')
+                                % score physical dose
+                                dij.physicalDose{phase}(:,i)        = dij.physicalDose{1}(:,i) + stf(beamNum(readCounter)).ray(rayNum(readCounter)).weight{1} * doseTmpContainer{1};
+                                dij.physicalDoseError{phase}(:,i)   = sqrt(dij.physicalDoseError{1}(:,i).^2 + (stf(beamNum(readCounter)).ray(rayNum(readCounter)).weight{1} * doseTmpContainerError{1}).^2);
+                            else
+                                error(['No weight available for beam ' num2str(beamNum(readCounter)) ', ray ' num2str(rayNum(readCounter))]);
+                            end
+                        else
+                            % fill entire dose influence matrix
+                            dij.physicalDose{phase}(:,(ceil(readCounter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:readCounter) = ...
+                                dij.physicalDose{phase}(:,(ceil(readCounter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:readCounter) + ...
+                                [doseTmpContainer{1:mod(readCounter-1,numOfBixelsContainer)+1,1}];
+                            
+                            dij.physicalDoseError{phase}(:,(ceil(readCounter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:readCounter) = ...
+                                sqrt( dij.physicalDoseError{phase}(:,(ceil(readCounter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:readCounter).^2 + ...
+                                [doseTmpContainerError{1:mod(readCounter-1,numOfBixelsContainer)+1,1}].^2 );
+                        end
                         
-                        dij.physicalDoseError{1}(:,(ceil(readCounter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:readCounter) = ...
-                            [doseTmpContainerError{1:mod(readCounter-1,numOfBixelsContainer)+1,1}];
+                        if ~pln.propOpt.run4D || any(frame == cumsum(ct.tumourMotion.nFramesPerPhase))
+                            % this clears the doseTmpContainer
+                            % we want to do this after dumping the container if
+                            % we aren't doing 4D VMAT, or if we are, after the
+                            % last frame in the current phase
+                            for l = 1:numOfBixelsContainer
+                                doseTmpContainer{l,phase} = spalloc(prod(ct.cubeDim),1,1);
+                                doseTmpContainerError{l,phase} = spalloc(prod(ct.cubeDim),1,1);
+                            end
+                        end
                     end
                 end
+                
             end
             
         end
         
     end
     
-    fprintf('Done!\n');
+    fprintf('Done all beams!\n');
 end
 
+fprintf('Done all phases!\n');
+
 %% delete temporary files
-delete(fullfile(VMCPath, 'run_parallel_simulations.bat')); % batch file
-delete(fullfile(phantomPath, 'matRad_CT.ct'));             % phantom file
+delete(fullfile(VMCPath, 'run_parallel_simulations.bat'));  % batch file
+delete(fullfile(phantomPath, 'matRad_CT.ct'));              % phantom file
+delete(fullfile(vectorsPath, 'matRad_MVF.vectors'));        % vectors file
 for j = 1:maxNumOfParMCSim
     delete(fullfile(runsPath, ['MCpencilbeam_temp_',num2str(mod(j-1,VmcOptions.run.numOfParMCSim)+1),'.vmc'])); % vmc inputfile
     switch pln.propDoseCalc.vmcOptions.version
@@ -336,9 +399,9 @@ for j = 1:maxNumOfParMCSim
 end
 
 try
-  % wait 0.1s for closing all waitbars
-  allWaitBarFigures = findall(0,'type','figure','tag','TMWWaitbar'); 
-  delete(allWaitBarFigures);
-  pause(0.1); 
+    % wait 0.1s for closing all waitbars
+    allWaitBarFigures = findall(0,'type','figure','tag','TMWWaitbar');
+    delete(allWaitBarFigures);
+    pause(0.1);
 catch
 end

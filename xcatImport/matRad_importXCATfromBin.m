@@ -13,9 +13,18 @@ xcatLog = matRad_xcatBin2DICOM(importOptions);
 %% Convert DICOM to ct structure
 fprintf('matRad: Converting DICOM to ct struct ... \n');
 
-for frame = 1:xcatLog.numFrames
+% determine the number of frames we're going to generate
+if importOptions.vmcDef
+    % if we're using the vmc++ deformation code, we only need one
+    numFrames = 1;
+else
+    % otherwise we need all of them
+    numFrames = xcatLog.numFrames;
+end
+
+for frame = 1:numFrames
     
-    fprintf('Frame %d of %d.\n',frame,xcatLog.numFrames);
+    fprintf('Frame %d of %d.\n',frame,numFrames);
     
     ctList = xcatLog.ctList(:,frame);
     
@@ -23,15 +32,15 @@ for frame = 1:xcatLog.numFrames
     
     if ~exist('ct','var')
         ct = ctTemp;
-        ct.cube = cell(xcatLog.numFrames,1);
-        ct.cubeHU = cell(xcatLog.numFrames,1);
+        ct.cube = cell(numFrames,1);
+        ct.cubeHU = cell(numFrames,1);
     end
     
     ct.cube{frame} = ctTemp.cube{1};
     ct.cubeHU{frame} = ctTemp.cubeHU{1};
 end
 
-ct.numOfCtScen = xcatLog.numFrames;
+ct.numOfCtScen = numFrames;
 
 %% Import vector files
 fprintf('matRad: Importing motion vectors from XCAT files ... \n');
@@ -43,7 +52,7 @@ fprintf('Done!\n');
 %% pad ct and interpolate mvf with zeros from vmc++
 fprintf('matRad: Padding ct and interpolating motion vectors ... \n');
 
-ct = matRad_padCtInterpMvf(ct,xcatLog);
+ct = matRad_padCtInterpMvf(ct,xcatLog,importOptions);
 
 %% Bin ct frames based on tumour motion data from XCAT
 fprintf('matRad: Binning frames into phases ... \n');
@@ -75,7 +84,7 @@ cst = matRad_createCst(structures);
 
 saveName = importOptions.fnameXcatRoot;
 
-if ~importOptions.keepAllFrames && importOptions.averageCT
+if ~importOptions.keepAllFrames && importOptions.averageCT && ~importOptions.vmcDef
     saveName = [saveName '_avCT'];
 end
 

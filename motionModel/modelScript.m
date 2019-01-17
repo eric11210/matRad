@@ -4,7 +4,7 @@ options.data.fileInfo.f         = 19;
 options.data.fileInfo.m         = 1;
 options.data.fileInfo.processed = true;
 
-options.data.origin             = 'function';
+options.data.origin             = 'file';
 options.data.function           = 'sawtooth';
 options.data.samplingFreq       = 26;
 options.data.totTime            = 600;
