@@ -176,6 +176,11 @@ for frame = 1:xcatLog.numFrames
     
     %% correct collapsed voxels
     
+    % keep old motionVecs before fixing collapse
+    ct.origMotionVecX{frame} = ct.motionVecX{frame};
+    ct.origMotionVecY{frame} = ct.motionVecY{frame};
+    ct.origMotionVecZ{frame} = ct.motionVecZ{frame};
+    
     % find collapsed voxels using adjacency test
     collapsedVoxel = findCollapsedVoxels(ct.motionVecX{frame}, ct.motionVecY{frame}, ct.motionVecZ{frame}, 'adjacent');
     
@@ -190,7 +195,7 @@ for frame = 1:xcatLog.numFrames
     ct.motionVecY{frame} = motionVecY_interp;
     ct.motionVecZ{frame} = motionVecZ_interp;
     
-    % check if any collapsed voxels persist using Jacobian test
+    % check if any collapsed voxels persist using tetrahedral volume test
     collapsedVoxel = findCollapsedVoxels(ct.motionVecX{frame}, ct.motionVecY{frame}, ct.motionVecZ{frame}, 'tetra', ct.resolution);
     
     % initialize completion flag
@@ -214,6 +219,9 @@ for frame = 1:xcatLog.numFrames
         % do average filter
         % add in the pad to fix issues with convolution (MATLAB will 0-pad
         % anyway)
+        
+        % subtract off coordinates first
+        
         kernel = ones(width,width,width)./(width^3);
         motionVecX_smooth = convn(padarray(ct.motionVecX{frame},[iteration iteration iteration],'replicate','both'),kernel,'same');
         motionVecY_smooth = convn(padarray(ct.motionVecY{frame},[iteration iteration iteration],'replicate','both'),kernel,'same');

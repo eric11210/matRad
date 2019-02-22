@@ -23,15 +23,20 @@ fprintf('matRad: Generating probability matrix... ');
 model = matRad_generateProbMat(data);
 fprintf('Done!\n')
 
+% calculate predicted and observed position histograms (as a function of t)
+fprintf('matRad: Calculating position histograms... ');
+model = matRad_calcPosHist(model,data,options.hist);
+fprintf('Done!\n')
+%{
 % estimate standard deviation of matrices
 fprintf('matRad: Estimating standard deviation... ');
-model = matRad_probMatStd(model,data,options.std);
+model = matRad_probMatStd(model,data,options.stdANDfft);
 fprintf('Done!\n')
 
 % determine time to convergence
 fprintf('matRad: Determing convergence time... ');
 model = matRad_motionConvTime(model,options.convTime);
 fprintf('Done!\n')
-
+%}
 end
 

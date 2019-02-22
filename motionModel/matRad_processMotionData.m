@@ -22,15 +22,22 @@ x_sample = interp1(t_cut,x_cut,t_sample);
 % remove mean so data is centred around 0
 x_sample = x_sample-mean(x_sample);
 
+% decimate data to desired frequency
+decFactor           = round(1./(deltaT_sample.*options.fResample));
+%x_sample        = lowpass(x_sample,0.8./decFactor);
+deltaT_sample_dec   = decFactor.*deltaT_sample;
+x_sample_dec        = decimate(x_sample,decFactor,8);
+t_sample_dec        = flipud((max(t_sample):(-deltaT_sample_dec):min(t_sample))');
+
 % determine velocity
-v_sample = gradient(x_sample,deltaT_sample);
+v_sample_dec = gradient(x_sample_dec,deltaT_sample_dec);
 
 % determine number of bins for the motion data (not incl. inhale/exhale
 % information)
-xBoundsMax = max(x_sample);
-xBoundsMin = min(x_sample);
-vBoundsMax = max(v_sample);
-vBoundsMin = min(v_sample);
+xBoundsMax = max(x_sample_dec);
+xBoundsMin = min(x_sample_dec);
+vBoundsMax = max(v_sample_dec);
+vBoundsMin = min(v_sample_dec);
 vBoundsM = max(abs([vBoundsMax vBoundsMin]));
 
 % find min and max thresholds for the extreme phases of motion
@@ -51,8 +58,8 @@ while percAbove < percExtTarg || percBelow < percExtTarg
     lMaxThres = xBoundsMax-nPosSubPhasesMaxExt.*deltaL;
     lMinThres = xBoundsMin+nPosSubPhasesMinExt.*deltaL;
     
-    percAbove = 100.*nnz(x_sample > lMaxThres)./numel(x_sample);
-    percBelow = 100*nnz(x_sample < lMinThres)./numel(x_sample);
+    percAbove = 100.*nnz(x_sample_dec > lMaxThres)./numel(x_sample_dec);
+    percBelow = 100*nnz(x_sample_dec < lMinThres)./numel(x_sample_dec);
     
     if percAbove < percExtTarg
         nPosSubPhasesMaxExt_final = nPosSubPhasesMaxExt;
@@ -72,65 +79,119 @@ nPosBins = nPosPhases.*nSubPerPosPhase/2+nPosSubPhasesMaxExt+nPosSubPhasesMinExt
 deltaL = (xBoundsMax-xBoundsMin)./nPosBins;
 lMaxThres = xBoundsMax-nPosSubPhasesMaxExt.*deltaL;
 lMinThres = xBoundsMin+nPosSubPhasesMinExt.*deltaL;
-percAbove = 100.*nnz(x_sample > lMaxThres)./numel(x_sample);
-percBelow = 100*nnz(x_sample < lMinThres)./numel(x_sample);
+percAbove = 100.*nnz(x_sample_dec > lMaxThres)./numel(x_sample_dec);
+percBelow = 100*nnz(x_sample_dec < lMinThres)./numel(x_sample_dec);
 
-nPosSubPhases = 2*nPosBins;
+if options.doFSM
+    nPosSubPhases = nPosBins;
+else
+    nPosSubPhases = 2.*nPosBins;
+end
+
 xBounds = linspace(xBoundsMax,xBoundsMin,nPosBins+1);
 
 %% bin data
 
 % do position binning
-l_sample = zeros(size(x_sample));
+l_sample_dec = zeros(size(x_sample_dec));
 for posBin = 1:nPosBins
-    l_sample(xBounds(posBin+1) <= x_sample & x_sample <= xBounds(posBin)) = posBin;
+    l_sample_dec(xBounds(posBin+1) <= x_sample_dec & x_sample_dec <= xBounds(posBin)) = posBin;
 end
 
-% include inhale/exhale information:
-% breathing in is the beginning of the cycle, so it should have
-% lower phase number
-% breathing out is the end of the cycle, so it should have higher phase
-% number
-
-% define breathing in/out by peaks: points after a min and before a max are
-% exhale, points after a max and before a min are inhale.
-[~,ind_maxPeaks] = findpeaks(x_sample,'MinPeakProminence',0.5);
-[~,ind_minPeaks] = findpeaks(-x_sample,'MinPeakProminence',0.5);
-
-numMinPeaks = numel(ind_minPeaks);
-numMaxPeaks = numel(ind_maxPeaks);
-
-if abs(numMinPeaks-numMaxPeaks) > 1
-    error('Error in peak-finding algorithm: difference in min and max peaks greater than 1.');
-end
-
-if ind_maxPeaks(1) < ind_minPeaks(1)
-    % first peak is a max
-    l_sample(1:ind_maxPeaks(1)) = nPosSubPhases+1-l_sample(1:ind_maxPeaks(1));
+if options.doFSM
+    % FSM takes care of distinction between exhaling, inhaling, EOE, and
+    % IRR
     
-    for i = 1:numMinPeaks
-        if i+1 > numMaxPeaks
-            l_sample(ind_minPeaks(i):end) = nPosSubPhases+1-l_sample(ind_minPeaks(i):end);
-            break
-        end
-        if ind_minPeaks(i) > ind_maxPeaks(i+1)
-            error('Error in peak-finding algorithm: min and max peaks not arranged correctly.');
-        end
-        l_sample(ind_minPeaks(i):ind_maxPeaks(i+1)) = nPosSubPhases+1-l_sample(ind_minPeaks(i):ind_maxPeaks(i+1));
-    end
+    % do the FSM on the non-decimated trace
+    FS_sample = matRad_doFSM(x_sample,deltaT_sample,options.FSM);
+    
+    % now decimate it
+    endInd = numel(x_sample);
+    startInd = decFactor-(decFactor*ceil(endInd./decFactor)-endInd);
+    FS_sample_dec = FS_sample(startInd:decFactor:endInd);
+    
+    % cut off the signal until we begin and end with a complete cycle
+    % (1>2>3>1>...)
+    indFirstEOE     = find(FS_sample_dec == 3,1,'first');
+    indFirstCycle   = find(FS_sample_dec(indFirstEOE:end) == 1,1,'first')+indFirstEOE-1;
+    
+    indLastInh      = find(FS_sample_dec == 1,1,'last');
+    indLastCycle    = find(FS_sample_dec(1:indLastInh) == 3,1,'last');
+    
+    t_sample_dec((indLastCycle+1):end)  = [];
+    x_sample_dec((indLastCycle+1):end)  = [];
+    v_sample_dec((indLastCycle+1):end)  = [];
+    l_sample_dec((indLastCycle+1):end)  = [];
+    FS_sample_dec((indLastCycle+1):end) = [];
+    
+    t_sample_dec(1:(indFirstCycle-1))   = [];
+    x_sample_dec(1:(indFirstCycle-1))   = [];
+    v_sample_dec(1:(indFirstCycle-1))   = [];
+    l_sample_dec(1:(indFirstCycle-1))   = [];
+    FS_sample_dec(1:(indFirstCycle-1))  = [];
+    
+    % do time split
+    FS_sample_dec = matRad_FSMfracTime(FS_sample_dec,deltaT_sample_dec,options.FSM);
+    
+    % each non-IRR is split into time fractions; the IRR state is not
+    nStates = 3.*options.FSM.nTimeFracs+1;
+    
+    % include finite states in l_sample
+    l_sample_dec = (FS_sample_dec-1).*nPosSubPhases + l_sample_dec;
     
 else
-    % first peak is a min
+    % only do this part if not doing FSM
     
-    for i = 1:numMinPeaks
-        if i > numMaxPeaks
-            l_sample(ind_minPeaks(i):end) = nPosSubPhases+1-l_sample(ind_minPeaks(i):end);
-            break
+    % number of states is 1
+    nStates = 1;
+    
+    % include inhale/exhale information:
+    % breathing in is the beginning of the cycle, so it should have
+    % lower phase number
+    % breathing out is the end of the cycle, so it should have higher phase
+    % number
+    
+    % define breathing in/out by peaks: points after a min and before a max are
+    % exhale, points after a max and before a min are inhale.
+    [~,ind_maxPeaks] = findpeaks(x_sample_dec,'MinPeakProminence',0.5);
+    [~,ind_minPeaks] = findpeaks(-x_sample_dec,'MinPeakProminence',0.5);
+    
+    numMinPeaks = numel(ind_minPeaks);
+    numMaxPeaks = numel(ind_maxPeaks);
+    
+    if abs(numMinPeaks-numMaxPeaks) > 1
+        error('Error in peak-finding algorithm: difference in min and max peaks greater than 1.');
+    end
+    
+    if ind_maxPeaks(1) < ind_minPeaks(1)
+        % first peak is a max
+        l_sample_dec(1:ind_maxPeaks(1)) = nPosSubPhases+1-l_sample_dec(1:ind_maxPeaks(1));
+        
+        for i = 1:numMinPeaks
+            if i+1 > numMaxPeaks
+                l_sample_dec(ind_minPeaks(i):end) = nPosSubPhases+1-l_sample_dec(ind_minPeaks(i):end);
+                break
+            end
+            if ind_minPeaks(i) > ind_maxPeaks(i+1)
+                error('Error in peak-finding algorithm: min and max peaks not arranged correctly.');
+            end
+            l_sample_dec(ind_minPeaks(i):ind_maxPeaks(i+1)) = nPosSubPhases+1-l_sample_dec(ind_minPeaks(i):ind_maxPeaks(i+1));
         end
-        if ind_minPeaks(i) > ind_maxPeaks(i)
-            error('Error in peak-finding algorithm: min and max peaks not arranged correctly.');
+        
+    else
+        % first peak is a min
+        
+        for i = 1:numMinPeaks
+            if i > numMaxPeaks
+                l_sample_dec(ind_minPeaks(i):end) = nPosSubPhases+1-l_sample_dec(ind_minPeaks(i):end);
+                break
+            end
+            if ind_minPeaks(i) > ind_maxPeaks(i)
+                error('Error in peak-finding algorithm: min and max peaks not arranged correctly.');
+            end
+            l_sample_dec(ind_minPeaks(i):ind_maxPeaks(i)) = nPosSubPhases+1-l_sample_dec(ind_minPeaks(i):ind_maxPeaks(i));
         end
-        l_sample(ind_minPeaks(i):ind_maxPeaks(i)) = nPosSubPhases+1-l_sample(ind_minPeaks(i):ind_maxPeaks(i));
+        
     end
     
 end
@@ -138,10 +199,12 @@ end
 
 if options.velBinning
     % velocity thresholds, assume symmetric around 0
-    nVelSubPhasesExt = 0;
+    nVelSubPhasesExt        = 0;
+    nVelSubPhasesExt_final  = 0;
     
     percAboveAndBelow = 0;
     
+    %{
     while percAboveAndBelow < 2*percExtTarg
         
         nVelBins = nVelPhases.*nSubPerVelPhase+2*nVelSubPhasesExt;
@@ -164,6 +227,7 @@ if options.velBinning
             nVelSubPhasesExt = nVelSubPhasesExt+1;
         end 
     end
+    %}
     
     nVelSubPhasesExt = nVelSubPhasesExt_final;
     
@@ -171,14 +235,14 @@ if options.velBinning
     deltaL = 2*vBoundsM./nVelBins;
     lMaxThres = vBoundsM-nVelSubPhasesExt.*deltaL;
     lMinThres = -vBoundsM+nVelSubPhasesExt.*deltaL;
-    percAboveAndBelow = 100.*nnz(v_sample > lMaxThres)./numel(v_sample)+100*nnz(v_sample < lMinThres)./numel(v_sample);
+    percAboveAndBelow = 100.*nnz(v_sample_dec > lMaxThres)./numel(v_sample_dec)+100*nnz(v_sample_dec < lMinThres)./numel(v_sample_dec);
     
     nVelSubPhases = nVelBins;
     vBounds = linspace(-vBoundsM,vBoundsM,nVelBins+1);
     
     % now do velocity binning
     for velBin = 1:nVelBins
-        l_sample(vBounds(velBin) <= v_sample & v_sample <= vBounds(velBin+1)) = l_sample(vBounds(velBin) <= v_sample & v_sample <= vBounds(velBin+1))+nPosSubPhases.*(velBin-1);
+        l_sample_dec(vBounds(velBin) <= v_sample_dec & v_sample_dec <= vBounds(velBin+1)) = l_sample_dec(vBounds(velBin) <= v_sample_dec & v_sample_dec <= vBounds(velBin+1))+nStates.*nPosSubPhases.*(velBin-1);
     end
     
     
@@ -189,18 +253,46 @@ else
     nVelSubPhasesExt    = 0;
 end
 
-nSubPhases = nPosSubPhases*nVelSubPhases;
+nSubPhases = nPosSubPhases*nStates*nVelSubPhases;
 
 %% conversion indices
 
+% convert from sub phase to position-state mix
+subPhase2PosStateSubPhase = mod((1:nSubPhases)',nStates.*nPosSubPhases);
+subPhaseChangeInd = subPhase2PosStateSubPhase == 0;
+subPhase2PosStateSubPhase(subPhaseChangeInd) = nStates.*nPosSubPhases;
+
+% convert from position-state subphase to position only
+posStateSubPhase2PosSubPhase = mod((1:(nPosSubPhases*nStates))',nPosSubPhases);
+posSubPhaseChangeInd = posStateSubPhase2PosSubPhase == 0;
+posStateSubPhase2PosSubPhase(posSubPhaseChangeInd) = nPosSubPhases;
+
+% convert from position-state subphase to state only
+posStateSubPhase2State = floor(((1:(nPosSubPhases*nStates))-1)'./nPosSubPhases)+1;
+
 % convert from sub phase to position only
-subPhase2PosSubPhase = mod((1:nSubPhases)',nPosSubPhases);
-changeInd = subPhase2PosSubPhase == 0;
-subPhase2PosSubPhase(changeInd) = nPosSubPhases;
+subPhase2PosSubPhase = posStateSubPhase2PosSubPhase(subPhase2PosStateSubPhase);
+
+% convert from sub phase to state only
+subPhase2State = posStateSubPhase2State(subPhase2PosStateSubPhase);
+
+% add the exhale and EOE states if doing FSM
+if options.doFSM
+    
+    % first convert from state to FS (1,2,3,4)
+    state2FS = floor(((1:(nStates))-1)'./options.FSM.nTimeFracs)+1;
+    
+    % then convert from sub phase to FS
+    subphase2FS = state2FS(subPhase2State);
+    
+    % if state is exhale or EOE, modify subPhase2PosSubPhase
+    subPhase2PosSubPhase(subphase2FS == 2 | subphase2FS == 3) = 2.*nPosSubPhases+1-subPhase2PosSubPhase(subphase2FS == 2 | subphase2FS == 3);
+    
+end
 
 % convert from sub phase to velocity only
-subPhase2VelSubPhase = floor((1:nSubPhases)'./nPosSubPhases)+1;
-subPhase2VelSubPhase(changeInd) = subPhase2VelSubPhase(changeInd)-1;
+subPhase2VelSubPhase = floor((1:nSubPhases)'./(nStates.*nPosSubPhases))+1;
+subPhase2VelSubPhase(subPhaseChangeInd) = subPhase2VelSubPhase(subPhaseChangeInd)-1;
 
 % convert from pos sub phase to pos phase
 posSubPhase2PosPhase = [repmat(nPosPhases+1,nPosSubPhasesMaxExt,1); repelem((1:nPosPhases/2)',nSubPerPosPhase,1); repmat(nPosPhases+2,nPosSubPhasesMinExt*2,1); repelem(((nPosPhases/2+1):nPosPhases)',nSubPerPosPhase,1); repmat(nPosPhases+1,nPosSubPhasesMaxExt,1)];
@@ -219,14 +311,20 @@ nSubPhasePerPosPhase = accumarray(subPhase2PosPhase,1);
 subPhase2VelPhase = velSubPhase2VelPhase(subPhase2VelSubPhase);
 nSubPhasePerVelPhase = accumarray(subPhase2VelPhase,1);
 
-%convert from sub phase to phase
+% convert from sub phase to phase
 subPhase2Phase = subPhase2PosPhase+(nPosPhases+2).*(subPhase2VelPhase-1);
 nSubPhasePerPhase = accumarray(subPhase2Phase,1);
 
 % convert from position subphase to position
 % remember to duplicate this to have both inhale and exhale
-posSubPhase2Pos = diff(xBounds)./2+xBounds(1:nPosBins);
-posSubPhase2Pos = [posSubPhase2Pos fliplr(posSubPhase2Pos)]';
+posSubPhase2Pos = (diff(xBounds)./2+xBounds(1:nPosBins))';
+posSubPhase2Pos = [posSubPhase2Pos; flipud(posSubPhase2Pos)];
+
+% convert from position phase to position
+posPhase2Pos = zeros(nPosPhases+2,1);
+for posPhase = 1:(nPosPhases+2)
+    posPhase2Pos(posPhase) = mean(posSubPhase2Pos(posSubPhase2PosPhase == posPhase));
+end
 
 if options.velBinning
     % convert from velocity subphase to velocity
@@ -237,13 +335,14 @@ if options.velBinning
 end
 
 %% put variables in struct
-data.l_sample                   = l_sample;
-data.t_sample                   = t_sample;
-data.x_sample                   = x_sample;
-data.deltaT_sample              = deltaT_sample;
+data.l_sample                   = l_sample_dec;
+data.t_sample                   = t_sample_dec;
+data.x_sample                   = x_sample_dec;
+data.deltaT_sample              = deltaT_sample_dec;
 
 indices.subPhase2PosSubPhase    = subPhase2PosSubPhase;
 indices.subPhase2VelSubPhase    = subPhase2VelSubPhase;
+indices.subPhase2State          = subPhase2State;
 
 indices.posSubPhase2PosPhase    = posSubPhase2PosPhase;
 indices.subPhase2PosPhase       = subPhase2PosPhase;
@@ -261,7 +360,10 @@ indices.nPosSubPhases           = nPosSubPhases;
 indices.nVelSubPhases           = nVelSubPhases;
 %indices.nPhases                = nPhases;
 
+indices.nPosPhases              = max(subPhase2PosPhase);
+
 indices.posSubPhase2Pos         = posSubPhase2Pos;
+indices.posPhase2Pos            = posPhase2Pos;
 
 data.indices    = indices;
 
