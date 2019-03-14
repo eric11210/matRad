@@ -1,4 +1,4 @@
-function data = matRad_processMotionData(data,options)
+function [data_train,data_test] = matRad_processMotionData(data,options)
 
 %% get variables from inputs
 % data
@@ -102,6 +102,13 @@ if options.doFSM
     % FSM takes care of distinction between exhaling, inhaling, EOE, and
     % IRR
     
+    % determine threshold velocity and amplitude values
+    % this is 1/4 the average velocity, using a typical breathing period of
+    % 4 s
+    options.FSM.cTheta           = 2*2*std(x_sample)./(4*4); % mm/s
+    % this is 1/3 the average amplitude
+    options.FSM.cLambda          = 2*std(x_sample)/3; % mm
+    
     % do the FSM on the non-decimated trace
     FS_sample = matRad_doFSM(x_sample,deltaT_sample,options.FSM);
     
@@ -112,23 +119,9 @@ if options.doFSM
     
     % cut off the signal until we begin and end with a complete cycle
     % (1>2>3>1>...)
-    indFirstEOE     = find(FS_sample_dec == 3,1,'first');
-    indFirstCycle   = find(FS_sample_dec(indFirstEOE:end) == 1,1,'first')+indFirstEOE-1;
-    
-    indLastInh      = find(FS_sample_dec == 1,1,'last');
-    indLastCycle    = find(FS_sample_dec(1:indLastInh) == 3,1,'last');
-    
-    t_sample_dec((indLastCycle+1):end)  = [];
-    x_sample_dec((indLastCycle+1):end)  = [];
-    v_sample_dec((indLastCycle+1):end)  = [];
-    l_sample_dec((indLastCycle+1):end)  = [];
-    FS_sample_dec((indLastCycle+1):end) = [];
-    
-    t_sample_dec(1:(indFirstCycle-1))   = [];
-    x_sample_dec(1:(indFirstCycle-1))   = [];
-    v_sample_dec(1:(indFirstCycle-1))   = [];
-    l_sample_dec(1:(indFirstCycle-1))   = [];
-    FS_sample_dec(1:(indFirstCycle-1))  = [];
+    % also getting starting and stopping indices for the training and
+    % testing data
+    [FS_sample_dec,t_sample_dec,x_sample_dec,v_sample_dec,l_sample_dec,indFirstCycle_train,indLastCycle_train,indFirstCycle_test,indLastCycle_test] = matRad_splitTrainTest(FS_sample_dec,t_sample_dec,x_sample_dec,v_sample_dec,l_sample_dec,0.5);
     
     % do time split
     FS_sample_dec = matRad_FSMfracTime(FS_sample_dec,deltaT_sample_dec,options.FSM);
@@ -366,6 +359,19 @@ indices.posSubPhase2Pos         = posSubPhase2Pos;
 indices.posPhase2Pos            = posPhase2Pos;
 
 data.indices    = indices;
+
+%% split data into training and testing
+data_train = data;
+data_test = data;
+
+% indFirstCycle_train indLastCycle_train indFirstCycle_test indLastCycle_test
+data_train.l_sample = data.l_sample(indFirstCycle_train:indLastCycle_train);
+data_train.t_sample = data.t_sample(indFirstCycle_train:indLastCycle_train);
+data_train.x_sample = data.x_sample(indFirstCycle_train:indLastCycle_train);
+
+data_test.l_sample = data.l_sample(indFirstCycle_test:indLastCycle_test);
+data_test.t_sample = data.t_sample(indFirstCycle_test:indLastCycle_test);
+data_test.x_sample = data.x_sample(indFirstCycle_test:indLastCycle_test);
 
 end
 

@@ -125,6 +125,36 @@ switch patCycle
         % change fmS(2) to EOE
         fmS(2) = 3;
         
+    case '1  4  1  3  2'
+        
+        % do a free spline fit from fmIndStart(1) to i
+        % the assumption here is that part of this region is inhale, and
+        % part is EOE; we want to find the break point
+        
+        % make room for 3-2 where the 4 is
+        fmTStart    = circshift(fmTStart,1);
+        xKnot       = circshift(xKnot,1);
+        fmS         = circshift(fmS,1);
+        fmS(3)      = 2;
+        fmS(2)      = 3;
+        
+        % first define "K" to be half the distance between fmIndStart(1) and i
+        d = round((i-fmIndStart(1)+1)./2);
+        
+        % now find average velocities of the two lines
+        v1 = matRad_FSMgetFitVelocity(x(fmIndStart(1):(fmIndStart(1)+d-1)),deltaT);
+        v2 = matRad_FSMgetFitVelocity(x((fmIndStart(1)+d):i),deltaT);
+        
+        % find start time of inhale
+        fmTStart(1) = matRad_FSMfreeSplineFit(x(fmIndStart(1):i),t(fmIndStart(1):i),d,v1,v2);
+        
+        % update starting indices
+        fmIndStart = ceil(fmTStart./deltaT);
+        
+        % fitting optimization
+        [fmTStart,fmIndStart,xKnot,state,cLambdaVec,cThetaVec,vEOEVec] = matRad_FSMfittingOptimization(x,t,deltaT,fmTStart,fmIndStart,fmS,xKnot,state,cLambdaVec,cThetaVec,vEOEVec);
+        
+        
     case '2'
         
         % do a free spline fit from fmIndStart(1) to i-K
@@ -180,9 +210,6 @@ switch patCycle
         % fitting optimization
         [fmTStart,fmIndStart,xKnot,state,cLambdaVec,cThetaVec,vEOEVec] = matRad_FSMfittingOptimization(x,t,deltaT,fmTStart,fmIndStart,fmS,xKnot,state,cLambdaVec,cThetaVec,vEOEVec);
         
-    case '1  4  3  2'
-        
-        error('nothing');
         
     otherwise
         

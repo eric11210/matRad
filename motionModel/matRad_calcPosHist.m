@@ -7,21 +7,32 @@ numSteps = round(options.timePoints./model.deltaT_sample);
 % determine actual time points
 roundTimePoints = numSteps.*model.deltaT_sample;
 
-%% determine initial distribution
+%% determine initial distribution for histograms
 
-% find position phase with max probability
-[~,initPhase] = max(accumarray(data.indices.subPhase2PosPhase,model.Pi_deltaTSample));
+% find position phase with max probability; this is the triggering phase
+[~,triggerPhase] = max(accumarray(data.indices.subPhase2PosPhase,model.Pi_deltaTSample));
 
 % initial distribution is all subphases giving the initial phase equally likely
+triggerInd = data.indices.subPhase2PosPhase == triggerPhase;
+triggerDist = model.Pi_deltaTSample;
+triggerDist(~triggerInd) = 0;
+triggerDist = triggerDist./sum(triggerDist);
+
+% determine distribution of initial subphases for simulation
+initPhase = data.indices.subPhase2State(data.l_sample(1));
 initInd = data.indices.subPhase2PosPhase == initPhase;
-initDist = sum(model.Pi_deltaTSample(:,:,1),2);
+initDist = model.Pi_deltaTSample;
 initDist(~initInd) = 0;
 initDist = initDist./sum(initDist);
 
-%% calculated Markov chain probabilities
+%% calculate Markov chain histograms
 
 % initialize probabilities
-prob_pred = zeros(data.indices.nPosPhases,numel(numSteps));
+hist_pred = zeros(data.indices.nPosPhases,numel(numSteps));
+
+% calculate sum of n-step transition matrices for total signal
+polyTransTot        = ones(numel(data.l_sample),1);
+sumNStepTransTot    = polyvalm(polyTransTot,model.Pij_deltaTSample);
 
 % loop through time points
 for i = 1:numel(numSteps)
@@ -29,14 +40,31 @@ for i = 1:numel(numSteps)
     % determine number of steps
     n = numSteps(i);
     
-    % calculate distribution across all subphases
-    distSubPhase = initDist'*model.Pij_deltaTSample^n;
+    % calculate sum of n-step transition matrices for particular number of
+    % steps
+    polyTransPart               = polyTransTot;
+    polyTransPart(1:(end-n))    = 0;
+    sumNStepTransPart           = sumNStepTransTot-polyvalm(polyTransPart,model.Pij_deltaTSample);
     
-    % sum over subphases
-    distPhase = accumarray(data.indices.subPhase2PosPhase,distSubPhase);
+    % calculate n-step transition matrix for particular number of steps
+    nStepTransPart = model.Pij_deltaTSample^n;
+    
+    % calculate expected number of times to observe the triggering phase
+    histTriggerSubPhase = initDist'*sumNStepTransPart;
+    numTriggerPhase     = sum(histTriggerSubPhase(data.indices.subPhase2PosPhase == triggerPhase));
+    
+    % calculate probability of observing a phase nSteps after the
+    % triggering phase
+    distObsSubPhase     = triggerDist'*nStepTransPart;
+    distObsPhase        = accumarray(data.indices.subPhase2PosPhase,distObsSubPhase);
+    
+    % calculate combined histogram: probability of observing a phase nSteps
+    % after the triggering phase multiplied by the number of times the
+    % triggering phase is observed
+    histPhase = numTriggerPhase.*distObsPhase;
     
     % insert into histogram
-    prob_pred(:,i) = distPhase;
+    hist_pred(:,i) = histPhase;
     
 end
 
@@ -46,30 +74,10 @@ end
 p_sample = data.indices.subPhase2PosPhase(data.l_sample);
 
 % calculate histograms
-[hist_obs,initDists] = calcHist(p_sample,data.l_sample,initPhase,data.indices.nPosPhases,data.indices.nSubPhases,numSteps);
-
-% determine last non-zero entry
-lastStep = find(sum(hist_obs,1) == 0,1)-1;
-if isempty(lastStep)
-    lastStep = numel(numSteps);
-end
-
-% calculate matrix exponentials
-Pijn_deltaTSample = zeros(data.indices.nSubPhases,data.indices.nSubPhases,lastStep);
-for i = 1:lastStep
-    
-    % determine number of steps
-    n = numSteps(i);
-    
-    Pijn_deltaTSample(:,:,i) = (model.Pij_deltaTSample^n);
-end
-
-% now calculate predicted histograms
-hist_pred       = repmat(sum(hist_obs,1),data.indices.nPosPhases,1).*prob_pred;
-hist_var_pred   = repmat(sum(hist_obs,1),data.indices.nPosPhases,1).*prob_pred.*(1-prob_pred);
+[hist_obs,initDists] = calcHist(p_sample,data.l_sample,triggerPhase,data.indices.nPosPhases,data.indices.nSubPhases,numSteps);
 
 % now calc chi squares
-chiSquares = calcChiSquares(hist_obs,hist_pred,hist_var_pred);
+chiSquares = calcChiSquares(hist_obs,hist_pred);
 
 
 %% Markov chain Monte Carlo trace: calculate histograms, chi square
@@ -79,31 +87,33 @@ nHistories = 500;
 % initialize chi squares
 chiSquaresMC = zeros(nHistories,numel(numSteps));
 
+% now calculate cumulative distribution
+cumInitSimDist = cumsum(initDist);
+
 for history = 1:nHistories
     
+    % determine initial subphase for simulation by sampling for the
+    % distribution
+    r = rand;
+    initSubPhase = find(r < cumInitSimDist,1,'first');
+    
     % do MC
-    l_simulated = matRad_runMarkovChain(model.Pij_deltaTSample,numel(p_sample),data.l_sample(1),false);
+    l_simulated = matRad_runMarkovChain(model.Pij_deltaTSample,numel(p_sample),initSubPhase,false);
     
     % convert l_sample to p_sample
     p_MCsample = data.indices.subPhase2PosPhase(l_simulated);
     
     % calculate histograms
-    [hist_MCobs,initMCDists] = calcHist(p_MCsample,l_simulated,initPhase,data.indices.nPosPhases,data.indices.nSubPhases,numSteps);
-    
+    [hist_MCobs,initMCDists] = calcHist(p_MCsample,l_simulated,triggerPhase,data.indices.nPosPhases,data.indices.nSubPhases,numSteps);
     
     % for each history, calculate chi square
-    
-    % start by calculating predicted histograms
-    hist_pred       = repmat(sum(hist_MCobs,1),data.indices.nPosPhases,1).*prob_pred;
-    hist_var_pred   = repmat(sum(hist_MCobs,1),data.indices.nPosPhases,1).*prob_pred.*(1-prob_pred);
-    
-    % now calc chi squares
-    chiSquaresMC(history,:) = calcChiSquares(hist_MCobs,hist_pred,hist_var_pred);
+    chiSquaresMC(history,:) = calcChiSquares(hist_MCobs,hist_pred);
     
 end
 
 %% maximum likelihood Monte Carlo: calculate histograms, chi square
 
+%{
 % initialize chi squares
 chiSquaresML = zeros(nHistories,numel(numSteps));
 
@@ -127,6 +137,7 @@ for history = 1:nHistories
     chiSquaresML(history,:) = calcChiSquares(hist_MLobs,hist_pred,hist_var_pred);
     
 end
+%}
 
 
 %% calculate p values
@@ -135,7 +146,7 @@ end
 p = zeros(1,numel(numSteps));
 
 % loop through time points
-for i = 1:lastStep
+for i = 1:numel(numSteps)
     
     % p is the probability of getting a worse disagreement than that
     % observed, just by random chance (under the assumption that our model
@@ -152,7 +163,7 @@ pSum = nnz(sum(chiSquaresMC,2) > sum(chiSquares))./nHistories;
 
 model.chiSquares    = chiSquares;
 model.chiSquaresMC  = chiSquaresMC;
-model.chiSquaresML  = chiSquaresML;
+%model.chiSquaresML  = chiSquaresML;
 model.p             = p;
 model.pSum          = pSum;
 
@@ -162,10 +173,10 @@ end
 %% helper functions
 
 % calculate chi square
-function chiSquares = calcChiSquares(hist_obs,hist_exp,hist_var_exp)
+function chiSquares = calcChiSquares(hist_obs,hist_exp)
 
 % calc square of diff over expected
-sqDiffByPred = ((hist_obs-hist_exp).^2)./hist_var_exp;
+sqDiffByPred = ((hist_obs-hist_exp).^2)./hist_exp;
 
 % set to 0 when expected is zero
 sqDiffByPred(hist_exp == 0) = 0;

@@ -24,7 +24,16 @@ for i = 1:numel(l_sample)
     end
     
     if i ~= numel(l_sample)
+        % if this isn't the last point, increment count by 1
         zij_deltaTSample(currPhase,nextPhase) = zij_deltaTSample(currPhase,nextPhase)+1;
+    else
+        % if it is, check if the current phase goes anywhere
+        if ~any(zij_deltaTSample(currPhase,:))
+            % if not, then let it go to the last phase with probability 1
+            prevPhase = l_sample(i-1);
+            
+            zij_deltaTSample(currPhase,prevPhase) = zij_deltaTSample(currPhase,prevPhase)+1;
+        end
     end
 end
 

@@ -1,8 +1,8 @@
-%% data origing
+%% data origin
 
 % file
 options.data.origin             = 'file';
-options.data.fileInfo.p         = 6;
+options.data.fileInfo.p         = 9;
 options.data.fileInfo.f         = 19;
 options.data.fileInfo.m         = 1;
 options.data.fileInfo.processed = true;
@@ -30,11 +30,11 @@ options.processing.fResample = 6; % Hz, 6 deg/s * 1 deg
 % for FSM
 options.processing.doFSM                = true;
 options.processing.FSM.timeLd           = 0.5; % s
-options.processing.FSM.velocityRangeInh = [-inf -5]; % mm/s
-options.processing.FSM.velocityRangeExh = [5 inf]; % mm/s
+options.processing.FSM.velocityRangeInh = [-inf -0.5]; % mm/s
+options.processing.FSM.velocityRangeExh = [0.5 inf]; % mm/s
 options.processing.FSM.velocityRangeEOE = [0 10]; % mm/s
-options.processing.FSM.cTheta           = 4.5; % mm/s
-options.processing.FSM.cLambda          = 4; % mm
+%options.processing.FSM.cTheta           = 4.5; % mm/s
+%options.processing.FSM.cLambda          = 4; % mm
 options.processing.FSM.cSLength         = 0.133; % s
 
 %% deprecated?
@@ -51,7 +51,7 @@ options.hist.timePoints = [1 4 6 22.5 45 90 180 270 360]/6; %s
 
 nSubPerPosPhaseVec  = 1:10;
 nSubPerVelPhaseVec  = 1:10;
-nTimeFracsVec       = 1:10;
+nTimeFracsVec       = 2:10; %%
 
 totNumPosSubPhases  = numel(nSubPerPosPhaseVec);
 totNumVelSubPhases  = numel(nSubPerVelPhaseVec);
@@ -78,8 +78,7 @@ nTimeFracsArr       = zeros(nRuns,1);
 
 %% loop over parameters
 
-i = 1;
-convergeT = 0;
+i = 101; %%
 
 for nTimeFracs = nTimeFracsVec
     

@@ -8,5 +8,14 @@ Pij_transT_dot = qij*Pij_transT;
 Pi_T    = initProb*expm(qij.*T);
 Pi_T_dot   = Pi_T*qij;
 
+% [subPhase2PosPhase_gridJ, subPhase2PosPhase_gridI] = meshgrid(subPhase2PosPhase);
+
+% norm = repmat(accumarray(subPhase2PosPhase_gridI(:),Pij(:)),[1 nPosPhases];
+
+% PIJ = accumarray([subPhase2PosPhase_gridI(:) subPhase2PosPhase_gridJ(:)],Pij(:))./norm;
+
+% PIJ(isnan(PIJ)) = 0;
+
+% PI = accumarray(subPhase2PosPhase,Pi);
 
 end

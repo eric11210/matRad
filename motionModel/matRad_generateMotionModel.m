@@ -13,19 +13,20 @@ switch options.data.origin
 end
 fprintf('Done!\n')
 
-% process data
+% process data, separating into training and testing data
 fprintf('matRad: Processing motion data... ');
-data = matRad_processMotionData(data,options.processing);
+[data_train,data_test] = matRad_processMotionData(data,options.processing);
 fprintf('Done!\n')
 
-% generate matrices
+% generate matrices using training data
 fprintf('matRad: Generating probability matrix... ');
-model = matRad_generateProbMat(data);
+model = matRad_generateProbMat(data_train);
 fprintf('Done!\n')
 
 % calculate predicted and observed position histograms (as a function of t)
+% this time use testing data
 fprintf('matRad: Calculating position histograms... ');
-model = matRad_calcPosHist(model,data,options.hist);
+model = matRad_calcPosHist(model,data_test,options.hist);
 fprintf('Done!\n')
 %{
 % estimate standard deviation of matrices

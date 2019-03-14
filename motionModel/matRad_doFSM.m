@@ -37,8 +37,8 @@ fmTStart = deltaT.*ones(size(x));
 % knot position as a function of index (NOT MOST RECENT)
 xKnot = zeros(size(x));
 % breathing state of most recent lines
-% assume we start in an exhale state
-fmS = 2.*ones(size(x));
+% assume we start in an inhale state
+fmS = 1.*ones(size(x));
 
 %% run state model
 state = zeros(size(x));
