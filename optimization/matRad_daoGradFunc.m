@@ -95,6 +95,10 @@ for phase = 1:apertureInfo.numPhases
     
 end
 
+% add in variance term
+[~,gVar]    = matRad_varObjAndGradFunc(apertureInfo,dij,cst);
+g           = g+gVar;
+
 end
 
 

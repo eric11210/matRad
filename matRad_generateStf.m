@@ -690,13 +690,15 @@ end
 
 %% vmc++
 
-if pln.propDoseCalc.vmc && strcmp(pln.propDoseCalc.vmcOptions.source,'phsp')
-    stf = matRad_bixelPhspVmc(stf,masterRayPosBEV,pln.propDoseCalc.vmcOptions);
+if pln.propDoseCalc.vmc
+    if strcmp(pln.propDoseCalc.vmcOptions.source,'phsp')
+        stf = matRad_bixelPhspVmc(stf,masterRayPosBEV,pln.propDoseCalc.vmcOptions);
+    end
+else
+    % compute SSDs if not using vmc++
+    stf = matRad_computeSSD(stf,ct);
 end
 
-
-% compute SSDs
-stf = matRad_computeSSD(stf,ct);
 
 end
 

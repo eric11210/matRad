@@ -20,7 +20,7 @@ else
 end
 
 % relative dose cutoff
-VmcOptions.run.relDoseCutoff    = 10^(-3);
+VmcOptions.run.relDoseCutoff    = 0.01;
 
 % version (Carleton, dkfz, etc.)
 VmcOptions.run.version = pln.propDoseCalc.vmcOptions.version;

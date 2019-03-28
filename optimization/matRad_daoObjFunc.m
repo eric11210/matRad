@@ -44,6 +44,9 @@ if ~isequal(apertureInfoVec,apertureInfo.apertureVector)
     matRad_global_apertureInfo = apertureInfo;
 end
 
-
 % bixel based objective function calculation
 f = matRad_objFuncWrapper(apertureInfo.bixelWeights,dij,cst,options);
+
+% add in variance term
+[fVar,~]    = matRad_varObjAndGradFunc(apertureInfo,dij,cst);
+f           = f+fVar;

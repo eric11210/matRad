@@ -25,14 +25,48 @@ initDist = model.Pi_deltaTSample;
 initDist(~initInd) = 0;
 initDist = initDist./sum(initDist);
 
+%% Markov chain Monte Carlo trace: expected number of visits to triggering phase
+
+nHistories = 1000;
+
+% initialize number of triggering phase
+numTriggerPhaseMC  = zeros(1,numel(numSteps));
+
+% now calculate cumulative distribution
+cumInitSimDist = cumsum(initDist);
+
+for history = 1:nHistories
+    
+    % determine initial subphase for simulation by sampling for the
+    % distribution
+    r = rand;
+    initSubPhase = find(r < cumInitSimDist,1,'first');
+    
+    % do MC
+    l_simulated = matRad_runMarkovChain(model.Pij_deltaTSample,numel(data.l_sample),initSubPhase,false);
+    
+    % convert l_sample to p_sample
+    p_MCsample = data.indices.subPhase2PosPhase(l_simulated);
+    
+    % loop through time points
+    for i = 1:numel(numSteps)
+        
+        % determine number of steps
+        n = numSteps(i);
+        
+        % determine number of times triggering phase occurs
+        numTriggerPhaseMC(i) = numTriggerPhaseMC(i)+nnz(p_MCsample(1:(end-n)) == triggerPhase)./nHistories;
+    end
+end
+
 %% calculate Markov chain histograms
 
 % initialize probabilities
 hist_pred = zeros(data.indices.nPosPhases,numel(numSteps));
 
 % calculate sum of n-step transition matrices for total signal
-polyTransTot        = ones(numel(data.l_sample),1);
-sumNStepTransTot    = polyvalm(polyTransTot,model.Pij_deltaTSample);
+%polyTransTot        = ones(numel(data.l_sample),1);
+%sumNStepTransTot    = polyvalm(polyTransTot,model.Pij_deltaTSample);
 
 % loop through time points
 for i = 1:numel(numSteps)
@@ -42,16 +76,16 @@ for i = 1:numel(numSteps)
     
     % calculate sum of n-step transition matrices for particular number of
     % steps
-    polyTransPart               = polyTransTot;
-    polyTransPart(1:(end-n))    = 0;
-    sumNStepTransPart           = sumNStepTransTot-polyvalm(polyTransPart,model.Pij_deltaTSample);
+    %polyTransPart               = polyTransTot;
+    %polyTransPart(1:(end-n))    = 0;
+    %sumNStepTransPart           = sumNStepTransTot-polyvalm(polyTransPart,model.Pij_deltaTSample);
     
     % calculate n-step transition matrix for particular number of steps
     nStepTransPart = model.Pij_deltaTSample^n;
     
     % calculate expected number of times to observe the triggering phase
-    histTriggerSubPhase = initDist'*sumNStepTransPart;
-    numTriggerPhase     = sum(histTriggerSubPhase(data.indices.subPhase2PosPhase == triggerPhase));
+    %histTriggerSubPhase = initDist'*sumNStepTransPart;
+    %numTriggerPhase     = sum(histTriggerSubPhase(data.indices.subPhase2PosPhase == triggerPhase));
     
     % calculate probability of observing a phase nSteps after the
     % triggering phase
@@ -61,7 +95,8 @@ for i = 1:numel(numSteps)
     % calculate combined histogram: probability of observing a phase nSteps
     % after the triggering phase multiplied by the number of times the
     % triggering phase is observed
-    histPhase = numTriggerPhase.*distObsPhase;
+    %histPhase = numTriggerPhase.*distObsPhase;
+    histPhase = numTriggerPhaseMC(i).*distObsPhase;
     
     % insert into histogram
     hist_pred(:,i) = histPhase;
@@ -82,13 +117,10 @@ chiSquares = calcChiSquares(hist_obs,hist_pred);
 
 %% Markov chain Monte Carlo trace: calculate histograms, chi square
 
-nHistories = 500;
+nHistories = 1000;
 
 % initialize chi squares
-chiSquaresMC = zeros(nHistories,numel(numSteps));
-
-% now calculate cumulative distribution
-cumInitSimDist = cumsum(initDist);
+chiSquaresMC        = zeros(nHistories,numel(numSteps));
 
 for history = 1:nHistories
     
@@ -110,35 +142,6 @@ for history = 1:nHistories
     chiSquaresMC(history,:) = calcChiSquares(hist_MCobs,hist_pred);
     
 end
-
-%% maximum likelihood Monte Carlo: calculate histograms, chi square
-
-%{
-% initialize chi squares
-chiSquaresML = zeros(nHistories,numel(numSteps));
-
-% calculate number of observation for each time point
-n_obs = sum(hist_obs,1)';
-
-% calculate probabilities for multinomial
-pMulti_obs = hist_obs'./repmat(n_obs,1,data.indices.nPosPhases);
-
-for history = 1:nHistories
-    
-    hist_MLobs = mnrnd(n_obs,pMulti_obs)';
-    
-    % for each history, calculate chi square
-    
-    % start by calculating predicted histograms
-    hist_pred       = repmat(sum(hist_MLobs,1),data.indices.nPosPhases,1).*prob_pred;
-    hist_var_pred   = repmat(sum(hist_MLobs,1),data.indices.nPosPhases,1).*prob_pred.*(1-prob_pred);
-    
-    % now calc chi squares
-    chiSquaresML(history,:) = calcChiSquares(hist_MLobs,hist_pred,hist_var_pred);
-    
-end
-%}
-
 
 %% calculate p values
 
@@ -163,7 +166,6 @@ pSum = nnz(sum(chiSquaresMC,2) > sum(chiSquares))./nHistories;
 
 model.chiSquares    = chiSquares;
 model.chiSquaresMC  = chiSquaresMC;
-%model.chiSquaresML  = chiSquaresML;
 model.p             = p;
 model.pSum          = pSum;
 

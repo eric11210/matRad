@@ -50,23 +50,22 @@ dij.scaleFactor        = 1;
 dij.memorySaverPhoton  = pln.propDoseCalc.memorySaverPhoton;
 dij.totalNumOfBixels   = sum([stf(:).totalNumOfBixels]);
 dij.totalNumOfRays     = sum(dij.numOfRaysPerBeam);
+dij.numOfScenarios     = 1;
 if pln.propOpt.run4D
-    dij.numOfScenarios     = ct.tumourMotion.numPhases;
     dij.numPhases          = ct.tumourMotion.numPhases;
     dij.numFrames          = ct.tumourMotion.numFrames;
 else
-    dij.numOfScenarios     = 1;
     dij.numPhases          = 1;
     dij.numFrames          = 1;
 end
 
 % check if full dose influence data is required
 if calcDoseDirect
-    numOfColumnsDij           = length(stf);
-    numOfBixelsContainer = 1;
+    numOfColumnsDij         = length(stf);
+    numOfBixelsContainer    = 1;
 else
-    numOfColumnsDij           = dij.totalNumOfBixels;
-    numOfBixelsContainer = ceil(dij.totalNumOfBixels/10);
+    numOfColumnsDij         = dij.totalNumOfBixels;
+    numOfBixelsContainer    = ceil(dij.totalNumOfBixels/10);
 end
 
 % set up arrays for book keeping
@@ -78,20 +77,23 @@ bixelNum = NaN*ones(dij.totalNumOfBixels,1);
 rayNum   = NaN*ones(dij.totalNumOfBixels,1);
 beamNum  = NaN*ones(dij.totalNumOfBixels,1);
 
-doseTmpContainer        = cell(numOfBixelsContainer,1);
-doseTmpContainerError   = cell(numOfBixelsContainer,1);
-
 % Allocate space for dij.physicalDose sparse matrix
-for i = 1:dij.numOfScenarios
-    dij.physicalDose{i}         = spalloc(prod(ct.cubeDim),numOfColumnsDij,1);
-    dij.physicalDoseError{i}    = spalloc(prod(ct.cubeDim),numOfColumnsDij,1);
+for k = 1:dij.numPhases
+    dij.physicalDose{k}         = spalloc(prod(ct.cubeDim),numOfColumnsDij,1);
+    if pln.propDoseCalc.vmcOptions.keepError
+        dij.physicalDoseError{k}    = spalloc(prod(ct.cubeDim),numOfColumnsDij,1);
+    end
 end
 
-% allocate space for doseTmpContainers
-for i = 1:numOfBixelsContainer
-    doseTmpContainer{i}       = spalloc(prod(ct.cubeDim),1,1);
-    doseTmpContainerError{i}  = spalloc(prod(ct.cubeDim),1,1);
+% Allocate memory for dose_temp cell array
+doseTmpContainer        = cell(numOfBixelsContainer,dij.numOfScenarios);
+if pln.propDoseCalc.vmcOptions.keepError
+    doseTmpContainerError   = cell(numOfBixelsContainer,dij.numOfScenarios);
 end
+
+% take only voxels inside patient
+V = [cst{:,4}];
+V = unique(vertcat(V{:}));
 
 % set environment variables for vmc++
 cd(fileparts(mfilename('fullpath')))
@@ -131,10 +133,6 @@ matRad_exportCtVmc(ct, fullfile(phantomPath, 'matRad_CT.ct'));
 
 % save CT name
 VmcOptions.geometry.Geometry.CtFile  = strrep(fullfile(phantomPath,'matRad_CT.ct'),'\','/'); % path of density matrix (only needed if input method is 'CT-PHANTOM')
-
-% take only voxels inside patient
-V = [cst{:,4}];
-V = unique(vertcat(V{:}));
 
 maxNumOfParMCSim    = 0;
 
@@ -268,7 +266,13 @@ for frame = 1:dij.numFrames
                     dos('run_parallel_simulations.bat');
                     fprintf('Completed %d of %d beamlets...\n',writeCounter,dij.totalNumOfBixels);
                 else
-                    [dummyOut1,dummyOut2] = dos('run_parallel_simulations.bat'); % supress output by assigning dummy output arguments
+                    %[dummyOut1,dummyOut2] = dos('run_parallel_simulations.bat'); % supress output by assigning dummy output arguments
+                    dos('run_parallel_simulations.bat &','-echo'); % supress output by assigning dummy output arguments
+                    
+                    while ~exist('EmptyFile.txt','file')
+                        pause(1);
+                    end
+                    delete('EmptyFile.txt');
                 end
                 cd(current);
                 
@@ -288,36 +292,37 @@ for frame = 1:dij.numFrames
                     end
                     [bixelDose,bixelDoseError] = matRad_readDoseVmc(fullfile(runsPath,filename),VmcOptions);
                     
-                    %{
-                %%% Don't do any sampling, since the correct error is
-                difficult to figure out. We also don't really need it on
-                the Graham cluster.
-                
-                if ~calcDoseDirect
-                    % if not calculating dose directly, sample dose
                     
-                    % determine cutoff
-                    doseCutoff          = VmcOptions.run.relDoseCutoff*max(bixelDose);
+                    %%% Don't do any sampling, since the correct error is
+                    % difficult to figure out. We also don't really need it on
+                    % the Graham cluster.
                     
-                    % determine which voxels to sample
-                    indSample = bixelDose < doseCutoff & bixelDose ~= 0;
-                    r = rand(nnz(indSample),1);
-                    
-                    % sample them
-                    thresRand = bixelDose(indSample)./doseCutoff;
-                    indKeepSampled = r < thresRand;
-                    indKeep = indSample;
-                    indKeep(indKeep) = indKeepSampled;
-                    
-                    bixelDose(indKeep) = doseCutoff;
-                    bixelDose(indSample & ~indKeep) = 0;
-                    
-                end
-                    %}
+                    if ~calcDoseDirect
+                        % if not calculating dose directly, sample dose
+                        
+                        % determine cutoff
+                        doseCutoff          = VmcOptions.run.relDoseCutoff*max(bixelDose);
+                        
+                        % determine which voxels to sample
+                        indSample = bixelDose < doseCutoff & bixelDose ~= 0;
+                        r = rand(nnz(indSample),1);
+                        
+                        % sample them
+                        thresRand = bixelDose(indSample)./doseCutoff;
+                        indKeepSampled = r < thresRand;
+                        indKeep = indSample;
+                        indKeep(indKeep) = indKeepSampled;
+                        
+                        bixelDose(indKeep) = doseCutoff;
+                        bixelDose(indSample & ~indKeep) = 0;
+                        
+                    end
                     
                     % apply absolute calibration factor
-                    bixelDoseError  = sqrt((VmcOptions.run.absCalibrationFactorVmc.*bixelDoseError).^2+(bixelDose.*VmcOptions.run.absCalibrationFactorVmc_err).^2);
                     bixelDose       = bixelDose*VmcOptions.run.absCalibrationFactorVmc;
+                    if pln.propDoseCalc.vmcOptions.keepError
+                        bixelDoseError  = sqrt((VmcOptions.run.absCalibrationFactorVmc.*bixelDoseError).^2+(bixelDose.*VmcOptions.run.absCalibrationFactorVmc_err).^2);
+                    end
                     
                     % determine the phase and normalization factor
                     if pln.propOpt.run4D
@@ -329,13 +334,12 @@ for frame = 1:dij.numFrames
                     end
                     
                     % Save dose for every bixel in cell array
-                    doseTmpContainer{mod(readCounter-1,numOfBixelsContainer)+1}   = doseTmpContainer{mod(readCounter-1,numOfBixelsContainer)+1}+sparse(V,1,bixelDose(V),dij.numOfVoxels,1)./normFactor;
-                    doseTmpContainerError{mod(readCounter-1,numOfBixelsContainer)+1}  = sqrt( doseTmpContainerError{mod(readCounter-1,numOfBixelsContainer)+1}.^2 + (sparse(V,1,bixelDoseError(V),dij.numOfVoxels,1)./normFactor).^2 );
-                    % Because it is V, we are calculating the dose on the
-                    % transformed CT, but bringing back to the reference CT for the
-                    % Dij.  Also, this ensures that even if two different voxels on
-                    % the reference map to the same voxel, we don't need to worry
-                    % about accumulation.
+                    % THIS IS CORRECT, FIX NON-VMC
+                    % JUST ALWAYS OVER-WRITE THE TEMP ARRAYS
+                    doseTmpContainer{mod(readCounter-1,numOfBixelsContainer)+1,1}   = sparse(V,1,bixelDose(V),dij.numOfVoxels,1)./normFactor;
+                    if pln.propDoseCalc.vmcOptions.keepError
+                        doseTmpContainerError{mod(readCounter-1,numOfBixelsContainer)+1,1}  = sparse(V,1,bixelDoseError(V),dij.numOfVoxels,1)./normFactor;
+                    end
                     
                     % save computation time and memory by sequentially filling the
                     % sparse matrix dose.dij from the cell array
@@ -343,8 +347,8 @@ for frame = 1:dij.numFrames
                         if calcDoseDirect
                             if isfield(stf(beamNum(readCounter)).ray(rayNum(readCounter)),'weight')
                                 % score physical dose
-                                dij.physicalDose{phase}(:,i)        = dij.physicalDose{1}(:,i) + stf(beamNum(readCounter)).ray(rayNum(readCounter)).weight{1} * doseTmpContainer{1};
-                                dij.physicalDoseError{phase}(:,i)   = sqrt(dij.physicalDoseError{1}(:,i).^2 + (stf(beamNum(readCounter)).ray(rayNum(readCounter)).weight{1} * doseTmpContainerError{1}).^2);
+                                dij.physicalDose{phase}(:,i)        = dij.physicalDose{phase}(:,i) + stf(beamNum(readCounter)).ray(rayNum(readCounter)).weight{1} * doseTmpContainer{1,1};
+                                dij.physicalDoseError{phase}(:,i)   = sqrt(dij.physicalDoseError{phase}(:,i).^2 + (stf(beamNum(readCounter)).ray(rayNum(readCounter)).weight{1} * doseTmpContainerError{1,1}).^2);
                             else
                                 error(['No weight available for beam ' num2str(beamNum(readCounter)) ', ray ' num2str(rayNum(readCounter))]);
                             end
@@ -354,28 +358,16 @@ for frame = 1:dij.numFrames
                                 dij.physicalDose{phase}(:,(ceil(readCounter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:readCounter) + ...
                                 [doseTmpContainer{1:mod(readCounter-1,numOfBixelsContainer)+1,1}];
                             
-                            dij.physicalDoseError{phase}(:,(ceil(readCounter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:readCounter) = ...
-                                sqrt( dij.physicalDoseError{phase}(:,(ceil(readCounter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:readCounter).^2 + ...
-                                [doseTmpContainerError{1:mod(readCounter-1,numOfBixelsContainer)+1,1}].^2 );
-                        end
-                        
-                        if ~pln.propOpt.run4D || any(frame == cumsum(ct.tumourMotion.nFramesPerPhase))
-                            % this clears the doseTmpContainer
-                            % we want to do this after dumping the container if
-                            % we aren't doing 4D VMAT, or if we are, after the
-                            % last frame in the current phase
-                            for l = 1:numOfBixelsContainer
-                                doseTmpContainer{l,phase} = spalloc(prod(ct.cubeDim),1,1);
-                                doseTmpContainerError{l,phase} = spalloc(prod(ct.cubeDim),1,1);
+                            if pln.propDoseCalc.vmcOptions.keepError
+                                dij.physicalDoseError{phase}(:,(ceil(readCounter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:readCounter) = ...
+                                    sqrt( dij.physicalDoseError{phase}(:,(ceil(readCounter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:readCounter).^2 + ...
+                                    [doseTmpContainerError{1:mod(readCounter-1,numOfBixelsContainer)+1,1}].^2 );
                             end
                         end
                     end
-                end
-                
-            end
-            
+                end 
+            end 
         end
-        
     end
     
     fprintf('Done all beams!\n');

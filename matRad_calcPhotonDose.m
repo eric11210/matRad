@@ -77,23 +77,22 @@ dij.memorySaverPhoton  = pln.propDoseCalc.memorySaverPhoton;
 dij.numOfRaysPerBeam   = [stf(:).numOfRays];
 dij.totalNumOfBixels   = sum([stf(:).totalNumOfBixels]);
 dij.totalNumOfRays     = sum(dij.numOfRaysPerBeam);
+dij.numOfScenarios     = 1;
 if pln.propOpt.run4D
-    dij.numOfScenarios     = ct.tumourMotion.numPhases;
     dij.numPhases          = ct.tumourMotion.numPhases;
     dij.numFrames          = ct.tumourMotion.numFrames;
 else
-    dij.numOfScenarios     = 1;
     dij.numPhases          = 1;
     dij.numFrames          = 1;
 end
 
 % check if full dose influence data is required
 if calcDoseDirect 
-    numOfColumnsDij           = length(stf);
-    numOfBixelsContainer = 1;
+    numOfColumnsDij         = length(stf);
+    numOfBixelsContainer    = 1;
 else
-    numOfColumnsDij           = dij.totalNumOfBixels;
-    numOfBixelsContainer = ceil(dij.totalNumOfBixels/10);
+    numOfColumnsDij         = dij.totalNumOfBixels;
+    numOfBixelsContainer    = ceil(dij.totalNumOfBixels/10);
 end
 
 % set up arrays for book keeping
@@ -128,14 +127,11 @@ for k = 1:dij.numPhases
 end
 
 % Allocate memory for dose_temp cell array
-doseTmpContainer     = cell(numOfBixelsContainer,dij.numPhases);
+doseTmpContainer     = cell(numOfBixelsContainer,dij.numOfScenarios);
 
 % Allocate space for dij.physicalDose sparse matrix
 for k = 1:dij.numPhases
     dij.physicalDose{k} = spalloc(prod(ct.cubeDim),numOfColumnsDij,1);
-    for l = 1:numOfBixelsContainer
-        doseTmpContainer{l,k} = spalloc(prod(ct.cubeDim),1,1);
-    end
 end
 
 
@@ -498,7 +494,7 @@ for i = 1:dij.numOfBeams % loop over all beams
             end
             
             % Save dose for every bixel in cell array
-            doseTmpContainer{mod(counter-1,numOfBixelsContainer)+1,phase} = doseTmpContainer{mod(counter-1,numOfBixelsContainer)+1,phase}+sparse(V{1}(ix{k}),1,bixelDose,dij.numOfVoxels,1)./normFactor;
+            doseTmpContainer{mod(counter-1,numOfBixelsContainer)+1,1} = sparse(V{1}(ix{k}),1,bixelDose,dij.numOfVoxels,1)./normFactor;
             % Because it is V{1}(ix{k}), we are calculating the dose on the
             % transformed CT, but bringing back to the reference CT for the
             % Dij.  Also, this ensures that even if two different voxels on
@@ -511,23 +507,15 @@ for i = 1:dij.numOfBeams % loop over all beams
                 if calcDoseDirect
                     if isfield(stf(1).ray(1),'weight')
                         % score physical dose
-                        dij.physicalDose{1}(:,i) = dij.physicalDose{1}(:,i) + stf(i).ray(j).weight{phase} * doseTmpContainer{1,phase};
+                        dij.physicalDose{1}(:,i) = dij.physicalDose{1}(:,i) + stf(i).ray(j).weight{phase} * doseTmpContainer{1,1};
                     else
                         error(['No weight available for beam ' num2str(i) ', ray ' num2str(j)]);
                     end
                 else
                     % fill entire dose influence matrix
-                    dij.physicalDose{phase}(:,(ceil(counter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:counter) = [doseTmpContainer{1:mod(counter-1,numOfBixelsContainer)+1,phase}];
-                end
-                
-                if ~pln.propOpt.run4D || any(k == cumsum(ct.tumourMotion.nFramesPerPhase))
-                    % this clears the doseTmpContainer
-                    % we want to do this after dumping the container if
-                    % we aren't doing 4D VMAT, or if we are, after the
-                    % last frame in the current phase
-                    for l = 1:numOfBixelsContainer
-                        doseTmpContainer{l,phase} = spalloc(prod(ct.cubeDim),1,1);
-                    end
+                    dij.physicalDose{phase}(:,(ceil(counter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:counter) = ...
+                        dij.physicalDose{phase}(:,(ceil(counter/numOfBixelsContainer)-1)*numOfBixelsContainer+1:counter) + ...
+                        [doseTmpContainer{1:mod(counter-1,numOfBixelsContainer)+1,1}];
                 end
             end
         end
