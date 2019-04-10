@@ -49,9 +49,9 @@ options.hist.timePoints = [1 4 6 22.5 45 90 180 270 360]/6; %s
 
 %% parameter options
 
-nSubPerPosPhaseVec  = 1:10;
+nSubPerPosPhaseVec  = 1:5;
 nSubPerVelPhaseVec  = 1:10;
-nTimeFracsVec       = 9:10;
+nTimeFracsVec       = 11:20;
 
 totNumPosSubPhases  = numel(nSubPerPosPhaseVec);
 totNumVelSubPhases  = numel(nSubPerVelPhaseVec);
@@ -65,7 +65,7 @@ Pij_relMeanOfStdVec = zeros(size(nSubPerPosPhaseVec));
 convergeTVec = zeros(size(nSubPerPosPhaseVec));
 
 %% set up outputs
-%{
+
 pSumArr         = zeros(nRuns,1);
 chiSquareSumArr = zeros(nRuns,1);
 
@@ -75,11 +75,11 @@ chiSquaresArr   = zeros(nRuns,numel(options.hist.timePoints));
 nSubPerPosPhaseArr  = zeros(nRuns,1);
 nSubPerVelPhaseArr  = zeros(nRuns,1);
 nTimeFracsArr       = zeros(nRuns,1);
-%}
+
 
 %% loop over parameters
 
-i = 801; %%
+i = 1;
 
 for nTimeFracs = nTimeFracsVec
     

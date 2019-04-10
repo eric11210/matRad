@@ -221,6 +221,7 @@ for i=1:size(stf,2)
     apertureInfo.beam(i).posOfCornerBixel = posOfCornerBixel;
     apertureInfo.beam(i).MLCWindow = MLCWindow;
     apertureInfo.beam(i).gantryAngle = stf(i).gantryAngle;
+    apertureInfo.beam(i).numBixels = nnz(~isnan(bixelIndMap));
     
     if pln.propOpt.runVMAT
         
@@ -297,6 +298,14 @@ apertureInfo.numOfMLCLeafPairs  = numOfMLCLeafPairs;
 apertureInfo.totalNumOfBixels   = totalNumOfBixels;
 apertureInfo.totalNumOfShapes   = sum([apertureInfo.beam.numOfShapes]);
 
+% Jacobian matrix to be used in the DAO gradient function
+% this tells us the gradient of a particular bixel with respect to an
+% element in the apertureVector (aperture weight or leaf position)
+% store as a vector for now, convert to sparse matrix later
+optBixelFactor = 7;
+% For optimized beams: 7 = (1 from weights) + (3 from left leaf positions (I, M, and F)) + (3 from
+% right leaf positions (I, M, and F))
+
 if isfield(sequencing,'weightToMU')
     apertureInfo.weightToMU = sequencing.weightToMU;
 end
@@ -310,6 +319,15 @@ if pln.propOpt.runVMAT
     
     apertureInfo.totalNumOfOptBixels = totalNumOfOptBixels;
     apertureInfo.doseTotalNumOfLeafPairs = sum([apertureInfo.beam(:).numOfActiveLeafPairs]);
+    
+    % individual size of jacobian vector
+    % For interpolated beams: multiply this number times 2 (influenced by the
+    % one before and the one after), then add 2 (influenced by the time of the
+    % times before and after)
+    intBixelFactor = 2*optBixelFactor+2;
+    % for the time (probability) gradients
+    optBixelFactor = optBixelFactor+apertureInfo.totalNumOfShapes;
+    intBixelFactor = intBixelFactor+apertureInfo.totalNumOfShapes;
     
     if apertureInfo.propVMAT.continuousAperture
         apertureInfo.totalNumOfLeafPairs = sum(reshape([apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).doseAngleDAO],2,[]),1)*[apertureInfo.beam([apertureInfo.propVMAT.beam.DAOBeam]).numOfActiveLeafPairs]';
@@ -430,12 +448,37 @@ if pln.propOpt.runVMAT
             
         end
         
+        % individual size of jacobian vector
+        if apertureInfo.propVMAT.beam(i).DAOBeam
+            apertureInfo.beam(i).bixelJApVec_sz = nnz(~isnan(apertureInfo.beam(i).bixelIndMap)).*optBixelFactor.*apertureInfo.numPhases;
+            apertureInfo.beam(i).numUniqueVar   = apertureInfo.beam(i).numOfShapes.*(1+4.*apertureInfo.beam(i).numOfActiveLeafPairs.*apertureInfo.numPhases)+apertureInfo.totalNumOfShapes;%apertureInfo.beam(i).numOfShapes.*(1+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(apertureInfo.numPhases+1))+apertureInfo.totalNumOfShapes;
+        else
+            apertureInfo.beam(i).bixelJApVec_sz = nnz(~isnan(apertureInfo.beam(i).bixelIndMap)).*intBixelFactor.*apertureInfo.numPhases;
+            apertureInfo.beam(i).numUniqueVar   = apertureInfo.beam(i).numOfShapes.*(2+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(apertureInfo.numPhases+1))+apertureInfo.totalNumOfShapes;
+        end % TAKE OUT NUMOFSHAPES
     end
     
 else
     apertureInfo.totalNumOfLeafPairs = sum([apertureInfo.beam.numOfShapes]*[apertureInfo.beam.numOfActiveLeafPairs]');
     apertureInfo.doseTotalNumOfLeafPairs = apertureInfo.totalNumOfLeafPairs;
+    
+    % individual size of jacobian vector
+    % For interpolated beams: multiply this number times 2 (influenced by the
+    % one before and the one after)
+    intBixelFactor = 2*optBixelFactor;
+    
+    for i = 1:numel(apertureInfo.beam)
+        if apertureInfo.propVMAT.beam(i).DAOBeam
+            apertureInfo.beam(i).bixelJApVec_sz = nnz(~isnan(apertureInfo.beam(i).bixelIndMap)).*optBixelFactor.*apertureInfo.beam(i).numOfShapes.*apertureInfo.numPhases;
+        else
+            apertureInfo.beam(i).bixelJApVec_sz = nnz(~isnan(apertureInfo.beam(i).bixelIndMap)).*intBixelFactor.*apertureInfo.beam(i).numOfShapes.*apertureInfo.numPhases;
+        end
+    end
 end
+
+% global size of jacobian vector
+apertureInfo.bixelJApVec_sz = sum([apertureInfo.beam.bixelJApVec_sz]);
+% apertureInfo.bixelJApVec_sz = (apertureInfo.totalNumOfOptBixels*optBixelFactor+(apertureInfo.totalNumOfBixels-apertureInfo.totalNumOfOptBixels)*intBixelFactor)*apertureInfo.numPhases;
 
 % create vectors for optimization
 [apertureInfo.apertureVector, apertureInfo.mappingMx, apertureInfo.limMx] = matRad_daoApertureInfo2Vec(apertureInfo);

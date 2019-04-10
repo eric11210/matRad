@@ -95,6 +95,17 @@ end
 V = [cst{:,4}];
 V = unique(vertcat(V{:}));
 
+% find voxels in target
+% find all target voxels from cst cell array
+VTarget = [];
+for i=1:size(cst,1)
+    if isequal(cst{i,3},'TARGET') && ~isempty(cst{i,6})
+        VTarget = [VTarget;vertcat(cst{i,4}{:})];
+    end
+end
+VTarget = unique(VTarget);
+dij.targetVox = VTarget;
+
 % set environment variables for vmc++
 cd(fileparts(mfilename('fullpath')))
 
