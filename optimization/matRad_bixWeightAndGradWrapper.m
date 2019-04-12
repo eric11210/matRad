@@ -64,8 +64,7 @@ numBix              = apertureInfo.beam(i).numBixels;
 totalNumOfShapes    = apertureInfo.totalNumOfShapes;
 
 % indices for various variables
-tIx_Vec     = (1:apertureInfo.totalNumOfShapes)+apertureInfo.beam(i).numUniqueVar-apertureInfo.totalNumOfShapes;%(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+(1:apertureInfo.totalNumOfShapes);
-DAOindex    = apertureInfo.propVMAT.beam(i).DAOIndex;
+tIx_Vec     = (1:totalNumOfShapes)+apertureInfo.beam(i).numUniqueVar-totalNumOfShapes;%(totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+(1:totalNumOfShapes);
 
 if ~apertureInfo.propVMAT.beam(i).DAOBeam
     time_last   = apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).time;
@@ -81,10 +80,10 @@ if ~apertureInfo.propVMAT.beam(i).DAOBeam
     timeFracFromLastDAO         = apertureInfo.propVMAT.beam(i).timeFracFromLastDAO;
     timeFracFromNextDAO         = apertureInfo.propVMAT.beam(i).timeFracFromNextDAO;
     
-    DAOindex_last   = apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).DAOIndex;
-    DAOindex_next   = apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).DAOIndex;
-    tIx_last        = (apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).DAOIndex;
-    tIx_next        = (apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).DAOIndex;
+    DAOindex_last   = 1;%apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).DAOIndex;
+    DAOindex_next   = 2;%apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).DAOIndex;
+    tIx_last        = apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).DAOIndex+apertureInfo.beam(i).numUniqueVar-totalNumOfShapes;%(totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).DAOIndex;
+    tIx_next        = apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).DAOIndex+apertureInfo.beam(i).numUniqueVar-totalNumOfShapes;%(totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).DAOIndex;
     
     if apertureInfo.propVMAT.continuousAperture
         fracFromLastOpt = apertureInfo.propVMAT.beam(i).fracFromLastDAO;
@@ -118,7 +117,6 @@ static.bixIndVec        = 1:numBix;
 
 if apertureInfo.propVMAT.beam(i).DAOBeam
     
-    static.DAOindex         = DAOindex;
     numVarMult              = 7;
 else
     
@@ -132,8 +130,6 @@ else
     static.time_next    = time_next;
     static.time_last    = time_last;
     
-    static.DAOindex_last    = DAOindex_last;
-    static.DAOindex_next    = DAOindex_next;
     static.tIx_last         = tIx_last;
     static.tIx_next         = tIx_next;
     
@@ -224,8 +220,8 @@ for j = 1:numOfShapes
                 jacobiScale_F = apertureInfo.beam(i).shape{phase_F}(1).jacobiScale;
                 
                 if apertureInfo.propVMAT.continuousAperture
-                    vectorIx_LI   = numOfShapes+2.*numRow.*(phase_I-1)+(1:numRow);%apertureInfo.beam(i).shape{phase_I}(j).vectorOffset(1) + ((1:n)-1);
-                    vectorIx_LF   = numOfShapes+2.*numRow.*(phase_F-1)+numRow+(1:numRow);%apertureInfo.beam(i).shape{phase_F}(j).vectorOffset(2) + ((1:n)-1);
+                    vectorIx_LI   = numOfShapes.*apertureInfo.numPhases+2.*numRow.*(phase_I-1)+(1:numRow);%apertureInfo.beam(i).shape{phase_I}(j).vectorOffset(1) + ((1:n)-1);
+                    vectorIx_LF   = numOfShapes.*apertureInfo.numPhases+2.*numRow.*(phase_F-1)+numRow+(1:numRow);%apertureInfo.beam(i).shape{phase_F}(j).vectorOffset(2) + ((1:n)-1);
                     vectorIx_RI   = vectorIx_LI+2.*numRow.*apertureInfo.numPhases;%vectorIx_LI+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
                     vectorIx_RF   = vectorIx_LF+2.*numRow.*apertureInfo.numPhases;%vectorIx_LF+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
                 else
@@ -257,17 +253,17 @@ for j = 1:numOfShapes
                 jacobiScale_next_F = apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_F}(1).jacobiScale;
                 
                 if apertureInfo.propVMAT.continuousAperture
-                    vectorIx_LF_last  = apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_I}(j).vectorOffset(2) + ((1:numRow)-1);
-                    vectorIx_LI_next  = apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_F}(j).vectorOffset(1) + ((1:numRow)-1);
-                    vectorIx_RF_last  = vectorIx_LF_last+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
-                    vectorIx_RI_next  = vectorIx_LI_next+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
+                    vectorIx_LF_last  = 2.*apertureInfo.numPhases+2.*numRow.*(phase_I-1)+(1:numRow);%apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_I}(j).vectorOffset(2) + ((1:numRow)-1);
+                    vectorIx_LI_next  = 2.*apertureInfo.numPhases+2.*numRow.*(phase_F-1)+numRow+(1:numRow);%apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_F}(j).vectorOffset(1) + ((1:numRow)-1);
+                    vectorIx_RF_last  = vectorIx_LF_last+2.*numRow.*apertureInfo.numPhases;%vectorIx_LF_last+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
+                    vectorIx_RI_next  = vectorIx_LI_next+2.*numRow.*apertureInfo.numPhases;%vectorIx_LI_next+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
                 else
                     vectorIx_LF_last  = apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_I}(j).vectorOffset + ((1:numRow)-1);
                     vectorIx_LI_next  = apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_F}(j).vectorOffset + ((1:numRow)-1);
                     vectorIx_RF_last  = vectorIx_LF_last+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
                     vectorIx_RI_next  = vectorIx_LI_next+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
                 end
-                          
+                
                 tempL = vectorIx_LF_last;
                 tempR = vectorIx_RF_last;
                 
@@ -319,17 +315,22 @@ for j = 1:numOfShapes
             
             if apertureInfo.propVMAT.beam(i).DAOBeam
                 
-                variable.jacobiScale = jacobiScale_I;
-                variable.vectorIx_LI = vectorIx_LI;
-                variable.vectorIx_LF = vectorIx_LF;
-                variable.vectorIx_RI = vectorIx_RI;
-                variable.vectorIx_RF = vectorIx_RF;
+                variable.DAOindex       = j+(phase_I-1)*numOfShapes;
+                
+                variable.jacobiScale    = jacobiScale_I;
+                variable.vectorIx_LI    = vectorIx_LI;
+                variable.vectorIx_LF    = vectorIx_LF;
+                variable.vectorIx_RI    = vectorIx_RI;
+                variable.vectorIx_RF    = vectorIx_RF;
             else
                 
-                variable.vectorIx_LF_last = vectorIx_LF_last;
-                variable.vectorIx_LI_next = vectorIx_LI_next;
-                variable.vectorIx_RF_last = vectorIx_RF_last;
-                variable.vectorIx_RI_next = vectorIx_RI_next;
+                variable.DAOindex_last      = DAOindex_last+(phase_I-1)*2;
+                variable.DAOindex_next      = DAOindex_next+(phase_I-1)*2;
+                
+                variable.vectorIx_LF_last   = vectorIx_LF_last;
+                variable.vectorIx_LI_next   = vectorIx_LI_next;
+                variable.vectorIx_RF_last   = vectorIx_RF_last;
+                variable.vectorIx_RI_next   = vectorIx_RI_next;
                 
                 variable.weight_last        = weight_last_I;
                 variable.weight_next        = weight_next_I;
@@ -343,7 +344,7 @@ for j = 1:numOfShapes
             %    = matRad_bixWeightAndGradNEW(static,variable,running.arcI,arcI_bixelJApVec_vec,arcI_bixelJApVec_i,arcI_bixelJApVec_j,arcI_bixelJApVec_offset,arcI_w);
             
             % put tempResults into results
-            results.arcI.w{phase_I}(apertureInfo.beam(i).bixelIndMap(~isnan(apertureInfo.beam(i).bixelIndMap)))         = tempResults.w;
+            results.arcI.w{phase_I}(apertureInfo.beam(i).bixelIndMap(~isnan(apertureInfo.beam(i).bixelIndMap)))         = results.arcI.w{phase_I}(apertureInfo.beam(i).bixelIndMap(~isnan(apertureInfo.beam(i).bixelIndMap)))+tempResults.w;
             results.arcI.bixelJApVec_i{phase_I}((1:variable.bixelJApVec_sz)+results.arcI.bixelJApVec_offset{phase_I})   = tempResults.bixelJApVec_i;
             results.arcI.bixelJApVec_j{phase_I}((1:variable.bixelJApVec_sz)+results.arcI.bixelJApVec_offset{phase_I})   = tempResults.bixelJApVec_j;
             results.arcI.bixelJApVec_vec{phase_I}((1:variable.bixelJApVec_sz)+results.arcI.bixelJApVec_offset{phase_I}) = tempResults.bixelJApVec_vec;
@@ -379,17 +380,22 @@ for j = 1:numOfShapes
             
             if apertureInfo.propVMAT.beam(i).DAOBeam
                 
-                variable.jacobiScale = jacobiScale_F;
-                variable.vectorIx_LI = vectorIx_LI;
-                variable.vectorIx_LF = vectorIx_LF;
-                variable.vectorIx_RI = vectorIx_RI;
-                variable.vectorIx_RF = vectorIx_RF;
+                variable.DAOindex       = j+(phase_F-1)*numOfShapes;
+                
+                variable.jacobiScale    = jacobiScale_F;
+                variable.vectorIx_LI    = vectorIx_LI;
+                variable.vectorIx_LF    = vectorIx_LF;
+                variable.vectorIx_RI    = vectorIx_RI;
+                variable.vectorIx_RF    = vectorIx_RF;
             else
                 
-                variable.vectorIx_LF_last = vectorIx_LF_last;
-                variable.vectorIx_LI_next = vectorIx_LI_next;
-                variable.vectorIx_RF_last = vectorIx_RF_last;
-                variable.vectorIx_RI_next = vectorIx_RI_next;
+                variable.DAOindex_last      = DAOindex_last+(phase_F-1)*2;
+                variable.DAOindex_next      = DAOindex_next+(phase_F-1)*2;
+                
+                variable.vectorIx_LF_last   = vectorIx_LF_last;
+                variable.vectorIx_LI_next   = vectorIx_LI_next;
+                variable.vectorIx_RF_last   = vectorIx_RF_last;
+                variable.vectorIx_RI_next   = vectorIx_RI_next;
                 
                 variable.weight_last        = weight_last_F;
                 variable.weight_next        = weight_next_F;
@@ -401,7 +407,7 @@ for j = 1:numOfShapes
             tempResults = matRad_bixWeightAndGrad(static,variable);
             
             % put tempResults into results
-            results.arcF.w{phase_F}(apertureInfo.beam(i).bixelIndMap(~isnan(apertureInfo.beam(i).bixelIndMap)))         = tempResults.w;
+            results.arcF.w{phase_F}(apertureInfo.beam(i).bixelIndMap(~isnan(apertureInfo.beam(i).bixelIndMap)))         = results.arcF.w{phase_F}(apertureInfo.beam(i).bixelIndMap(~isnan(apertureInfo.beam(i).bixelIndMap)))+tempResults.w;
             results.arcF.bixelJApVec_i{phase_F}((1:variable.bixelJApVec_sz)+results.arcF.bixelJApVec_offset{phase_F})   = tempResults.bixelJApVec_i;
             results.arcF.bixelJApVec_j{phase_F}((1:variable.bixelJApVec_sz)+results.arcF.bixelJApVec_offset{phase_F})   = tempResults.bixelJApVec_j;
             results.arcF.bixelJApVec_vec{phase_F}((1:variable.bixelJApVec_sz)+results.arcF.bixelJApVec_offset{phase_F}) = tempResults.bixelJApVec_vec;

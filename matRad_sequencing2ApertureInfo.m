@@ -451,11 +451,49 @@ if pln.propOpt.runVMAT
         % individual size of jacobian vector
         if apertureInfo.propVMAT.beam(i).DAOBeam
             apertureInfo.beam(i).bixelJApVec_sz = nnz(~isnan(apertureInfo.beam(i).bixelIndMap)).*optBixelFactor.*apertureInfo.numPhases;
-            apertureInfo.beam(i).numUniqueVar   = apertureInfo.beam(i).numOfShapes.*(1+4.*apertureInfo.beam(i).numOfActiveLeafPairs.*apertureInfo.numPhases)+apertureInfo.totalNumOfShapes;%apertureInfo.beam(i).numOfShapes.*(1+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(apertureInfo.numPhases+1))+apertureInfo.totalNumOfShapes;
+            apertureInfo.beam(i).numUniqueVar   = apertureInfo.beam(i).numOfShapes.*apertureInfo.numPhases.*(1+4.*apertureInfo.beam(i).numOfActiveLeafPairs)+apertureInfo.totalNumOfShapes;%apertureInfo.beam(i).numOfShapes.*(1+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(apertureInfo.numPhases+1))+apertureInfo.totalNumOfShapes;
+            
+            % conversion from local opt variable to global opt variable
+            apertureInfo.beam(i).local2GlobalVar = zeros(apertureInfo.beam(i).numUniqueVar,1);
+            
+            for phase = 1:apertureInfo.numPhases
+                % weight variables
+                apertureInfo.beam(i).local2GlobalVar(phase) = apertureInfo.propVMAT.beam(i).DAOIndex+(phase-1)*apertureInfo.totalNumOfShapes;
+                % leaf position variables
+                apertureInfo.beam(i).local2GlobalVar(apertureInfo.numPhases+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(phase-1)+(1:apertureInfo.beam(i).numOfActiveLeafPairs)) ...
+                    = apertureInfo.beam(i).shape{phase}(1).vectorOffset(1) + ((1:apertureInfo.beam(i).numOfActiveLeafPairs)-1);
+                apertureInfo.beam(i).local2GlobalVar(apertureInfo.numPhases+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(phase-1)+apertureInfo.beam(i).numOfActiveLeafPairs+(1:apertureInfo.beam(i).numOfActiveLeafPairs)) ...
+                    = apertureInfo.beam(i).shape{phase}(1).vectorOffset(2) + ((1:apertureInfo.beam(i).numOfActiveLeafPairs)-1);
+                apertureInfo.beam(i).local2GlobalVar(apertureInfo.numPhases+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(phase-1)+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*apertureInfo.numPhases+(1:apertureInfo.beam(i).numOfActiveLeafPairs)) ...
+                    = apertureInfo.beam(i).shape{phase}(1).vectorOffset(1) + apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases + ((1:apertureInfo.beam(i).numOfActiveLeafPairs)-1);
+                apertureInfo.beam(i).local2GlobalVar(apertureInfo.numPhases+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(phase-1)+apertureInfo.beam(i).numOfActiveLeafPairs+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*apertureInfo.numPhases+(1:apertureInfo.beam(i).numOfActiveLeafPairs)) ...
+                    = apertureInfo.beam(i).shape{phase}(1).vectorOffset(2) + apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases + ((1:apertureInfo.beam(i).numOfActiveLeafPairs)-1);
+                % time variables
+                apertureInfo.beam(i).local2GlobalVar(apertureInfo.beam(i).numUniqueVar-apertureInfo.totalNumOfShapes+(1:apertureInfo.totalNumOfShapes)) = ...
+                    (apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+(1:apertureInfo.totalNumOfShapes);
+            end
+            
         else
             apertureInfo.beam(i).bixelJApVec_sz = nnz(~isnan(apertureInfo.beam(i).bixelIndMap)).*intBixelFactor.*apertureInfo.numPhases;
-            apertureInfo.beam(i).numUniqueVar   = apertureInfo.beam(i).numOfShapes.*(2+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(apertureInfo.numPhases+1))+apertureInfo.totalNumOfShapes;
-        end % TAKE OUT NUMOFSHAPES
+            apertureInfo.beam(i).numUniqueVar   = apertureInfo.numPhases.*(2+4.*apertureInfo.beam(i).numOfActiveLeafPairs)+apertureInfo.totalNumOfShapes;%(2+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(apertureInfo.numPhases+1))+apertureInfo.totalNumOfShapes;
+            
+            for phase = 1:apertureInfo.numPhases
+                % weight variables
+                apertureInfo.beam(i).local2GlobalVar(2.*(phase-1)+(1:2)) = [apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).DAOIndex apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).DAOIndex]+(phase-1)*apertureInfo.totalNumOfShapes;
+                % leaf position variables
+                apertureInfo.beam(i).local2GlobalVar(2.*apertureInfo.numPhases+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(phase-1)+(1:apertureInfo.beam(i).numOfActiveLeafPairs)) ...
+                    = apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase}(1).vectorOffset(2) + ((1:apertureInfo.beam(i).numOfActiveLeafPairs)-1);
+                apertureInfo.beam(i).local2GlobalVar(2.*apertureInfo.numPhases+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(phase-1)+apertureInfo.beam(i).numOfActiveLeafPairs+(1:apertureInfo.beam(i).numOfActiveLeafPairs)) ...
+                    = apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase}(1).vectorOffset(1) + ((1:apertureInfo.beam(i).numOfActiveLeafPairs)-1);
+                apertureInfo.beam(i).local2GlobalVar(2.*apertureInfo.numPhases+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(phase-1)+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*apertureInfo.numPhases+(1:apertureInfo.beam(i).numOfActiveLeafPairs)) ...
+                    = apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase}(1).vectorOffset(2) + apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases + ((1:apertureInfo.beam(i).numOfActiveLeafPairs)-1);
+                apertureInfo.beam(i).local2GlobalVar(2.*apertureInfo.numPhases+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(phase-1)+apertureInfo.beam(i).numOfActiveLeafPairs+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*apertureInfo.numPhases+(1:apertureInfo.beam(i).numOfActiveLeafPairs)) ...
+                    = apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase}(1).vectorOffset(1) + apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases + ((1:apertureInfo.beam(i).numOfActiveLeafPairs)-1);
+                % time variables
+                apertureInfo.beam(i).local2GlobalVar(apertureInfo.beam(i).numUniqueVar-apertureInfo.totalNumOfShapes+(1:apertureInfo.totalNumOfShapes)) = ...
+                    (apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+(1:apertureInfo.totalNumOfShapes);
+            end
+        end
     end
     
 else

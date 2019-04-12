@@ -69,7 +69,11 @@ options.radMod          = pln.radiationMode;
 options.bioOpt          = pln.propOpt.bioOptimization;
 options.ID              = [pln.radiationMode '_' pln.propOpt.bioOptimization];
 options.FMO             = false; % let optimizer know that this is FMO
-options.numOfScenarios  = dij.numOfScenarios;
+if pln.propOpt.run4D
+    options.numOfScenarios = dij.numPhases;
+else
+    options.numOfScenarios  = dij.numOfScenarios;
+end
 
 % initialize global variables for optimizer
 global matRad_global_x;

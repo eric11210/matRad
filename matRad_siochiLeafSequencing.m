@@ -250,7 +250,7 @@ if pln.propOpt.runVMAT
     sequencing.w = resultGUI.apertureInfo.bixelWeights;
     
     % get dose variance
-    [dVar,~] = matRad_doseVariance(resultGUI.apertureInfo,dij);
+    %[dVar,~] = matRad_doseVariance(resultGUI.apertureInfo,dij);
     
 else
     sequencing.weightToMU = dij.weightToMU;
@@ -279,7 +279,7 @@ options.FMO = false;
 d = matRad_backProjection(sequencing.w,dij,options);
 
 resultGUI.physicalDose      = reshape(d,dij.dimensions);
-resultGUI.physicalDoseVar   = reshape(dVar,dij.dimensions);
+%resultGUI.physicalDoseVar   = reshape(dVar,dij.dimensions);
 
 
 % if weights exists from an former DAO remove it
@@ -375,7 +375,7 @@ for i = minX:maxX
         %now check if all TnG conditions have been removed
         TnG = 0;
         for j = (minZ+1):maxZ
-            if map(j,i) < map(j-1,i);
+            if map(j,i) < map(j-1,i)
                 if tops(j,i) > tops(j-1,i)
                     TnG = 1;
                 elseif bases(j,i) < bases(j-1,i)

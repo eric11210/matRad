@@ -111,6 +111,9 @@ bixWeightAndGradBase_angle.bixelJApVec_j = cell(updatedInfo.numPhases,1);
 % offset
 bixWeightAndGradBase_angle.bixelJApVec_offset = cell(updatedInfo.numPhases,1);
 
+updatedInfo.arcI.bixelJApVec = cell(updatedInfo.numPhases*numel(updatedInfo.beam),1);
+updatedInfo.arcF.bixelJApVec = cell(updatedInfo.numPhases*numel(updatedInfo.beam),1);
+
 %{
 for i = 1:numel(updatedInfo.beam)
     for phase = 1:updatedInfo.numPhases

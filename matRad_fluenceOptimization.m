@@ -75,8 +75,12 @@ options.radMod          = pln.radiationMode;
 options.bioOpt          = pln.propOpt.bioOptimization;
 options.ID              = [pln.radiationMode '_' pln.propOpt.bioOptimization];
 options.FMO             = true; % let optimizer know that this is FMO
-if pln.propOpt.run4D && pln.propOpt.prop4D.singlePhaseFMO
-    options.numOfScenarios = 1;
+if pln.propOpt.run4D
+    if pln.propOpt.prop4D.singlePhaseFMO
+        options.numOfScenarios = 1;
+    else
+        options.numOfScenarios = dij.numPhases;
+    end
 else
     options.numOfScenarios  = dij.numOfScenarios;
 end

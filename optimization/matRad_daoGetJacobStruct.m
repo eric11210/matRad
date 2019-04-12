@@ -83,7 +83,7 @@ for phase = 1:apertureInfo.numPhases
             
             DAOBeams = find([apertureInfo.propVMAT.beam.DAOBeam]);
             
-            for i = 1:numel(apertureInfo.beam);
+            for i = 1:numel(apertureInfo.beam)
                 
                 % get used bixels in beam
                 ixWeight = ~isnan(apertureInfo.beam(i).bixelIndMap);

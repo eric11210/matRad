@@ -44,7 +44,7 @@ numShapbixIndVec    = variable.numShapbixIndVec; % = 1:(totalNumOfShapes*numBix)
 
 if static.DAOBeam
     
-    DAOindex    = static.DAOindex;
+    DAOindex    = variable.DAOindex;
     
     jacobiScale = variable.jacobiScale;
     vectorIx_LI = variable.vectorIx_LI;
@@ -74,8 +74,8 @@ else
     time_next   = static.time_next;
     time_last   = static.time_last;
     
-    DAOindex_last   = static.DAOindex_last;
-    DAOindex_next   = static.DAOindex_next;
+    DAOindex_last   = variable.DAOindex_last;
+    DAOindex_next   = variable.DAOindex_next;
     tIx_last        = static.tIx_last;
     tIx_next        = static.tIx_next;
     
@@ -230,7 +230,7 @@ shapeMap_nW(isnan(shapeMap_nW)) = 0;
 shapeMapIx = bixelIndMap ~= 0 ;
 
 currBixelIx = bixelIndMap(shapeMapIx);
-w(currBixelIx) = shapeMap_nW(shapeMapIx).*weight.*weightFactor_I.*probability;
+w = shapeMap_nW(shapeMapIx).*weight.*weightFactor_I.*probability;
 shapeMap = shapeMap_nW.*weight.*weightFactor_I.*probability;
 
 % store information for Jacobi preconditioning
@@ -249,7 +249,7 @@ if static.DAOBeam
     
     % wrt weight
     bixelJApVec_vec(bixelJApVec_offset+bixIndVec) = shapeMap_nW(shapeMapIx).*weightFactor_I.*probability./jacobiScale;
-    bixelJApVec_i(bixelJApVec_offset+bixIndVec) = 1;%DAOindex+(phase-1)*totalNumOfShapes; % CHANGE THIS TO AN INPUT
+    bixelJApVec_i(bixelJApVec_offset+bixIndVec) = DAOindex; %DAOindex+(phase-1)*totalNumOfShapes;
     bixelJApVec_j(bixelJApVec_offset+bixIndVec) = currBixelIx;
     bixelJApVec_offset = bixelJApVec_offset+numBix;
     
@@ -310,7 +310,7 @@ else
     %bixelJApVec_vec(bixelJApVec_offset+(1:numSaveBixel)) = (updatedInfo.beam(i).doseAngleBordersDiff*fracFromLastOpt*updatedInfo.beam(apertureInfo.beam(i).lastOptIndex).gantryRot ...
     %/(updatedInfo.beam(apertureInfo.beam(i).lastOptIndex).doseAngleBordersDiff*updatedInfo.beam(i).gantryRot))*updatedInfo.beam(i).shape(j).shapeMap(shapeMapIx) ...
     %./ apertureInfo.beam(apertureInfo.beam(i).lastOptIndex).shape(1).jacobiScale;
-    bixelJApVec_i(bixelJApVec_offset+bixIndVec) = DAOindex_last+(phase-1)*totalNumOfShapes;
+    bixelJApVec_i(bixelJApVec_offset+bixIndVec) = DAOindex_last;%DAOindex_last+(phase-1)*totalNumOfShapes;
     bixelJApVec_j(bixelJApVec_offset+bixIndVec) = currBixelIx;
     bixelJApVec_offset = bixelJApVec_offset+numBix;
     
@@ -319,7 +319,7 @@ else
     %bixelJApVec_vec(bixelJApVec_offset+(1:numSaveBixel)) = (updatedInfo.beam(i).doseAngleBordersDiff*(1-fracFromLastOpt)*updatedInfo.beam(apertureInfo.beam(i).nextOptIndex).gantryRot ...
     %/(updatedInfo.beam(apertureInfo.beam(i).nextOptIndex).doseAngleBordersDiff*updatedInfo.beam(i).gantryRot))*updatedInfo.beam(i).shape(j).shapeMap(shapeMapIx) ...
     %./ apertureInfo.beam(apertureInfo.beam(i).nextOptIndex).shape(1).jacobiScale;
-    bixelJApVec_i(bixelJApVec_offset+bixIndVec) = DAOindex_next+(phase-1)*totalNumOfShapes;
+    bixelJApVec_i(bixelJApVec_offset+bixIndVec) = DAOindex_next;%DAOindex_next+(phase-1)*totalNumOfShapes;
     bixelJApVec_j(bixelJApVec_offset+bixIndVec) = currBixelIx;
     bixelJApVec_offset = bixelJApVec_offset+numBix;
     

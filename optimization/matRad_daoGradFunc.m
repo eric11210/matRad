@@ -50,20 +50,25 @@ bixelG = matRad_gradFuncWrapper(apertureInfo.bixelWeights,dij,cst,options);
 %changed from NaNs to zeros
 g = zeros(size(apertureInfoVec,1),1);
 
-for phase = 1:apertureInfo.numPhases
+offset = 0;
+for i = 1:numel(apertureInfo.beam)
     
-    if apertureInfo.runVMAT
+    % determine current bixel indices
+    currBixelIx = apertureInfo.beam(i).bixelIndMap(~isnan(apertureInfo.beam(i).bixelIndMap));
+    % determine current variable indicies
+    currVarIx   = apertureInfo.beam(i).local2GlobalVar;
+    
+    for phase = 1:apertureInfo.numPhases
         
-        % use the Jacobian calculated in daoVec2ApertureInfo.
-        % should also do this for non-VMAT
-        g = g+apertureInfo.bixelJApVec{phase} * bixelG{phase};
-    else
-        %we're not doing VMAT
-        
-        % 1. calculate aperatureGrad
-        % loop over all beams
-        offset = 0;
-        for i = 1:numel(apertureInfo.beam)
+        if apertureInfo.runVMAT
+            
+            % use the Jacobian calculated in daoVec2ApertureInfo.
+            % should also do this for non-VMAT
+            g(currVarIx) = g(currVarIx)+apertureInfo.bixelJApVec{(i-1).*apertureInfo.numPhases+phase} * bixelG{phase}(currBixelIx);
+        else
+            %we're not doing VMAT
+            
+            % 1. calculate aperatureGrad
             
             % get used bixels in beam
             ix = ~isnan(apertureInfo.beam(i).bixelIndMap);
@@ -77,27 +82,27 @@ for phase = 1:apertureInfo.numPhases
             % increment offset
             offset = offset + apertureInfo.beam(i).numOfShapes;
             
-        end
-        
-        % 2. find corresponding bixel to the leaf Positions and aperture
-        % weights to calculate the gradient
-        g(apertureInfo.totalNumOfShapes+1:apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2) = ...
-            apertureInfoVec(apertureInfo.mappingMx(apertureInfo.totalNumOfShapes+1:apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2,2)) ...
-            .* bixelG{phase}(apertureInfo.bixelIndices(1:apertureInfo.totalNumOfLeafPairs*2)) ./ ...
-            (apertureInfo.bixelWidth.*apertureInfo.jacobiScale(apertureInfo.mappingMx(apertureInfo.totalNumOfShapes+1:apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2,2)));
-        
-        
-        % correct the sign for the left leaf positions
-        g(apertureInfo.totalNumOfShapes*apertureInfo.numPhases+(1:(apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases))) = ...
+            % 2. find corresponding bixel to the leaf Positions and aperture
+            % weights to calculate the gradient
+            g(apertureInfo.totalNumOfShapes+1:apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2) = ...
+                apertureInfoVec(apertureInfo.mappingMx(apertureInfo.totalNumOfShapes+1:apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2,2)) ...
+                .* bixelG{phase}(apertureInfo.bixelIndices(1:apertureInfo.totalNumOfLeafPairs*2)) ./ ...
+                (apertureInfo.bixelWidth.*apertureInfo.jacobiScale(apertureInfo.mappingMx(apertureInfo.totalNumOfShapes+1:apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2,2)));
+            
+            
+            % correct the sign for the left leaf positions
+            g(apertureInfo.totalNumOfShapes*apertureInfo.numPhases+(1:(apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases))) = ...
                 -g(apertureInfo.totalNumOfShapes*apertureInfo.numPhases+(1:(apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases)));
+            
+        end
         
     end
     
 end
 
 % add in variance term
-[~,gVar]    = matRad_varObjAndGradFunc(apertureInfo,dij,cst);
-g           = g+gVar;
+%[~,gVar]    = matRad_varObjAndGradFunc(apertureInfo,dij,cst);
+%g           = g+gVar;
 
 end
 
