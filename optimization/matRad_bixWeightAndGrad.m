@@ -105,7 +105,7 @@ bixelJApVec_j       = zeros(variable.bixelJApVec_sz,1);
 
 %calculate fraction of fluence uncovered by left leaf
 %initial computation
-uncoveredByLeftLeaf = (centres-leftLeafPosI)./repmat(leftLeafPosF-leftLeafPosI,1,numCol);% bsxfun(@minus,centres,leftLeafPosI)./repmat(leftLeafPosF-leftLeafPosI,1,numBix);
+uncoveredByLeftLeaf = (centres-leftLeafPosI)./(leftLeafPosF-leftLeafPosI);% bsxfun(@minus,centres,leftLeafPosI)./repmat(leftLeafPosF-leftLeafPosI,1,numBix);
 %correct for overshoot in initial and final leaf positions
 uncoveredByLeftLeaf(xPosLinearIndLeftLeafI) = uncoveredByLeftLeaf(xPosLinearIndLeftLeafI) + (leftLeafPosI-edges_l(xPosIndLeftLeafI)').^2./((leftLeafPosF-leftLeafPosI).*(widths(xPosIndLeftLeafI)').*2);
 uncoveredByLeftLeaf(xPosLinearIndLeftLeafF) = uncoveredByLeftLeaf(xPosLinearIndLeftLeafF) - (edges_r(xPosIndLeftLeafF)'-leftLeafPosF).^2./((leftLeafPosF-leftLeafPosI).*(widths(xPosIndLeftLeafF)').*2);
@@ -115,7 +115,7 @@ uncoveredByLeftLeaf(uncoveredByLeftLeaf > 1) = 1;
 
 %calculate fraction of fluence covered by right leaf
 %initial computation
-coveredByRightLeaf = (centres-rightLeafPosI)./repmat(rightLeafPosF-rightLeafPosI,1,numCol);%bsxfun(@minus,centres,rightLeafPosI)./repmat(rightLeafPosF-rightLeafPosI,1,numBix);
+coveredByRightLeaf = (centres-rightLeafPosI)./(rightLeafPosF-rightLeafPosI);%bsxfun(@minus,centres,rightLeafPosI)./repmat(rightLeafPosF-rightLeafPosI,1,numBix);
 %correct for overshoot in initial and final leaf positions
 coveredByRightLeaf(xPosLinearIndRightLeafI) = coveredByRightLeaf(xPosLinearIndRightLeafI) + (rightLeafPosI-edges_l(xPosIndRightLeafI)').^2./((rightLeafPosF-rightLeafPosI).*(widths(xPosIndRightLeafI)').*2);
 coveredByRightLeaf(xPosLinearIndRightLeafF) = coveredByRightLeaf(xPosLinearIndRightLeafF) - (edges_r(xPosIndRightLeafF)'-rightLeafPosF).^2./((rightLeafPosF-rightLeafPosI).*(widths(xPosIndRightLeafF)').*2);
@@ -159,6 +159,9 @@ for k = 1:numRow
         if leftLeafPosF(k)-leftLeafPosI(k) <= eps(max(lim_r))
             uncoveredByLeftLeaf(k,xPosIndLeftLeafI(k)) = (edges_r(xPosIndLeftLeafI(k))-leftLeafPosI(k))./widths(xPosIndLeftLeafI(k));
             uncoveredByLeftLeaf(k,xPosIndLeftLeafF(k)) = (edges_r(xPosIndLeftLeafF(k))-leftLeafPosF(k))./widths(xPosIndLeftLeafF(k));
+            
+            dUl_dLI(k,xPosIndLeftLeafI(k)-1) = -1/(2*widths(xPosIndLeftLeafI(k))');
+            dUl_dLF(k,xPosIndLeftLeafF(k)+1) = -1/(2*widths(xPosIndLeftLeafF(k))');
         end
     end
     
@@ -168,6 +171,9 @@ for k = 1:numRow
         if rightLeafPosF(k)-rightLeafPosI(k) <= eps(max(lim_r))
             coveredByRightLeaf(k,xPosIndRightLeafI(k)) = (edges_r(xPosIndRightLeafI(k))-rightLeafPosI(k))./widths(xPosIndRightLeafI(k));
             coveredByRightLeaf(k,xPosIndRightLeafF(k)) = (edges_r(xPosIndRightLeafF(k))-rightLeafPosF(k))./widths(xPosIndRightLeafF(k));
+            
+            dCr_dRI(k,xPosIndRightLeafI(k)-1) = -1/(2*widths(xPosIndRightLeafI(k)-1)');
+            dCr_dRF(k,xPosIndRightLeafF(k)+1) = -1/(2*widths(xPosIndRightLeafF(k)+1)');
         end
     end
 end

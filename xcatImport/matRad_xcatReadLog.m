@@ -9,54 +9,54 @@ muPixel = false;
 
 while(ischar(tline))
     
-    if ~isempty(strfind(tline,'Total Output Frames'))
+    if contains(tline,'Total Output Frames')
         
         equalInd = find(tline == '=');
         numPhases = str2double(tline((equalInd+1):end));
         
-    elseif ~isempty(strfind(tline,'Time Per Frame'))
+    elseif contains(tline,'Time Per Frame')
         
         equalInd = find(tline == '=');
         sInd = find(tline == 's');
         deltaT = str2double(tline((equalInd(3)+1):(sInd(1)-1)));
     
-    elseif ~isempty(strfind(tline,'pixel width')) && isempty(strfind(tline,'voxel volume'))
+    elseif contains(tline,'pixel width') && ~contains(tline,'voxel volume')
         
         equalInd = find(tline == '=');
         parenthInd = find(tline == '(');
         resolution.x = str2double(tline((equalInd+1):(parenthInd-1)))*10; % mm
         resolution.y = str2double(tline((equalInd+1):(parenthInd-1)))*10; % mm
         
-    elseif ~isempty(strfind(tline,'slice width')) && isempty(strfind(tline,'voxel volume'))
+    elseif contains(tline,'slice width') && ~contains(tline,'voxel volume')
         
         equalInd = find(tline == '=');
         parenthInd = find(tline == '(');
         resolution.z = str2double(tline((equalInd+1):(parenthInd-1)))*10; % mm
         
-    elseif ~isempty(strfind(tline,'array_size'))
+    elseif contains(tline,'array_size')
         
         equalInd = find(tline == '=');
         dim.x = str2double(tline((equalInd+1):end));
         dim.y = str2double(tline((equalInd+1):end));
         
-    elseif ~isempty(strfind(tline,'starting slice number'))
+    elseif contains(tline,'starting slice number')
         
         equalInd = find(tline == '=');
         startingSlice = str2double(tline((equalInd+1):end));
         
-    elseif ~isempty(strfind(tline,'ending slice number'))
+    elseif contains(tline,'ending slice number')
         
         equalInd = find(tline == '=');
         endingSlice = str2double(tline((equalInd+1):end));
         
-    elseif ~isempty(strfind(tline,'Linear Attenuation Coefficients (1/pixel):'))
+    elseif contains(tline,'Linear Attenuation Coefficients (1/pixel):')
         
         % next lines are the mu's in pixel units
         muPixel = true;
         
     end
     
-    if muPixel && ~isempty(strfind(tline,'Body (water)'))
+    if muPixel && contains(tline,'Body (water)')
         
         equalInd = find(tline == '=');
         muWater = str2double(tline((equalInd+1):end));

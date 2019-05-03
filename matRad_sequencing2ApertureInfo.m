@@ -400,7 +400,7 @@ if pln.propOpt.runVMAT
         % store transition probabilities in apertureInfo
         % move to separate function later??? (use Markov chain to determine
         % mask)
-        apertureInfo.propVMAT.qij = rand(apertureInfo.numPhases,apertureInfo.numPhases);
+        apertureInfo.propVMAT.qij = rand(apertureInfo.numPhases,apertureInfo.numPhases)/1000;
         for i = 1:apertureInfo.numPhases
             apertureInfo.propVMAT.qij(i,i) = 0;
             apertureInfo.propVMAT.qij(i,i) = -sum(apertureInfo.propVMAT.qij(i,:),2);
@@ -421,6 +421,8 @@ if pln.propOpt.runVMAT
     end
     
     interpGetsTrans = false;
+    % prep for gradient offset
+    gradOffset      = 0;
     for i = 1:numel(apertureInfo.beam)
         
         maxTime = apertureInfo.propVMAT.beam(i).doseAngleBordersDiff./machine.constraints.gantryRotationSpeed(1);
@@ -473,6 +475,11 @@ if pln.propOpt.runVMAT
                     (apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+(1:apertureInfo.totalNumOfShapes);
             end
             
+            % keep weight and time variables when calculating gradients for
+            % d2
+            apertureInfo.beam(i).d2KeepVar = true(apertureInfo.beam(i).numUniqueVar,1);
+            apertureInfo.beam(i).d2KeepVar((apertureInfo.beam(i).numOfShapes.*apertureInfo.numPhases+1):(end-apertureInfo.totalNumOfShapes)) = false;
+            
         else
             apertureInfo.beam(i).bixelJApVec_sz = nnz(~isnan(apertureInfo.beam(i).bixelIndMap)).*intBixelFactor.*apertureInfo.numPhases;
             apertureInfo.beam(i).numUniqueVar   = apertureInfo.numPhases.*(2+4.*apertureInfo.beam(i).numOfActiveLeafPairs)+apertureInfo.totalNumOfShapes;%(2+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(apertureInfo.numPhases+1))+apertureInfo.totalNumOfShapes;
@@ -493,7 +500,15 @@ if pln.propOpt.runVMAT
                 apertureInfo.beam(i).local2GlobalVar(apertureInfo.beam(i).numUniqueVar-apertureInfo.totalNumOfShapes+(1:apertureInfo.totalNumOfShapes)) = ...
                     (apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+(1:apertureInfo.totalNumOfShapes);
             end
+            
+            % keep weight and time variables when calculating gradients for
+            % d2
+            apertureInfo.beam(i).d2KeepVar = true(apertureInfo.beam(i).numUniqueVar,1);
+            apertureInfo.beam(i).d2KeepVar((2.*apertureInfo.numPhases+1):(end-apertureInfo.totalNumOfShapes)) = false;
         end
+        
+        apertureInfo.beam(i).gradOffset = gradOffset;
+        gradOffset = gradOffset+apertureInfo.numPhases.*apertureInfo.beam(i).numUniqueVar;
     end
     
 else

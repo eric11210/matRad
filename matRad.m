@@ -74,7 +74,7 @@ clc
 %load PROSTATE.mat
 %load LIVER.mat
 %load BOXPHANTOM.mat
-load lungPatient0_rep
+load lungPatient0_5mm_rep
 
 % meta information for treatment plan
 

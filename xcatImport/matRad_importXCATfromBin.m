@@ -1,6 +1,6 @@
 function [ct,cst] = matRad_importXCATfromBin(importOptions)
 
-if importOptions.repPhase && ~strfind(importOptions.fnameXcatRoot,'rep')
+if importOptions.repPhase && ~contains(importOptions.fnameXcatRoot,'rep')
     importOptions.fnameXcatRoot = [importOptions.fnameXcatRoot '_rep'];
 end
 
@@ -40,7 +40,8 @@ for frame = 1:numFrames
     ct.cubeHU{frame} = ctTemp.cubeHU{1};
 end
 
-ct.numOfCtScen = numFrames;
+% but use the correct number of frames here
+ct.numOfCtScen = importOptions.numPhases;
 
 %% Import vector files
 fprintf('matRad: Importing motion vectors from XCAT files ... \n');

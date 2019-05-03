@@ -12,7 +12,13 @@ if importOptions.binFrames2Phases
     % get boundaries on bins
     lBoundsMax = max(x_XCAT);
     lBoundsMin = min(x_XCAT);
-    nBins = importOptions.numPhases/2;
+    if importOptions.inhExhDisc
+        % discriminate between inhale and exhale
+        nBins = importOptions.numPhases/2;
+    else
+        % do not discriminate between inhale and exhale
+        nBins = importOptions.numPhases;
+    end
     lBounds = linspace(lBoundsMax,lBoundsMin,nBins+1);
     
     % preliminary binning of data
@@ -21,18 +27,27 @@ if importOptions.binFrames2Phases
         l_XCAT(lBounds(bin+1) <= x_XCAT & x_XCAT <= lBounds(bin)) = bin;
     end
     
-    % include inhale/exhale information:
-    % breathing in is the beginning of the cycle, so it should have
-    % lower phase number
-    % breathing out is the end of the cycle, so it should have higher phase
-    % number
-    
     % define breathing in/out by peaks: points after a min and before a max are
     % exhale, points after a max and before a min are inhale.
     %[~,ind_maxPeaks] = findpeaks(x_XCAT,'MinPeakProminence',0.5);
     [~,ind_minPeaks] = findpeaks(-x_XCAT,'MinPeakProminence',0.5);
     
-    l_XCAT(ind_minPeaks:end) = importOptions.numPhases+1-l_XCAT(ind_minPeaks:end);
+    if importOptions.inhExhDisc
+        % include inhale/exhale information:
+        % breathing in is the beginning of the cycle, so it should have
+        % lower phase number
+        % breathing out is the end of the cycle, so it should have higher phase
+        % number
+        
+        l_XCAT(ind_minPeaks:end) = importOptions.numPhases+1-l_XCAT(ind_minPeaks:end);
+        
+        % include all points when calculating time to reach phase
+        timeMask = true(size(l_XCAT));
+    else
+        % only include inhales when calculating time to reach phase
+        timeMask = true(size(l_XCAT));
+        timeMask(ind_minPeaks+1:end) = false;
+    end
     
     % find time at which mean x value of each phase is reached
     x_l = zeros(importOptions.numPhases,1);
@@ -41,13 +56,10 @@ if importOptions.binFrames2Phases
     ind_x_l_XCAT = zeros(importOptions.numPhases,1);
     for phase = 1:importOptions.numPhases
         x_l(phase) = mean(x_XCAT(l_XCAT == phase));
-        t_x_l(phase) = interp1(x_XCAT(l_XCAT == phase),t(l_XCAT == phase),x_l(phase));
+        t_x_l(phase) = interp1(x_XCAT(l_XCAT == phase & timeMask),t(l_XCAT == phase & timeMask),x_l(phase));
         t_x_l_XCAT(phase) = interp1(t,t,t_x_l(phase),'nearest','extrap');
         ind_x_l_XCAT(phase) = find(t == t_x_l_XCAT(phase));
     end
-    
-    
-    
     
     ct.tumourMotion.frames2Phases = l_XCAT(1:(end-1));
     ct.tumourMotion.nFramesPerPhase = accumarray(ct.tumourMotion.frames2Phases,1);

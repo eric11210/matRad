@@ -249,9 +249,6 @@ if pln.propOpt.runVMAT
     
     sequencing.w = resultGUI.apertureInfo.bixelWeights;
     
-    % get dose variance
-    %[dVar,~] = matRad_doseVariance(resultGUI.apertureInfo,dij);
-    
 else
     sequencing.weightToMU = dij.weightToMU;
     sequencing.preconditioner = pln.propOpt.preconditioner;
@@ -266,21 +263,27 @@ if pln.propOpt.preconditioner
     resultGUI.apertureInfo = matRad_preconditionFactors(resultGUI.apertureInfo);
 end
 
+% get dose variance
+[dVarSum,~] = matRad_doseVariance(resultGUI.apertureInfo,dij);
+
 resultGUI.w          = sequencing.w;
 resultGUI.wSequenced = sequencing.w;
 
 resultGUI.sequencing   = sequencing;
 
-options.numOfScenarios = dij.numOfScenarios;
+if pln.propOpt.run4D
+    options.numOfScenarios = dij.numPhases;
+else
+    options.numOfScenarios  = dij.numOfScenarios;
+end
 options.bioOpt = 'none';
 options.run4D = pln.propOpt.run4D;
 options.FMO = false;
 
 d = matRad_backProjection(sequencing.w,dij,options);
 
-resultGUI.physicalDose      = reshape(d,dij.dimensions);
-%resultGUI.physicalDoseVar   = reshape(dVar,dij.dimensions);
-
+resultGUI.physicalDose          = reshape(d,dij.dimensions);
+resultGUI.physicalDoseVarSum    = dVarSum;
 
 % if weights exists from an former DAO remove it
 if isfield(resultGUI,'wDao')
