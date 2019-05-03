@@ -1,4 +1,4 @@
-function [l_simulated,relProb]= matRad_runMarkovChain(Pij,nSteps,l_init,maxProb)
+function [l_simulated,relProb]= matRad_runMarkovChain_P(Pij,nSteps,l_init,maxProb)
 
 if nargin < 4
     maxProb = false;

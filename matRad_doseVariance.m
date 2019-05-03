@@ -244,6 +244,10 @@ for i1 = 1:numel(apertureInfo.beam)
                 dRawGrad_F1         = dRawGrad_F(:,varInd);
                 %dRawGrad_F1 = dRawGradCell_F{(i1-1).*apertureInfo.numPhases+phase_F1}(:,d2KeepVar1);
                 
+                % sum I1 and F1 doses and gradients
+                dRaw_1      = dRaw_I1+dRaw_F1;
+                dRawGrad_1  = dRawGrad_I1+dRawGrad_F1;
+                
                 % second loop over initial phases
                 for phase_I2 = 1:apertureInfo.numPhases
                     
@@ -292,15 +296,21 @@ for i1 = 1:numel(apertureInfo.beam)
                             % get pre-calculated raw doses
                             dRaw_F2 = dRaw_F{(i2-1).*apertureInfo.numPhases+phase_F2};
                             
+                            % sum I2 and F2 doses
+                            dRaw_2 = dRaw_I2+dRaw_F2;
+                            
                             % the "weight" tensors are given by of all
                             % combinations of weight products multiplied by the
                             % extra probability to observe both trajectories
                             % SKIP tensor determination step and go right to
                             % calculating mean squared doses
-                            d2SumRaw_II = dRaw_I1 * dRaw_I2';
-                            d2SumRaw_IF = dRaw_I1 * dRaw_F2';
-                            d2SumRaw_FI = dRaw_F1 * dRaw_I2';
-                            d2SumRaw_FF = dRaw_F1 * dRaw_F2';
+                            %d2SumRaw_II = dRaw_I1 * dRaw_I2';
+                            %d2SumRaw_IF = dRaw_I1 * dRaw_F2';
+                            %d2SumRaw_FI = dRaw_F1 * dRaw_I2';
+                            %d2SumRaw_FF = dRaw_F1 * dRaw_F2';
+                            
+                            % combine into a single multiplication
+                            d2SumRaw = dRaw_1 * dRaw_2';
                             
                             % only do the following if we need d2 stuff,
                             % i.e. if pNorm is > eps
@@ -311,13 +321,14 @@ for i1 = 1:numel(apertureInfo.beam)
                                 % extra probability to observe both trajectories
                                 % SKIP tensor determination step and go right to
                                 % calculating mean squared doses
-                                d2Sum_II = pNorm .* d2SumRaw_II;
-                                d2Sum_IF = pNorm .* d2SumRaw_IF;
-                                d2Sum_FI = pNorm .* d2SumRaw_FI;
-                                d2Sum_FF = pNorm .* d2SumRaw_FF;
+                                %d2Sum_II = pNorm .* d2SumRaw_II;
+                                %d2Sum_IF = pNorm .* d2SumRaw_IF;
+                                %d2Sum_FI = pNorm .* d2SumRaw_FI;
+                                %d2Sum_FF = pNorm .* d2SumRaw_FF;
                                 
                                 % sum terms
-                                d2Sum = d2Sum+d2Sum_II+d2Sum_IF+d2Sum_FI+d2Sum_FF;
+                                %d2Sum  = d2Sum+d2Sum_II+d2Sum_IF+d2Sum_FI+d2Sum_FF;
+                                d2Sum   = d2Sum + pNorm .* d2SumRaw;
                                 
                                 % get pre-calculated raw gradients
                                 % only consider gradients wrt weights and times for d2
@@ -325,10 +336,8 @@ for i1 = 1:numel(apertureInfo.beam)
                                 dRawGrad_F2         = dRawGrad_F(:,varInd);
                                 %dRawGrad_F2 = dRawGradCell_F{(i2-1).*apertureInfo.numPhases+phase_F2}(:,d2KeepVar2);
                                 
-                                %keep_I1     = logical(sum(abs(dRawGrad_I1) > eps,1));
-                                %keep_F1     = logical(sum(abs(dRawGrad_F1) > eps,1));
-                                %keep_I2     = logical(sum(abs(dRawGrad_I2) > eps,1));
-                                %keep_F2     = logical(sum(abs(dRawGrad_F2) > eps,1));
+                                % sum I2 and F2 gradients
+                                dRawGrad_2  = dRawGrad_I2+dRawGrad_F2;
                                 
                                 % calculate gradients of mean squared doses, put
                                 % them directly in d2Grad
@@ -336,17 +345,21 @@ for i1 = 1:numel(apertureInfo.beam)
                                 % doses, not pNorm
                                 
                                 % do II
-                                d2SumGrad_i1   = d2SumGrad_i1 + pNorm .* dRaw_I2 * dRawGrad_I1;
-                                d2SumGrad_i2   = d2SumGrad_i2 + pNorm .* dRaw_I1 * dRawGrad_I2;
+                                %d2SumGrad_i1   = d2SumGrad_i1 + pNorm .* dRaw_I2 * dRawGrad_I1;
+                                %d2SumGrad_i2   = d2SumGrad_i2 + pNorm .* dRaw_I1 * dRawGrad_I2;
                                 % do IF
-                                d2SumGrad_i1   = d2SumGrad_i1 + pNorm .* dRaw_F2 * dRawGrad_I1;
-                                d2SumGrad_i2   = d2SumGrad_i2 + pNorm .* dRaw_I1 * dRawGrad_F2;
+                                %d2SumGrad_i1   = d2SumGrad_i1 + pNorm .* dRaw_F2 * dRawGrad_I1;
+                                %d2SumGrad_i2   = d2SumGrad_i2 + pNorm .* dRaw_I1 * dRawGrad_F2;
                                 % do FI
-                                d2SumGrad_i1   = d2SumGrad_i1 + pNorm .* dRaw_I2 * dRawGrad_F1;
-                                d2SumGrad_i2   = d2SumGrad_i2 + pNorm .* dRaw_F1 * dRawGrad_I2;
+                                %d2SumGrad_i1   = d2SumGrad_i1 + pNorm .* dRaw_I2 * dRawGrad_F1;
+                                %d2SumGrad_i2   = d2SumGrad_i2 + pNorm .* dRaw_F1 * dRawGrad_I2;
                                 % do FF
-                                d2SumGrad_i1   = d2SumGrad_i1 + pNorm .* dRaw_F2 * dRawGrad_F1;
-                                d2SumGrad_i2   = d2SumGrad_i2 + pNorm .* dRaw_F1 * dRawGrad_F2;
+                                %d2SumGrad_i1   = d2SumGrad_i1 + pNorm .* dRaw_F2 * dRawGrad_F1;
+                                %d2SumGrad_i2   = d2SumGrad_i2 + pNorm .* dRaw_F1 * dRawGrad_F2;
+                                
+                                % do all of the gradients together
+                                d2SumGrad_i1    = d2SumGrad_i1 + pNorm .* dRaw_2 * dRawGrad_1;
+                                d2SumGrad_i2    = d2SumGrad_i2 + pNorm .* dRaw_1 * dRawGrad_2;
                             end
                             
                             % only do the following if we need time gradients
@@ -358,13 +371,16 @@ for i1 = 1:numel(apertureInfo.beam)
                                 % now only look at gradients wrt time
                                 
                                 % do II
-                                d2SumTimeGrad(temptIx_Vec)    = d2SumTimeGrad(temptIx_Vec) + pNormGrad .* d2SumRaw_II;
+                                %d2SumTimeGrad(temptIx_Vec)    = d2SumTimeGrad(temptIx_Vec) + pNormGrad .* d2SumRaw_II;
                                 % do IF
-                                d2SumTimeGrad(temptIx_Vec)    = d2SumTimeGrad(temptIx_Vec) + pNormGrad .* d2SumRaw_IF;
+                                %d2SumTimeGrad(temptIx_Vec)    = d2SumTimeGrad(temptIx_Vec) + pNormGrad .* d2SumRaw_IF;
                                 % do FI
-                                d2SumTimeGrad(temptIx_Vec)    = d2SumTimeGrad(temptIx_Vec) + pNormGrad .* d2SumRaw_FI;
+                                %d2SumTimeGrad(temptIx_Vec)    = d2SumTimeGrad(temptIx_Vec) + pNormGrad .* d2SumRaw_FI;
                                 % do FF
-                                d2SumTimeGrad(temptIx_Vec)    = d2SumTimeGrad(temptIx_Vec) + pNormGrad .* d2SumRaw_FF;
+                                %d2SumTimeGrad(temptIx_Vec)    = d2SumTimeGrad(temptIx_Vec) + pNormGrad .* d2SumRaw_FF;
+                                
+                                % combine into a single multiplication
+                                d2SumTimeGrad(temptIx_Vec)    = d2SumTimeGrad(temptIx_Vec) + pNormGrad .* d2SumRaw;
                             end
                         end
                         
@@ -399,9 +415,6 @@ for i1 = 1:numel(apertureInfo.beam)
                         d2Grad_FF = dij.scaleFactor.^2 .* ( ((dij.physicalDose{phase_F1}(dij.targetVox,currBixelIx1) * w_F1) .* (dij.physicalDose{phase_F2}(dij.targetVox,currBixelIx2) * w_F2)) * pNormGrad + ...
                             pNorm .* (dij.physicalDose{phase_F1}(dij.targetVox,currBixelIx1) * j_F1') .* repmat((dij.physicalDose{phase_F2}(dij.targetVox,currBixelIx2) * w_F2),1,size(apertureInfo.apertureVector,1)) + ...
                             pNorm .* repmat((dij.physicalDose{phase_F1}(dij.targetVox,currBixelIx1) * w_F1),1,size(apertureInfo.apertureVector,1)) .* (dij.physicalDose{phase_F2}(dij.targetVox,currBixelIx2) * j_F2') );
-                        
-                        % sum terms
-                        d2Grad = d2Grad+d2Grad_II+d2Grad_IF+d2Grad_FI+d2Grad_FF;
                         %}
                     end
                 end
@@ -410,12 +423,10 @@ for i1 = 1:numel(apertureInfo.beam)
         
         % dump gradient for i2
         d2SumGrad(currVarIx2(d2KeepVar2)) = d2SumGrad(currVarIx2(d2KeepVar2)) + d2SumGrad_i2;
-        %d2SumGrad(currVarIx2) = d2SumGrad(currVarIx2) + d2SumGrad_i2;
     end
     
     % dump gradient for i1
     d2SumGrad(currVarIx1(d2KeepVar1)) = d2SumGrad(currVarIx1(d2KeepVar1)) + d2SumGrad_i1;
-    %d2SumGrad(currVarIx1) = d2SumGrad(currVarIx1) + d2SumGrad_i1;
 end
 
 % dump gradient for time

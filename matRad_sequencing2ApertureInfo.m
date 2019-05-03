@@ -400,7 +400,7 @@ if pln.propOpt.runVMAT
         % store transition probabilities in apertureInfo
         % move to separate function later??? (use Markov chain to determine
         % mask)
-        apertureInfo.propVMAT.qij = rand(apertureInfo.numPhases,apertureInfo.numPhases)/1000;
+        apertureInfo.propVMAT.qij = rand(apertureInfo.numPhases,apertureInfo.numPhases)/2;
         for i = 1:apertureInfo.numPhases
             apertureInfo.propVMAT.qij(i,i) = 0;
             apertureInfo.propVMAT.qij(i,i) = -sum(apertureInfo.propVMAT.qij(i,:),2);

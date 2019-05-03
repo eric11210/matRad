@@ -152,8 +152,8 @@ for j = 1:numOfShapes
     
     for phase_I = 1:apertureInfo.numPhases
         
-        transitions = apertureInfo.propVMAT.beam(i).transMask(phase_I,:);
-        transitions(transitions == 0) = [];
+        %transitions = apertureInfo.propVMAT.beam(i).transMask(phase_I,:);
+        %transitions(transitions == 0) = [];
         
         % loop over all (final) phases
         for phase_F = 1:apertureInfo.numPhases
