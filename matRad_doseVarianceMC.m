@@ -6,7 +6,7 @@ dSum    = zeros(dij.numOfVoxels,1);
 d2Sum   = zeros(dij.numOfVoxels,1);
 
 % initialize options
-if pln.propOpt.run4D
+if apertureInfo.run4D
     options.numOfScenarios = dij.numPhases;
 else
     options.numOfScenarios  = dij.numOfScenarios;
@@ -15,17 +15,24 @@ options.bioOpt = 'none';
 options.run4D = apertureInfo.run4D;
 options.FMO = false;
 
+% prepare motionModel structure
+apertureInfo.motionModelOriginal = apertureInfo.motionModel;
+apertureInfo = rmfield(apertureInfo,'motionModel');
+apertureInfo.motionModel.type = 'single';
+apertureInfo.motionModel.numPhases = apertureInfo.numPhases;
+
 % loop over number of histories
 for hist = 1:nHistories
     
     % MC simulation of tumour trajectory
-    
+    [lSimulated,tSimulated]= matRad_runMarkovChain_Q(apertureInfo.motionModelOriginal.qij,apertureInfo.motionModelOriginal.initProb,sum([apertureInfo.beam.time]));
     
     % insert trajectory in apertureInfo struct
-    apertureInfo;
+    apertureInfo.motionModel.lSimulated = lSimulated;
+    apertureInfo.motionModel.tSimulated = tSimulated;
     
     % get weights for this particular history
-    apertureInfo_hist = matRad_daoVec2ApertureInfo(apertureInfo,apertureInfoVect);
+    apertureInfo_hist = matRad_daoVec2ApertureInfo(apertureInfo,apertureInfo.apertureVector);
     
     % get dose for this particular trajectory
     d_hist = matRad_backProjection(apertureInfo_hist.bixelWeights,dij,options);

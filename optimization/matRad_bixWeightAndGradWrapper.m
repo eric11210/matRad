@@ -146,17 +146,29 @@ else
 end
 
 % determine probabilities
-[Pij_transT,Pij_transT_dot,Pi_T,Pi_T_dot] = matRad_transAndTProb(apertureInfo.propVMAT.qij,apertureInfo.propVMAT.initProb,apertureInfo.beam(i).time,sum([apertureInfo.beam(1:(i-1)).time]));
+[Pij_transT,Pij_transT_dot,Pi_T,Pi_T_dot] = matRad_transAndTProb(apertureInfo.beam(i).time,sum([apertureInfo.beam(1:(i-1)).time]),apertureInfo.motionModel);
 
 for j = 1:numOfShapes
     
     for phase_I = 1:apertureInfo.numPhases
+        
+        % skip to next phase if probability to be in phase_I and its
+        % derivative are both 0
+        if Pi_T(phase_I)  == 0 && Pi_T_dot(phase_I) == 0
+            continue
+        end
         
         %transitions = apertureInfo.propVMAT.beam(i).transMask(phase_I,:);
         %transitions(transitions == 0) = [];
         
         % loop over all (final) phases
         for phase_F = 1:apertureInfo.numPhases
+            
+            % skip to next phase if probability to transition from phase_I
+            % to phase_F and its derivative are both 0
+            if Pij_transT(phase_I,phase_F)  == 0 && Pij_transT_dot(phase_I,phase_F) == 0
+                continue
+            end
             
             %% determine variable quantities
             

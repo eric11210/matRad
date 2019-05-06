@@ -1,5 +1,4 @@
 function [dVarSum,dVarSumGrad] = matRad_doseVariance(apertureInfo,dij)
-%#codegen
 
 %% setup
 
@@ -79,9 +78,6 @@ for i = 1:numel(apertureInfo.beam)
         nnzGrad_I = nnzGrad_I+nnz(dRawGradCell_I{(i-1).*apertureInfo.numPhases+phase});
         nnzGrad_F = nnzGrad_F+nnz(dRawGradCell_F{(i-1).*apertureInfo.numPhases+phase});
         
-        % find relevant variables for gradient
-        currVarIx = apertureInfo.beam(i).local2GlobalVar;
-        
         % accumulate sum of dose and dose gradient
         d = d+dRaw_I{(i-1).*apertureInfo.numPhases+phase}'+dRaw_F{(i-1).*apertureInfo.numPhases+phase}';
         dGrad_i = dGrad_i+dRawGradCell_I{(i-1).*apertureInfo.numPhases+phase}+dRawGradCell_F{(i-1).*apertureInfo.numPhases+phase};
@@ -146,9 +142,6 @@ for i = 1:numel(apertureInfo.beam)
     end
 end
 
-% TRY SPARSE MATRIX AGAIN, THIS TIME WITH THE VOXELS AS THE ROW INDEX AND
-% THE VARIABLES AS THE COLUMNS
-
 % construct sparse matrix of gradients
 dRawGrad_I = sparse(I_I,J_I,V_I,numel(dij.targetVox),apertureInfo.beam(end).gradOffset+apertureInfo.numPhases.*apertureInfo.beam(end).numUniqueVar,nnzGrad_I);
 dRawGrad_F = sparse(I_F,J_F,V_F,numel(dij.targetVox),apertureInfo.beam(end).gradOffset+apertureInfo.numPhases.*apertureInfo.beam(end).numUniqueVar,nnzGrad_F);
@@ -185,8 +178,8 @@ for i1 = 1:numel(apertureInfo.beam)
         % 2) probability to arrive at the later
         
         % determine which i is first and last
-        iFirst = min([i1 i2]);
-        iLast = max([i1 i2]);
+        iFirst  = min([i1 i2]);
+        iLast   = max([i1 i2]);
         
         % determine pNormGradFactors
         pNormGradFactor1 = sum(apertureInfo.propVMAT.jacobT(:,(iFirst+1):(iLast-1)),2);
@@ -197,7 +190,7 @@ for i1 = 1:numel(apertureInfo.beam)
         T2          = sum([apertureInfo.beam(1:(iLast-1)).time]);
         
         % calculate the probabilities
-        [Pij_transT12,Pij_transT12_dot,Pi_T2,Pi_T2_dot] = matRad_transAndTProb(apertureInfo.propVMAT.qij,apertureInfo.propVMAT.initProb,transT12,T2);
+        [Pij_transT12,Pij_transT12_dot,Pi_T2,Pi_T2_dot] = matRad_transAndTProb(transT12,T2,apertureInfo.motionModel);
         
         % find relevant variables for beam 2
         currVarIx2 = apertureInfo.beam(i2).local2GlobalVar;

@@ -400,17 +400,18 @@ if pln.propOpt.runVMAT
         % store transition probabilities in apertureInfo
         % move to separate function later??? (use Markov chain to determine
         % mask)
-        apertureInfo.propVMAT.qij = rand(apertureInfo.numPhases,apertureInfo.numPhases)/2;
+        apertureInfo.motionModel.type   = 'Markov';
+        apertureInfo.motionModel.qij    = rand(apertureInfo.numPhases,apertureInfo.numPhases)/2;
         for i = 1:apertureInfo.numPhases
-            apertureInfo.propVMAT.qij(i,i) = 0;
-            apertureInfo.propVMAT.qij(i,i) = -sum(apertureInfo.propVMAT.qij(i,:),2);
+            apertureInfo.motionModel.qij(i,i) = 0;
+            apertureInfo.motionModel.qij(i,i) = -sum(apertureInfo.motionModel.qij(i,:),2);
         end
-        apertureInfo.propVMAT.initProb  = rand(1,apertureInfo.numPhases);
-        apertureInfo.propVMAT.initProb  = apertureInfo.propVMAT.initProb./sum(apertureInfo.propVMAT.initProb);
+        apertureInfo.motionModel.initProb  = rand(1,apertureInfo.numPhases);
+        apertureInfo.motionModel.initProb  = apertureInfo.motionModel.initProb./sum(apertureInfo.motionModel.initProb);
         
     else
-        apertureInfo.propVMAT.qij       = 0;
-        apertureInfo.propVMAT.initProb  = 1;
+        apertureInfo.motionModel.qij       = 0;
+        apertureInfo.motionModel.initProb  = 1;
     end
     
     fileName = apertureInfo.propVMAT.machineConstraintFile;
@@ -426,7 +427,7 @@ if pln.propOpt.runVMAT
     for i = 1:numel(apertureInfo.beam)
         
         maxTime = apertureInfo.propVMAT.beam(i).doseAngleBordersDiff./machine.constraints.gantryRotationSpeed(1);
-        [Pij_transT,~,~,~] = matRad_transAndTProb(apertureInfo.propVMAT.qij,apertureInfo.propVMAT.initProb,maxTime,maxTime);
+        [Pij_transT,~,~,~] = matRad_transAndTProb(maxTime,maxTime,apertureInfo.motionModel);
         transMask = Pij_transT > 0.01;
         
         apertureInfo.propVMAT.beam(i).transMask             = repmat(1:apertureInfo.numPhases,[apertureInfo.numPhases 1]);

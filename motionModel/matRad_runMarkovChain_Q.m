@@ -10,13 +10,12 @@ lambda_vec = -diag(qij);
 mu_vec = 1./lambda_vec;
 
 % get probability transition matrix
-% CHECK THIS
 pij = qij.*mu_vec;
 % take transpose to make memory access faster
 pij_transpose = pij';
 
 % estimate maximum number of transitions in time tStop
-maxTrans = 10.*ceil(tStop.*lambda_vec);
+maxTrans = 10.*ceil(tStop.*max(lambda_vec));
 
 % allocate frames and transition times
 lSimulated = zeros(maxTrans,1);
@@ -30,6 +29,9 @@ tTot = 0;
 
 % initialize step counter
 step = 1;
+
+% initialize set of next frames
+nextFramesAll = 1:numFrames;
 
 % stop loop once total simulated exceeds stopping time
 while tTot < tStop
@@ -50,7 +52,9 @@ while tTot < tStop
     tTot = tTot+tSample;
     
     % sample next frame
-    lSimulated(step+1) = randsample(numFrames,1,true,pij_transpose(:,lCurrent));
+    nextFrames              = nextFramesAll;
+    nextFrames(lCurrent)    = [];
+    lSimulated(step+1)      = randsample(nextFrames,1,true,pij_transpose(nextFrames,lCurrent));
     
     % increase step
     step = step+1;
