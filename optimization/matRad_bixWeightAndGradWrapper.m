@@ -170,6 +170,9 @@ for j = 1:numOfShapes
                 continue
             end
             
+            % determine cell index
+            cellInd = (phase_I-1).*apertureInfo.numPhases+phase_F;
+            
             %% determine variable quantities
             
             weight_I        = apertureInfo.beam(i).shape{phase_I}(j).weight;
@@ -356,11 +359,11 @@ for j = 1:numOfShapes
             %    = matRad_bixWeightAndGradNEW(static,variable,running.arcI,arcI_bixelJApVec_vec,arcI_bixelJApVec_i,arcI_bixelJApVec_j,arcI_bixelJApVec_offset,arcI_w);
             
             % put tempResults into results
-            results.arcI.w{phase_I}(apertureInfo.beam(i).bixelIndMap(~isnan(apertureInfo.beam(i).bixelIndMap)))         = results.arcI.w{phase_I}(apertureInfo.beam(i).bixelIndMap(~isnan(apertureInfo.beam(i).bixelIndMap)))+tempResults.w;
-            results.arcI.bixelJApVec_i{phase_I}((1:variable.bixelJApVec_sz)+results.arcI.bixelJApVec_offset{phase_I})   = tempResults.bixelJApVec_i;
-            results.arcI.bixelJApVec_j{phase_I}((1:variable.bixelJApVec_sz)+results.arcI.bixelJApVec_offset{phase_I})   = tempResults.bixelJApVec_j;
-            results.arcI.bixelJApVec_vec{phase_I}((1:variable.bixelJApVec_sz)+results.arcI.bixelJApVec_offset{phase_I}) = tempResults.bixelJApVec_vec;
-            results.arcI.bixelJApVec_offset{phase_I}                                                                    = results.arcI.bixelJApVec_offset{phase_I}+variable.bixelJApVec_sz;
+            results.arcI.w{cellInd}(apertureInfo.beam(i).bixelIndMap(~isnan(apertureInfo.beam(i).bixelIndMap)))         = results.arcI.w{cellInd}(apertureInfo.beam(i).bixelIndMap(~isnan(apertureInfo.beam(i).bixelIndMap)))+tempResults.w;
+            results.arcI.bixelJApVec_i{cellInd}((1:variable.bixelJApVec_sz)+results.arcI.bixelJApVec_offset{cellInd})   = tempResults.bixelJApVec_i;
+            results.arcI.bixelJApVec_j{cellInd}((1:variable.bixelJApVec_sz)+results.arcI.bixelJApVec_offset{cellInd})   = tempResults.bixelJApVec_j;
+            results.arcI.bixelJApVec_vec{cellInd}((1:variable.bixelJApVec_sz)+results.arcI.bixelJApVec_offset{cellInd}) = tempResults.bixelJApVec_vec;
+            results.arcI.bixelJApVec_offset{cellInd}                                                                    = results.arcI.bixelJApVec_offset{cellInd}+variable.bixelJApVec_sz;
             
             apertureInfo.beam(i).shape{phase_I}(j).shapeMap     = apertureInfo.beam(i).shape{phase_I}(j).shapeMap+tempResults.shapeMap;
             apertureInfo.beam(i).shape{phase_I}(j).sumGradSq    = apertureInfo.beam(i).shape{phase_I}(j).sumGradSq+tempResults.sumGradSq;
@@ -419,11 +422,11 @@ for j = 1:numOfShapes
             tempResults = matRad_bixWeightAndGrad(static,variable);
             
             % put tempResults into results
-            results.arcF.w{phase_F}(apertureInfo.beam(i).bixelIndMap(~isnan(apertureInfo.beam(i).bixelIndMap)))         = results.arcF.w{phase_F}(apertureInfo.beam(i).bixelIndMap(~isnan(apertureInfo.beam(i).bixelIndMap)))+tempResults.w;
-            results.arcF.bixelJApVec_i{phase_F}((1:variable.bixelJApVec_sz)+results.arcF.bixelJApVec_offset{phase_F})   = tempResults.bixelJApVec_i;
-            results.arcF.bixelJApVec_j{phase_F}((1:variable.bixelJApVec_sz)+results.arcF.bixelJApVec_offset{phase_F})   = tempResults.bixelJApVec_j;
-            results.arcF.bixelJApVec_vec{phase_F}((1:variable.bixelJApVec_sz)+results.arcF.bixelJApVec_offset{phase_F}) = tempResults.bixelJApVec_vec;
-            results.arcF.bixelJApVec_offset{phase_F}                                                                    = results.arcF.bixelJApVec_offset{phase_F}+variable.bixelJApVec_sz;
+            results.arcF.w{cellInd}(apertureInfo.beam(i).bixelIndMap(~isnan(apertureInfo.beam(i).bixelIndMap)))         = results.arcF.w{cellInd}(apertureInfo.beam(i).bixelIndMap(~isnan(apertureInfo.beam(i).bixelIndMap)))+tempResults.w;
+            results.arcF.bixelJApVec_i{cellInd}((1:variable.bixelJApVec_sz)+results.arcF.bixelJApVec_offset{cellInd})   = tempResults.bixelJApVec_i;
+            results.arcF.bixelJApVec_j{cellInd}((1:variable.bixelJApVec_sz)+results.arcF.bixelJApVec_offset{cellInd})   = tempResults.bixelJApVec_j;
+            results.arcF.bixelJApVec_vec{cellInd}((1:variable.bixelJApVec_sz)+results.arcF.bixelJApVec_offset{cellInd}) = tempResults.bixelJApVec_vec;
+            results.arcF.bixelJApVec_offset{cellInd}                                                                    = results.arcF.bixelJApVec_offset{cellInd}+variable.bixelJApVec_sz;
             
             apertureInfo.beam(i).shape{phase_F}(j).shapeMap     = apertureInfo.beam(i).shape{phase_F}(j).shapeMap+tempResults.shapeMap;
             apertureInfo.beam(i).shape{phase_F}(j).sumGradSq    = tempResults.sumGradSq;

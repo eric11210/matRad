@@ -264,7 +264,7 @@ if pln.propOpt.preconditioner
 end
 
 % get dose variance
-[dVarSum,~] = matRad_doseVariance(resultGUI.apertureInfo,dij);
+[dVarSum,~] = matRad_doseVarianceSum(resultGUI.apertureInfo,dij);
 
 resultGUI.w          = sequencing.w;
 resultGUI.wSequenced = sequencing.w;

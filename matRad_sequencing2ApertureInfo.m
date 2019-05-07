@@ -509,7 +509,7 @@ if pln.propOpt.runVMAT
         end
         
         apertureInfo.beam(i).gradOffset = gradOffset;
-        gradOffset = gradOffset+apertureInfo.numPhases.*apertureInfo.beam(i).numUniqueVar;
+        gradOffset = gradOffset+apertureInfo.beam(i).numUniqueVar.*apertureInfo.numPhases.^2;
     end
     
 else

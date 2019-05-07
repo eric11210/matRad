@@ -80,19 +80,19 @@ iBitStr = sprintf('uint%d',2^ceil(log2(log2(numel(apertureInfoVect)))));
 jBitStr = sprintf('uint%d',2^ceil(log2(log2(updatedInfo.totalNumOfBixels))));
 
 % weights
-bixWeightAndGradBase.w = cell(updatedInfo.numPhases,1);
+bixWeightAndGradBase.w = cell(updatedInfo.numPhases.^2,1);
 bixWeightAndGradBase.w(:) = {zeros(updatedInfo.totalNumOfBixels,1)};
 % jacobian
-bixWeightAndGradBase.bixelJApVec_vec = cell(updatedInfo.numPhases,1);
+bixWeightAndGradBase.bixelJApVec_vec = cell(updatedInfo.numPhases.^2,1);
 bixWeightAndGradBase.bixelJApVec_vec(:) = {zeros(updatedInfo.bixelJApVec_sz,1)};
 % vector indices
-bixWeightAndGradBase.bixelJApVec_i = cell(updatedInfo.numPhases,1);
+bixWeightAndGradBase.bixelJApVec_i = cell(updatedInfo.numPhases.^2,1);
 bixWeightAndGradBase.bixelJApVec_i(:) = {zeros(updatedInfo.bixelJApVec_sz,1,iBitStr)};
 % bixel indices
-bixWeightAndGradBase.bixelJApVec_j = cell(updatedInfo.numPhases,1);
+bixWeightAndGradBase.bixelJApVec_j = cell(updatedInfo.numPhases.^2,1);
 bixWeightAndGradBase.bixelJApVec_j(:) = {zeros(updatedInfo.bixelJApVec_sz,1,jBitStr)};
 % offset
-bixWeightAndGradBase.bixelJApVec_offset = cell(updatedInfo.numPhases,1);
+bixWeightAndGradBase.bixelJApVec_offset = cell(updatedInfo.numPhases.^2,1);
 bixWeightAndGradBase.bixelJApVec_offset(:) = {0};
 
 % make arcI and arcF structs
@@ -100,19 +100,19 @@ bixWeightAndGrad.arcI = bixWeightAndGradBase;
 bixWeightAndGrad.arcF = bixWeightAndGradBase;
 
 % weights
-bixWeightAndGradBase_angle.w = cell(updatedInfo.numPhases,1);
+bixWeightAndGradBase_angle.w = cell(updatedInfo.numPhases.^2,1);
 % jacobian
-bixWeightAndGradBase_angle.bixelJApVec_vec = cell(updatedInfo.numPhases,1);
+bixWeightAndGradBase_angle.bixelJApVec_vec = cell(updatedInfo.numPhases.^2,1);
 % vector indices
-bixWeightAndGradBase_angle.bixelJApVec_i = cell(updatedInfo.numPhases,1);
+bixWeightAndGradBase_angle.bixelJApVec_i = cell(updatedInfo.numPhases.^2,1);
 % bixel indices
-bixWeightAndGradBase_angle.bixelJApVec_j = cell(updatedInfo.numPhases,1);
+bixWeightAndGradBase_angle.bixelJApVec_j = cell(updatedInfo.numPhases.^2,1);
 % FIGURE OUT IF WE NEED 32BIT OR 16BIT
 % offset
-bixWeightAndGradBase_angle.bixelJApVec_offset = cell(updatedInfo.numPhases,1);
+bixWeightAndGradBase_angle.bixelJApVec_offset = cell(updatedInfo.numPhases.^2,1);
 
-updatedInfo.arcI.bixelJApVec = cell(updatedInfo.numPhases*numel(updatedInfo.beam),1);
-updatedInfo.arcF.bixelJApVec = cell(updatedInfo.numPhases*numel(updatedInfo.beam),1);
+updatedInfo.arcI.bixelJApVec = cell(numel(updatedInfo.beam).*updatedInfo.numPhases.^2,1);
+updatedInfo.arcF.bixelJApVec = cell(numel(updatedInfo.beam).*updatedInfo.numPhases.^2,1);
 
 %{
 for i = 1:numel(updatedInfo.beam)
@@ -285,7 +285,6 @@ for i = 1:numel(updatedInfo.beam)
     bixWeightAndGradBase_angle.bixelJApVec_j(:) = {zeros(updatedInfo.beam(i).bixelJApVec_sz,1,jBitStr)};
     % FIGURE OUT IF WE NEED 32BIT OR 16BIT
     % offset
-    bixWeightAndGradBase_angle.bixelJApVec_offset = cell(updatedInfo.numPhases,1);
     bixWeightAndGradBase_angle.bixelJApVec_offset(:) = {0};
     
     % make arcI and arcF structs
@@ -296,47 +295,64 @@ for i = 1:numel(updatedInfo.beam)
     % possibly have an effect on the weights of that gantry angle
     [updatedInfo,bixWeightAndGrad_angle] = matRad_bixWeightAndGradWrapper(updatedInfo,i,bixWeightAndGrad_angle);
     
-    for phase = 1:updatedInfo.numPhases
+    % loop over initial and final phases to put weights and gradients in
+    % their proper place
+    for phase_I = 1:updatedInfo.numPhases
         
-        bixWeightAndGrad.arcI.w{phase} = bixWeightAndGrad.arcI.w{phase}+bixWeightAndGrad_angle.arcI.w{phase};
-        bixWeightAndGrad.arcF.w{phase} = bixWeightAndGrad.arcF.w{phase}+bixWeightAndGrad_angle.arcF.w{phase};
-        
-        % cut out zeros
-        delIndI = bixWeightAndGrad_angle.arcI.bixelJApVec_vec{phase} == 0;
-        delIndF = bixWeightAndGrad_angle.arcF.bixelJApVec_vec{phase} == 0;
-        
-        bixWeightAndGrad_angle.arcI.bixelJApVec_i{phase}(delIndI)   = [];
-        bixWeightAndGrad_angle.arcI.bixelJApVec_j{phase}(delIndI)   = [];
-        bixWeightAndGrad_angle.arcI.bixelJApVec_vec{phase}(delIndI) = [];
-        bixWeightAndGrad_angle.arcF.bixelJApVec_i{phase}(delIndF)   = [];
-        bixWeightAndGrad_angle.arcF.bixelJApVec_j{phase}(delIndF)   = [];
-        bixWeightAndGrad_angle.arcF.bixelJApVec_vec{phase}(delIndF) = [];
-        
-        updatedInfo.arcI.bixelJApVec{(i-1).*updatedInfo.numPhases+phase} = sparse(double(bixWeightAndGrad_angle.arcI.bixelJApVec_i{phase}),double(bixWeightAndGrad_angle.arcI.bixelJApVec_j{phase}),bixWeightAndGrad_angle.arcI.bixelJApVec_vec{phase},updatedInfo.beam(i).numUniqueVar,updatedInfo.beam(i).numBixels);
-        updatedInfo.arcF.bixelJApVec{(i-1).*updatedInfo.numPhases+phase} = sparse(double(bixWeightAndGrad_angle.arcF.bixelJApVec_i{phase}),double(bixWeightAndGrad_angle.arcF.bixelJApVec_j{phase}),bixWeightAndGrad_angle.arcF.bixelJApVec_vec{phase},updatedInfo.beam(i).numUniqueVar,updatedInfo.beam(i).numBixels);
+        for phase_F = 1:updatedInfo.numPhases
+            % DO BOTH LOOPS, PHASE_I AND PHASE_F, OUT HERE
+            % have arcI.w be of length numPhases*numPhases
+            % let it contain not the sum of all final phases but each final
+            % phase individually
+            % THEN we can use this for the variance!!
+            
+            cellInd = (phase_I-1).*updatedInfo.numPhases+phase_F;
+            
+            bixWeightAndGrad.arcI.w{cellInd} = bixWeightAndGrad.arcI.w{cellInd}+bixWeightAndGrad_angle.arcI.w{cellInd};
+            bixWeightAndGrad.arcF.w{cellInd} = bixWeightAndGrad.arcF.w{cellInd}+bixWeightAndGrad_angle.arcF.w{cellInd};
+            
+            % cut out zeros
+            delIndI = bixWeightAndGrad_angle.arcI.bixelJApVec_vec{cellInd} == 0;
+            delIndF = bixWeightAndGrad_angle.arcF.bixelJApVec_vec{cellInd} == 0;
+            
+            bixWeightAndGrad_angle.arcI.bixelJApVec_i{cellInd}(delIndI)   = [];
+            bixWeightAndGrad_angle.arcI.bixelJApVec_j{cellInd}(delIndI)   = [];
+            bixWeightAndGrad_angle.arcI.bixelJApVec_vec{cellInd}(delIndI) = [];
+            bixWeightAndGrad_angle.arcF.bixelJApVec_i{cellInd}(delIndF)   = [];
+            bixWeightAndGrad_angle.arcF.bixelJApVec_j{cellInd}(delIndF)   = [];
+            bixWeightAndGrad_angle.arcF.bixelJApVec_vec{cellInd}(delIndF) = [];
+            
+            updatedInfo.arcI.bixelJApVec{(i-1).*updatedInfo.numPhases.^2+cellInd} = sparse(double(bixWeightAndGrad_angle.arcI.bixelJApVec_i{cellInd}),double(bixWeightAndGrad_angle.arcI.bixelJApVec_j{cellInd}),bixWeightAndGrad_angle.arcI.bixelJApVec_vec{cellInd},updatedInfo.beam(i).numUniqueVar,updatedInfo.beam(i).numBixels);
+            updatedInfo.arcF.bixelJApVec{(i-1).*updatedInfo.numPhases.^2+cellInd} = sparse(double(bixWeightAndGrad_angle.arcF.bixelJApVec_i{cellInd}),double(bixWeightAndGrad_angle.arcF.bixelJApVec_j{cellInd}),bixWeightAndGrad_angle.arcF.bixelJApVec_vec{cellInd},updatedInfo.beam(i).numUniqueVar,updatedInfo.beam(i).numBixels);
+        end
     end
 end
 
 %% save bixelWeight, apertureVector, and Jacobian between the two
 updatedInfo.arcI.bixelWeights = bixWeightAndGrad.arcI.w;
 updatedInfo.arcF.bixelWeights = bixWeightAndGrad.arcF.w;
-updatedInfo.bixelWeights = cell(updatedInfo.numPhases,1);
+updatedInfo.bixelWeights = cell(updatedInfo.numPhases.^2,1);
 
 updatedInfo.apertureVector = apertureInfoVect;
 
 %updatedInfo.arcI.bixelJApVec = cell(updatedInfo.numPhases,1);
 %updatedInfo.arcF.bixelJApVec = cell(updatedInfo.numPhases,1);
-updatedInfo.bixelJApVec = cell(updatedInfo.numPhases,1);
+updatedInfo.bixelJApVec = cell(numel(updatedInfo.beam).*updatedInfo.numPhases.^2,1);
 
-for phase = 1:updatedInfo.numPhases
+for phase_I = 1:updatedInfo.numPhases
     
-    %updatedInfo.arcI.bixelJApVec{phase} = sparse(double(bixWeightAndGrad.arcI.bixelJApVec_i{phase}),double(bixWeightAndGrad.arcI.bixelJApVec_j{phase}),bixWeightAndGrad.arcI.bixelJApVec_vec{phase},numel(apertureInfoVect),updatedInfo.totalNumOfBixels);
-    %updatedInfo.arcF.bixelJApVec{phase} = sparse(double(bixWeightAndGrad.arcF.bixelJApVec_i{phase}),double(bixWeightAndGrad.arcF.bixelJApVec_j{phase}),bixWeightAndGrad.arcF.bixelJApVec_vec{phase},numel(apertureInfoVect),updatedInfo.totalNumOfBixels);
-    
-    % sum both arcs
-    updatedInfo.bixelWeights{phase}    = updatedInfo.arcI.bixelWeights{phase}+updatedInfo.arcF.bixelWeights{phase};
-    for i = 1:numel(updatedInfo.beam)
-        updatedInfo.bixelJApVec{(i-1).*updatedInfo.numPhases+phase}     = updatedInfo.arcI.bixelJApVec{(i-1).*updatedInfo.numPhases+phase}+updatedInfo.arcF.bixelJApVec{(i-1).*updatedInfo.numPhases+phase};
+    for phase_F = 1:updatedInfo.numPhases
+        
+        cellInd = (phase_I-1).*updatedInfo.numPhases+phase_F;
+        
+        %updatedInfo.arcI.bixelJApVec{phase} = sparse(double(bixWeightAndGrad.arcI.bixelJApVec_i{phase}),double(bixWeightAndGrad.arcI.bixelJApVec_j{phase}),bixWeightAndGrad.arcI.bixelJApVec_vec{phase},numel(apertureInfoVect),updatedInfo.totalNumOfBixels);
+        %updatedInfo.arcF.bixelJApVec{phase} = sparse(double(bixWeightAndGrad.arcF.bixelJApVec_i{phase}),double(bixWeightAndGrad.arcF.bixelJApVec_j{phase}),bixWeightAndGrad.arcF.bixelJApVec_vec{phase},numel(apertureInfoVect),updatedInfo.totalNumOfBixels);
+        
+        % sum both arcs
+        updatedInfo.bixelWeights{cellInd}    = updatedInfo.arcI.bixelWeights{cellInd}+updatedInfo.arcF.bixelWeights{cellInd};
+        for i = 1:numel(updatedInfo.beam)
+            updatedInfo.bixelJApVec{(i-1).*updatedInfo.numPhases.^2+cellInd}     = updatedInfo.arcI.bixelJApVec{(i-1).*updatedInfo.numPhases.^2+cellInd}+updatedInfo.arcF.bixelJApVec{(i-1).*updatedInfo.numPhases.^2+cellInd};
+        end
     end
 end
 
