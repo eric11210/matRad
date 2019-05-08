@@ -94,6 +94,7 @@ end
 % take only voxels inside patient
 V = [cst{:,4}];
 V = unique(vertcat(V{:}));
+dij.structVox = V;
 
 % find voxels in target
 % find all target voxels from cst cell array

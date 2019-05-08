@@ -53,6 +53,8 @@ for i = 1:numel(apertureInfo.beam)
     % loop over initial and final phases
     for phase_I = 1:apertureInfo.numPhases
         
+        %%% GET RID OF INVERSES OF DIJ?
+        
         % extract dijBeamPhase for phase_I
         dijBeamPhase_I      = dij.scaleFactor .* dij.physicalDose{phase_I}(dij.targetVox,currBixelIx);
         dijBeamPhaseInv_I   = dijBeamPhase_I';

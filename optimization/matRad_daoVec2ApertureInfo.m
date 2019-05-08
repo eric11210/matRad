@@ -329,15 +329,16 @@ for i = 1:numel(updatedInfo.beam)
 end
 
 %% save bixelWeight, apertureVector, and Jacobian between the two
-updatedInfo.arcI.bixelWeights = bixWeightAndGrad.arcI.w;
-updatedInfo.arcF.bixelWeights = bixWeightAndGrad.arcF.w;
-updatedInfo.bixelWeights = cell(updatedInfo.numPhases.^2,1);
+updatedInfo.arcI.bixelWeights   = bixWeightAndGrad.arcI.w;
+updatedInfo.arcF.bixelWeights   = bixWeightAndGrad.arcF.w;
+updatedInfo.bixelWeights        = cell(updatedInfo.numPhases,1);
+updatedInfo.bixelWeights(:)     = {zeros(updatedInfo.totalNumOfBixels,1)};
 
 updatedInfo.apertureVector = apertureInfoVect;
 
 %updatedInfo.arcI.bixelJApVec = cell(updatedInfo.numPhases,1);
 %updatedInfo.arcF.bixelJApVec = cell(updatedInfo.numPhases,1);
-updatedInfo.bixelJApVec = cell(numel(updatedInfo.beam).*updatedInfo.numPhases.^2,1);
+updatedInfo.bixelJApVec     = cell(numel(updatedInfo.beam).*updatedInfo.numPhases,1);
 
 for phase_I = 1:updatedInfo.numPhases
     
@@ -349,9 +350,25 @@ for phase_I = 1:updatedInfo.numPhases
         %updatedInfo.arcF.bixelJApVec{phase} = sparse(double(bixWeightAndGrad.arcF.bixelJApVec_i{phase}),double(bixWeightAndGrad.arcF.bixelJApVec_j{phase}),bixWeightAndGrad.arcF.bixelJApVec_vec{phase},numel(apertureInfoVect),updatedInfo.totalNumOfBixels);
         
         % sum both arcs
-        updatedInfo.bixelWeights{cellInd}    = updatedInfo.arcI.bixelWeights{cellInd}+updatedInfo.arcF.bixelWeights{cellInd};
+        updatedInfo.bixelWeights{phase_I} = updatedInfo.bixelWeights{phase_I}+updatedInfo.arcI.bixelWeights{cellInd};
+        updatedInfo.bixelWeights{phase_F} = updatedInfo.bixelWeights{phase_F}+updatedInfo.arcF.bixelWeights{cellInd};
+        %updatedInfo.bixelWeights{cellInd}    = updatedInfo.arcI.bixelWeights{cellInd}+updatedInfo.arcF.bixelWeights{cellInd};
+        
         for i = 1:numel(updatedInfo.beam)
-            updatedInfo.bixelJApVec{(i-1).*updatedInfo.numPhases.^2+cellInd}     = updatedInfo.arcI.bixelJApVec{(i-1).*updatedInfo.numPhases.^2+cellInd}+updatedInfo.arcF.bixelJApVec{(i-1).*updatedInfo.numPhases.^2+cellInd};
+            
+            if isempty(updatedInfo.bixelJApVec{(i-1).*updatedInfo.numPhases+phase_I})
+                updatedInfo.bixelJApVec{(i-1).*updatedInfo.numPhases+phase_I} = updatedInfo.arcI.bixelJApVec{(i-1).*updatedInfo.numPhases.^2+cellInd};
+            else
+                updatedInfo.bixelJApVec{(i-1).*updatedInfo.numPhases+phase_I} = updatedInfo.bixelJApVec{(i-1).*updatedInfo.numPhases+phase_I}+updatedInfo.arcI.bixelJApVec{(i-1).*updatedInfo.numPhases.^2+cellInd};
+                %updatedInfo.bixelJApVec{(i-1).*updatedInfo.numPhases.^2+cellInd}     = updatedInfo.arcI.bixelJApVec{(i-1).*updatedInfo.numPhases.^2+cellInd}+updatedInfo.arcF.bixelJApVec{(i-1).*updatedInfo.numPhases.^2+cellInd};
+            end
+            
+            if isempty(updatedInfo.bixelJApVec{(i-1).*updatedInfo.numPhases+phase_F})
+                updatedInfo.bixelJApVec{(i-1).*updatedInfo.numPhases+phase_F} = updatedInfo.arcF.bixelJApVec{(i-1).*updatedInfo.numPhases.^2+cellInd};
+            else
+                updatedInfo.bixelJApVec{(i-1).*updatedInfo.numPhases+phase_F} = updatedInfo.bixelJApVec{(i-1).*updatedInfo.numPhases+phase_F}+updatedInfo.arcF.bixelJApVec{(i-1).*updatedInfo.numPhases.^2+cellInd};
+                %updatedInfo.bixelJApVec{(i-1).*updatedInfo.numPhases.^2+cellInd}     = updatedInfo.arcI.bixelJApVec{(i-1).*updatedInfo.numPhases.^2+cellInd}+updatedInfo.arcF.bixelJApVec{(i-1).*updatedInfo.numPhases.^2+cellInd};
+            end
         end
     end
 end
