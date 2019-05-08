@@ -1,9 +1,12 @@
-function [dMean,dVar] = matRad_doseVarianceMC(apertureInfo,dij,nHistories)
+function [dMean_MC,dVar_MC] = matRad_doseVarianceMC(apertureInfo,dij,nHistories)
 % Monte Carlo estimate of the mean and variance of the dose
 
 % initialize sum of dose and square of dose
 dSum    = zeros(dij.numOfVoxels,1);
 d2Sum   = zeros(dij.numOfVoxels,1);
+
+% determine transition times
+tTrans = [apertureInfo.beam.time]';
 
 % initialize options
 if apertureInfo.run4D
@@ -16,23 +19,23 @@ options.run4D = apertureInfo.run4D;
 options.FMO = false;
 
 % prepare motionModel structure
-apertureInfo.motionModelOriginal = apertureInfo.motionModel;
-apertureInfo = rmfield(apertureInfo,'motionModel');
-apertureInfo.motionModel.type = 'single';
-apertureInfo.motionModel.numPhases = apertureInfo.numPhases;
+apertureInfo_hist                       = apertureInfo;
+apertureInfo_hist                       = rmfield(apertureInfo_hist,'motionModel');
+apertureInfo_hist.motionModel.type      = 'single';
+apertureInfo_hist.motionModel.numPhases = apertureInfo_hist.numPhases;
 
 % loop over number of histories
 for hist = 1:nHistories
     
     % MC simulation of tumour trajectory
-    [lSimulated,tSimulated]= matRad_runMarkovChain_Q(apertureInfo.motionModelOriginal.qij,apertureInfo.motionModelOriginal.initProb,sum([apertureInfo.beam.time]));
+    [lSimulated_hist,tSimulated_hist]= matRad_runMarkovChain_Q(apertureInfo.motionModel.qij,apertureInfo.motionModel.initProb,tTrans);
     
     % insert trajectory in apertureInfo struct
-    apertureInfo.motionModel.lSimulated = lSimulated;
-    apertureInfo.motionModel.tSimulated = tSimulated;
+    apertureInfo_hist.motionModel.lSimulated = lSimulated_hist;
+    apertureInfo_hist.motionModel.tSimulated = tSimulated_hist;
     
     % get weights for this particular history
-    apertureInfo_hist = matRad_daoVec2ApertureInfo(apertureInfo,apertureInfo.apertureVector);
+    apertureInfo_hist = matRad_daoVec2ApertureInfo(apertureInfo_hist,apertureInfo_hist.apertureVector);
     
     % get dose for this particular trajectory
     d_hist = matRad_backProjection(apertureInfo_hist.bixelWeights,dij,options);
@@ -44,8 +47,8 @@ for hist = 1:nHistories
 end
 
 % calculate mean and variance of dose
-dMean   = dSum./nHistories;
-dVar    = (d2Sum-nHistories.*dMean.^2)./(nHistories-1);
+dMean_MC   = dSum./nHistories;
+dVar_MC    = (d2Sum-nHistories.*dMean_MC.^2)./(nHistories-1);
 
 end
 

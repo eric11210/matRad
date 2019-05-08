@@ -33,10 +33,12 @@ switch motionModel.type
         Pi_T        = zeros(1,motionModel.numPhases);
         
         % determine phases at beginning and end of arc
-        phase_I = motionModel.lSimulated(motionModel.tSimulated <= T);
-        phase_F = motionModel.lSimulated(motionModel.tSimulated <= (T+transT));
-        phase_I = phase_I(end);
-        phase_F = phase_F(end);
+        phase_I = motionModel.lSimulated(abs(motionModel.tSimulated-T) <= eps.*T);
+        phase_F = motionModel.lSimulated(abs(motionModel.tSimulated-(T+transT)) <= eps.*(T+transT));
+        
+        if isempty(phase_I) || isempty(phase_F)
+            error('Phases not found!');
+        end
         
         % use these phases to construct the probability matrices and vectors
         Pij_transT(phase_I,phase_F) = 1;

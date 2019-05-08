@@ -92,8 +92,8 @@ for i1_loop = 1:numel(apertureInfo.beam)
             % (the probability to transition from I1 to F1)
             
             % calculate the transition and arrival times
-            transT  = apertureInfo.beam(i).time;
-            T       = sum([apertureInfo.beam(1:(i-1)).time]);
+            transT  = apertureInfo.beam(i1).time;
+            T       = sum([apertureInfo.beam(1:(i1-1)).time]);
             
             % calculate the transition and arrival times
             [Pij_transT,~,Pi_T,~] = matRad_transAndTProb(transT,T,apertureInfo.motionModel);

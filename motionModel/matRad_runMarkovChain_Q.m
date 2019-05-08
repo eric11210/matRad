@@ -1,72 +1,41 @@
-function [lSimulated,tSimulated]= matRad_runMarkovChain_Q(qij,initProb,tStop)
+function [lSimulated,tSimulated]= matRad_runMarkovChain_Q(qij,initProb,tTrans)
 % simulate a history of the Markov Chain
 
 numFrames = numel(initProb);
 
-% get rate parameters
-lambda_vec = -diag(qij);
+% determine number of steps to take
+nSteps = numel(tTrans);
 
-% get mean parameters
-mu_vec = 1./lambda_vec;
+% allocate frames
+lSimulated = zeros(nSteps+1,1);
 
-% get probability transition matrix
-pij = qij.*mu_vec;
-% take transpose to make memory access faster
-pij_transpose = pij';
-
-% estimate maximum number of transitions in time tStop
-maxTrans = 10.*ceil(tStop.*max(lambda_vec));
-
-% allocate frames and transition times
-lSimulated = zeros(maxTrans,1);
-tTrans     = zeros(maxTrans,1);
+% accumulate transition times to get simulated times
+tSimulated = [0; cumsum(tTrans)];
 
 % sample first frame
 lSimulated(1) = randsample(numFrames,1,true,initProb);
 
-% initialize total time
-tTot = 0;
-
-% initialize step counter
-step = 1;
-
-% initialize set of next frames
-nextFramesAll = 1:numFrames;
-
-% stop loop once total simulated exceeds stopping time
-while tTot < tStop
+% loop through the steps
+for step = 1:nSteps
+    
+    %% simulation
     
     % get current frame
     lCurrent = lSimulated(step);
     
-    % get exponential rate parameter
-    mu = mu_vec(lCurrent);
+    % get time since last step
+    tStep = tTrans(step);
     
-    % sample from exponential distribution with mu parameter
-    tSample = exprnd(mu);
-    
-    % insert sampled time into transition times
-    tTrans(step) = tSample;
-    
-    % increase total time
-    tTot = tTot+tSample;
+    % calculate transition probability to arrive at i at T and derivative
+    Pij_tStep = expm(qij.*tStep);
     
     % sample next frame
-    nextFrames              = nextFramesAll;
-    nextFrames(lCurrent)    = [];
-    lSimulated(step+1)      = randsample(nextFrames,1,true,pij_transpose(nextFrames,lCurrent));
+    lNext = randsample(numFrames,1,true,Pij_tStep(lCurrent,:));
     
-    % increase step
-    step = step+1;
+    % insert next frame
+    lSimulated(step+1) = lNext;
     
 end
-
-% delete any elements not used in lSimulated and tTrans
-lSimulated((step+1):end)    = [];
-tTrans(step:end)            = [];
-
-% accumulate transition times to get simulated times
-tSimulated = [0; cumsum(tTrans)];
 
 end
 
