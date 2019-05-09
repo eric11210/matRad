@@ -219,6 +219,7 @@ for i1_loop = 1:numel(apertureInfo.beam)
                     % only do the following if we need d2 stuff,
                     % i.e. if pNorm is > eps
                     if dod2
+                        
                         % here, dRaw2 = dRaw1
                         
                         % the "weight" tensors are given by of all
