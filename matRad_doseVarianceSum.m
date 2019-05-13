@@ -100,6 +100,9 @@ for i = 1:numel(apertureInfo.beam)
     
     % dump gradient for i
     dGrad(:,currVarIx) = dGrad(:,currVarIx)+dGrad_i;
+    
+    % delete gradient for ~d2KeepVar
+    dGrad(:,currVarIx(~apertureInfo.beam(i).d2KeepVar)) = 0;
 end
 
 % preallocate full values and indices

@@ -13,7 +13,7 @@ end
 if recalcVar
     
     % calculate variance and gradient
-    [dVar,dVarGrad] = matRad_doseVariance(apertureInfo,dij);
+    [dVarSum,dVarSumGrad] = matRad_doseVarianceSum(apertureInfo,dij);
     
     % initialize fVar, fVarGrad
     fVar = 0;
@@ -22,20 +22,21 @@ if recalcVar
     % compute objective function for every VOI.
     for  i = 1:size(cst,1)
         
-        % Only take OAR or target VOI.
-        if ~isempty(cst{i,4}{1}) && isequal(cst{i,3},'OAR')
+        % Only take target VOI.
+        if ~isempty(cst{i,4}{1}) && isequal(cst{i,3},'TARGET')
             
             % loop over the number of constraints for the current VOI
             for j = 1:numel(cst{i,6})
                 
-                % only perform objective computations for objectives
-                if isempty(strfind(cst{i,6}(j).type,'constraint'))
+                % only perform objective computations for square deviation
+                % objectives
+                if strcmp(cst{i,6}(j).type,'square deviation')
                     
-                    dVar_i      = dVar(cst{i,4}{1});
-                    dVarGrad_i  = dVarGrad(cst{i,4}{1},:);
+                    dVar_i      = numel(cst{i,4}{1}).*dVarSum./numel(dij.targetVox);
+                    dVarGrad_i  = numel(cst{i,4}{1}).*dVarSumGrad./numel(dij.targetVox);
                     
-                    fVar    = fVar + (cst{i,6}(j).penalty./dij.numOfFractions).*(sum(dVar_i,1)./numel(dVar_i));
-                    gVar    = gVar + (cst{i,6}(j).penalty./dij.numOfFractions).*(sum(dVarGrad_i,1)./numel(dVarGrad_i));
+                    fVar    = fVar + (cst{i,6}(j).penalty./dij.numOfFractions).*(dVar_i./numel(cst{i,4}{1}));
+                    gVar    = gVar + (cst{i,6}(j).penalty./dij.numOfFractions).*(dVarGrad_i./numel(cst{i,4}{1}));
                     
                 end
             end

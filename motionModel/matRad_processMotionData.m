@@ -51,9 +51,17 @@ nPosSubPhasesMinExt_final = 0;
 percAbove = 0;
 percBelow = 0;
 
+% get factor for numer of position subphases to number of position bins
+% if we are doing FSM, this is 1, otherwise 2
+if options.doFSM
+    oneOrTwo = 1;
+else
+    oneOrTwo = 2;
+end
+
 while percAbove < percExtTarg || percBelow < percExtTarg
     
-    nPosBins = nPosPhases.*nSubPerPosPhase/2+nPosSubPhasesMaxExt+nPosSubPhasesMinExt;
+    nPosBins = nPosPhases.*nSubPerPosPhase/oneOrTwo+nPosSubPhasesMaxExt+nPosSubPhasesMinExt;
     deltaL = (xBoundsMax-xBoundsMin)./nPosBins;
     lMaxThres = xBoundsMax-nPosSubPhasesMaxExt.*deltaL;
     lMinThres = xBoundsMin+nPosSubPhasesMinExt.*deltaL;
@@ -75,18 +83,14 @@ end
 nPosSubPhasesMaxExt = nPosSubPhasesMaxExt_final;
 nPosSubPhasesMinExt = nPosSubPhasesMinExt_final;
 
-nPosBins = nPosPhases.*nSubPerPosPhase/2+nPosSubPhasesMaxExt+nPosSubPhasesMinExt;
+nPosBins = nPosPhases.*nSubPerPosPhase/oneOrTwo+nPosSubPhasesMaxExt+nPosSubPhasesMinExt;
 deltaL = (xBoundsMax-xBoundsMin)./nPosBins;
 lMaxThres = xBoundsMax-nPosSubPhasesMaxExt.*deltaL;
 lMinThres = xBoundsMin+nPosSubPhasesMinExt.*deltaL;
 percAbove = 100.*nnz(x_sample_dec > lMaxThres)./numel(x_sample_dec);
 percBelow = 100*nnz(x_sample_dec < lMinThres)./numel(x_sample_dec);
 
-if options.doFSM
-    nPosSubPhases = nPosBins;
-else
-    nPosSubPhases = 2.*nPosBins;
-end
+nPosSubPhases = oneOrTwo.*nPosBins;
 
 xBounds = linspace(xBoundsMax,xBoundsMin,nPosBins+1);
 
@@ -269,6 +273,7 @@ subPhase2PosSubPhase = posStateSubPhase2PosSubPhase(subPhase2PosStateSubPhase);
 % convert from sub phase to state only
 subPhase2State = posStateSubPhase2State(subPhase2PosStateSubPhase);
 
+%{
 % add the exhale and EOE states if doing FSM
 if options.doFSM
     
@@ -282,13 +287,18 @@ if options.doFSM
     subPhase2PosSubPhase(subphase2FS == 2 | subphase2FS == 3) = 2.*nPosSubPhases+1-subPhase2PosSubPhase(subphase2FS == 2 | subphase2FS == 3);
     
 end
+%}
 
 % convert from sub phase to velocity only
 subPhase2VelSubPhase = floor((1:nSubPhases)'./(nStates.*nPosSubPhases))+1;
 subPhase2VelSubPhase(subPhaseChangeInd) = subPhase2VelSubPhase(subPhaseChangeInd)-1;
 
 % convert from pos sub phase to pos phase
-posSubPhase2PosPhase = [repmat(nPosPhases+1,nPosSubPhasesMaxExt,1); repelem((1:nPosPhases/2)',nSubPerPosPhase,1); repmat(nPosPhases+2,nPosSubPhasesMinExt*2,1); repelem(((nPosPhases/2+1):nPosPhases)',nSubPerPosPhase,1); repmat(nPosPhases+1,nPosSubPhasesMaxExt,1)];
+if options.doFSM
+    posSubPhase2PosPhase = [repmat(nPosPhases+1,nPosSubPhasesMaxExt,1); repelem((1:nPosPhases)',nSubPerPosPhase,1); repmat(nPosPhases+2,nPosSubPhasesMinExt,1)];
+else
+    posSubPhase2PosPhase = [repmat(nPosPhases+1,nPosSubPhasesMaxExt,1); repelem((1:nPosPhases/2)',nSubPerPosPhase,1); repmat(nPosPhases+2,nPosSubPhasesMinExt*2,1); repelem(((nPosPhases/2+1):nPosPhases)',nSubPerPosPhase,1); repmat(nPosPhases+1,nPosSubPhasesMaxExt,1)];
+end
 
 % convert from vel sub phase to vel phase
 velSubPhase2VelPhase = [repmat(nVelPhases+1,nVelSubPhasesExt,1); repelem((1:nVelPhases)',nSubPerVelPhase,1); repmat(nVelPhases+2,nVelSubPhasesExt,1)];
@@ -309,9 +319,12 @@ subPhase2Phase = subPhase2PosPhase+(nPosPhases+2).*(subPhase2VelPhase-1);
 nSubPhasePerPhase = accumarray(subPhase2Phase,1);
 
 % convert from position subphase to position
-% remember to duplicate this to have both inhale and exhale
 posSubPhase2Pos = (diff(xBounds)./2+xBounds(1:nPosBins))';
-posSubPhase2Pos = [posSubPhase2Pos; flipud(posSubPhase2Pos)];
+if ~options.doFSM
+    % remember to duplicate this to have both inhale and exhale if not
+    % doing FSM
+    posSubPhase2Pos = [posSubPhase2Pos; flipud(posSubPhase2Pos)];
+end
 
 % convert from position phase to position
 posPhase2Pos = zeros(nPosPhases+2,1);

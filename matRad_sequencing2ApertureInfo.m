@@ -398,16 +398,35 @@ if pln.propOpt.runVMAT
         apertureInfo = matRad_doDAD(apertureInfo,stf);
         
         % store transition probabilities in apertureInfo
-        % move to separate function later??? (use Markov chain to determine
-        % mask)
-        apertureInfo.motionModel.type   = 'Markov';
-        apertureInfo.motionModel.qij    = rand(apertureInfo.numPhases,apertureInfo.numPhases)/2;
-        for i = 1:apertureInfo.numPhases
-            apertureInfo.motionModel.qij(i,i) = 0;
-            apertureInfo.motionModel.qij(i,i) = -sum(apertureInfo.motionModel.qij(i,:),2);
+        if isfield(pln.propOpt.prop4D,'motionModel')
+            
+            % use model if it exists
+            apertureInfo.motionModel        = pln.propOpt.prop4D.motionModel;
+            apertureInfo.motionModel.type   = 'Markov';
+            
+            % strip model of the "out of bounds" phases
+            apertureInfo.motionModel = matRad_stripMarkovOOB(apertureInfo.motionModel);
+            
+            % determine initial position phase
+            posPhaseProb = accumarray(apertureInfo.motionModel.indices.subPhase2PosPhase,apertureInfo.motionModel.Pi_deltaTSample);
+            initPosPhase = find(posPhaseProb == max(posPhaseProb));
+            
+            % determine initial probabililty
+            apertureInfo.motionModel.initProb = apertureInfo.motionModel.indices.subPhase2PosPhase == initPosPhase;
+            apertureInfo.motionModel.initProb = apertureInfo.motionModel.initProb'./sum(apertureInfo.motionModel.initProb);
+            
+        else
+            
+            apertureInfo.motionModel.type   = 'Markov';
+            apertureInfo.motionModel.qij    = rand(apertureInfo.numPhases,apertureInfo.numPhases)/2;
+            for i = 1:apertureInfo.numPhases
+                apertureInfo.motionModel.qij(i,i) = 0;
+                apertureInfo.motionModel.qij(i,i) = -sum(apertureInfo.motionModel.qij(i,:),2);
+            end
+            apertureInfo.motionModel.initProb  = rand(1,apertureInfo.numPhases);
+            apertureInfo.motionModel.initProb  = apertureInfo.motionModel.initProb./sum(apertureInfo.motionModel.initProb);
+            
         end
-        apertureInfo.motionModel.initProb  = rand(1,apertureInfo.numPhases);
-        apertureInfo.motionModel.initProb  = apertureInfo.motionModel.initProb./sum(apertureInfo.motionModel.initProb);
         
     else
         apertureInfo.motionModel.qij       = 0;

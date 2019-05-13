@@ -38,15 +38,21 @@ global matRad_global_apertureInfo;
 % update apertureInfo from the global variable
 apertureInfo = matRad_global_apertureInfo;
 
+% also read in the global recalc variance variable
+global matRad_global_recalcVar;
+
 % update apertureInfo, bixel weight vector an mapping of leafes to bixels
 if ~isequal(apertureInfoVec,apertureInfo.apertureVector)
     apertureInfo = matRad_daoVec2ApertureInfo(apertureInfo,apertureInfoVec);
     matRad_global_apertureInfo = apertureInfo;
+    
+    % recalculate the variance
+    matRad_global_recalcVar = true;
 end
 
 % bixel based objective function calculation
 f = matRad_objFuncWrapper(apertureInfo.bixelWeights,dij,cst,options);
 
 % add in variance term
-%[fVar,~]    = matRad_varObjAndGradFunc(apertureInfo,dij,cst);
-%f           = f+fVar;
+[fVar,~]    = matRad_varObjAndGradFunc(apertureInfo,dij,cst);
+f           = f+fVar;

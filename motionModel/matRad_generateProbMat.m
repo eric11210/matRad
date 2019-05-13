@@ -45,12 +45,19 @@ Pij_deltaTSample(zi_deltaTSample == 0) = 0;
 % construction of probability vector (time-homogeneous)
 Pi_deltaTSample = zeros(nSubPhases,1);
 
+% prepare to delete subphases which are not reached
+deleteSubPhase = zeros(nSubPhases,1,'logical');
+
 for i = 1:nSubPhases
     Pi_deltaTSample(i) = nnz(l_sample == i)./numel(l_sample);
+    
+    deleteSubPhase(i) = sum(Pij_deltaTSample(i,:)) == 0;
 end
 
 % construct transition rate matrix
-qij = (Pij_deltaTSample-eye(nSubPhases))./deltaT_sample;
+identity = eye(nSubPhases);
+identity(deleteSubPhase,deleteSubPhase) = 0;
+qij = (Pij_deltaTSample-identity)./deltaT_sample;
 
 if false
     % determine possible transitions
@@ -81,6 +88,7 @@ model.Pi_deltaTSample   = Pi_deltaTSample;
 model.qij               = qij;
 model.deltaT_sample     = data.deltaT_sample;
 model.indices           = data.indices;
+model.deleteSubPhase    = deleteSubPhase;
 
 end
 

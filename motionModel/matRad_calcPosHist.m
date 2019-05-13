@@ -43,7 +43,7 @@ for history = 1:nHistories
     initSubPhase = find(r < cumInitSimDist,1,'first');
     
     % do MC
-    l_simulated = matRad_runMarkovChain(model.Pij_deltaTSample,numel(data.l_sample),initSubPhase,false);
+    l_simulated = matRad_runMarkovChain_P(model.Pij_deltaTSample,numel(data.l_sample),initSubPhase,false);
     
     % convert l_sample to p_sample
     p_MCsample = data.indices.subPhase2PosPhase(l_simulated);
@@ -130,7 +130,7 @@ for history = 1:nHistories
     initSubPhase = find(r < cumInitSimDist,1,'first');
     
     % do MC
-    l_simulated = matRad_runMarkovChain(model.Pij_deltaTSample,numel(p_sample),initSubPhase,false);
+    l_simulated = matRad_runMarkovChain_P(model.Pij_deltaTSample,numel(p_sample),initSubPhase,false);
     
     % convert l_sample to p_sample
     p_MCsample = data.indices.subPhase2PosPhase(l_simulated);

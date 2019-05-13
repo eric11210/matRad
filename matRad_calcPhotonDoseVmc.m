@@ -39,18 +39,19 @@ if ~isdeployed % only if _not_ running as standalone
 end
 
 % meta information for dij
-dij.numOfBeams         = pln.propStf.numOfBeams;
-dij.numOfVoxels        = prod(ct.cubeDim);
-dij.resolution         = ct.resolution;
-dij.dimensions         = ct.cubeDim;
-dij.numOfScenarios     = 1;
-dij.numOfRaysPerBeam   = [stf(:).numOfRays];
-dij.weightToMU         = 100;
-dij.scaleFactor        = 1;
-dij.memorySaverPhoton  = pln.propDoseCalc.memorySaverPhoton;
-dij.totalNumOfBixels   = sum([stf(:).totalNumOfBixels]);
-dij.totalNumOfRays     = sum(dij.numOfRaysPerBeam);
-dij.numOfScenarios     = 1;
+dij.numOfBeams          = pln.propStf.numOfBeams;
+dij.numOfVoxels         = prod(ct.cubeDim);
+dij.resolution          = ct.resolution;
+dij.dimensions          = ct.cubeDim;
+dij.numOfScenarios      = 1;
+dij.numOfRaysPerBeam    = [stf(:).numOfRays];
+dij.weightToMU          = 100;
+dij.scaleFactor         = 1;
+dij.memorySaverPhoton   = pln.propDoseCalc.memorySaverPhoton;
+dij.totalNumOfBixels    = sum([stf(:).totalNumOfBixels]);
+dij.totalNumOfRays      = sum(dij.numOfRaysPerBeam);
+dij.numOfScenarios      = 1;
+dij.numOfFractions      = pln.numOfFractions;
 if pln.propOpt.run4D
     dij.numPhases          = ct.tumourMotion.numPhases;
     dij.numFrames          = ct.tumourMotion.numFrames;

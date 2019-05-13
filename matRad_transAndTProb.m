@@ -9,22 +9,22 @@ switch motionModel.type
         initProb    = motionModel.initProb;
         
         % calculate transition probability matrix and derivative
-        Pij_transT      = expm(qij.*transT);
-        Pij_transT_dot  = qij*Pij_transT;
+        PijSub_transT       = expm(qij.*transT);
+        PijSub_transT_dot   = qij*PijSub_transT;
         
         % calculate probability to arrive at i at T and derivative
-        Pi_T        = initProb*expm(qij.*T);
-        Pi_T_dot    = Pi_T*qij;
+        PiSub_T     = initProb*expm(qij.*T);
+        PiSub_T_dot = PiSub_T*qij;
         
-        % [subPhase2PosPhase_gridJ, subPhase2PosPhase_gridI] = meshgrid(subPhase2PosPhase);
+        % accumulate probabilities into position phases
+        [subPhase2PosPhase_gridJ, subPhase2PosPhase_gridI] = meshgrid(motionModel.indices.subPhase2PosPhase);
         
-        % norm = repmat(accumarray(subPhase2PosPhase_gridI(:),Pij(:)),[1 nPosPhases];
+        norm            = motionModel.indices.nSubPhasePerPosPhase;
+        Pij_transT      = accumarray([subPhase2PosPhase_gridI(:) subPhase2PosPhase_gridJ(:)],PijSub_transT(:))./norm;
+        Pij_transT_dot  = accumarray([subPhase2PosPhase_gridI(:) subPhase2PosPhase_gridJ(:)],PijSub_transT_dot(:))./norm;
         
-        % PIJ = accumarray([subPhase2PosPhase_gridI(:) subPhase2PosPhase_gridJ(:)],Pij(:))./norm;
-        
-        % PIJ(isnan(PIJ)) = 0;
-        
-        % PI = accumarray(subPhase2PosPhase,Pi);
+        Pi_T        = accumarray(motionModel.indices.subPhase2PosPhase,PiSub_T);
+        Pi_T_dot    = accumarray(motionModel.indices.subPhase2PosPhase,PiSub_T_dot);
         
     case 'single'
         
