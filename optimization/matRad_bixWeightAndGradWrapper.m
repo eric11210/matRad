@@ -429,7 +429,7 @@ for j = 1:numOfShapes
             results.arcF.bixelJApVec_offset{cellInd}                                                                    = results.arcF.bixelJApVec_offset{cellInd}+variable.bixelJApVec_sz;
             
             apertureInfo.beam(i).shape{phase_F}(j).shapeMap     = apertureInfo.beam(i).shape{phase_F}(j).shapeMap+tempResults.shapeMap;
-            apertureInfo.beam(i).shape{phase_F}(j).sumGradSq    = tempResults.sumGradSq;
+            apertureInfo.beam(i).shape{phase_F}(j).sumGradSq    = apertureInfo.beam(i).shape{phase_F}(j).sumGradSq+tempResults.sumGradSq;
             
         end
     end

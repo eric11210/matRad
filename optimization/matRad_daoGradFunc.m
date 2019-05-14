@@ -106,9 +106,11 @@ for i = 1:numel(apertureInfo.beam)
     
 end
 
-% add in variance term
-[~,gVar]    = matRad_varObjAndGradFunc(apertureInfo,dij,cst);
-g           = g+gVar;
+if apertureInfo.varOpt
+    % add in variance term
+    [~,gVar]    = matRad_varObjAndGradFunc(apertureInfo,dij,cst);
+    g           = g+gVar;
+end
 
 end
 

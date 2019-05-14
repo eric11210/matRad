@@ -263,8 +263,10 @@ if pln.propOpt.preconditioner
     resultGUI.apertureInfo = matRad_preconditionFactors(resultGUI.apertureInfo);
 end
 
-% get dose variance
-[dVarSum,~] = matRad_doseVarianceSum(resultGUI.apertureInfo,dij);
+if pln.propOpt.varOpt
+    % get dose variance
+    [dVarSum,~] = matRad_doseVarianceSum(resultGUI.apertureInfo,dij);
+end
 
 resultGUI.w          = sequencing.w;
 resultGUI.wSequenced = sequencing.w;

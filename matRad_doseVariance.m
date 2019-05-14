@@ -127,7 +127,7 @@ for i1_loop = 1:numel(apertureInfo.beam)
                         pNorm = pNormMat(phase_F1,phase_I2);
                         
                         % determine if we're doing d2 for this combo
-                        dod2 = abs(pNorm) > eps;
+                        dod2 = abs(pNorm) > eps && pNorm < inf;
                         
                         % second loop over final phases
                         for phase_F2 = 1:apertureInfo.numPhases
@@ -213,7 +213,7 @@ for i1_loop = 1:numel(apertureInfo.beam)
                     pNorm = pNormMat(phase_I1,phase_F1);
                     
                     % determine if we're doing d2 for this combo
-                    dod2 = abs(pNorm) > eps;
+                    dod2 = abs(pNorm) > eps && pNorm < inf;
                     
                     %% determine mean of squared dose for this combination
                     % only do the following if we need d2 stuff,
@@ -255,6 +255,9 @@ for i1_loop = 1:numel(apertureInfo.beam)
 end
 
 % calculate sum of variances
-dVar = d2-d.*d;
+dVarSmall = d2-d.*d;
+
+dVar = zeros(dij.numOfVoxels,1);
+dVar(dij.structVox) = dVarSmall;
 
 end

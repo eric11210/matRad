@@ -48,12 +48,8 @@ catch
     error(['Could not find the following machine file: ' fileName ]);
 end
 
-
-
 %calculate max leaf speed
 apertureInfo = matRad_maxLeafSpeed(apertureInfo);
-
-doInterp = 0;
 
 for i = 1:size(apertureInfo.beam,2)
     if apertureInfo.propVMAT.beam(i).DAOBeam
@@ -62,7 +58,10 @@ for i = 1:size(apertureInfo.beam,2)
         %constraints
         
         %if one of them is less than 1, then a constraint is violated
-        factorMURate = machine.constraints.monitorUnitRate(2)/apertureInfo.beam(i).shape{1}.MURate;
+        factorMURate = inf;
+        for phase = 1:apertureInfo.numPhases
+            factorMURate = min([machine.constraints.monitorUnitRate(2)/apertureInfo.beam(i).shape{phase}.MURate factorMURate]);
+        end
         factorLeafSpeed = machine.constraints.leafSpeed(2)/apertureInfo.beam(i).maxLeafSpeed;
         factorGantryRot = machine.constraints.gantryRotationSpeed(2)/apertureInfo.beam(i).gantryRot;
         
@@ -78,35 +77,29 @@ for i = 1:size(apertureInfo.beam,2)
         end
         
         %multiply each speed by this factor
-        apertureInfo.beam(i).shape{1}.MURate = factor*apertureInfo.beam(i).shape{1}.MURate;
+        for phase = 1:apertureInfo.numPhases
+            apertureInfo.beam(i).shape{phase}.MURate = factor*apertureInfo.beam(i).shape{phase}.MURate;
+        end
         apertureInfo.beam(i).maxLeafSpeed = factor*apertureInfo.beam(i).maxLeafSpeed;
         apertureInfo.beam(i).gantryRot = factor*apertureInfo.beam(i).gantryRot;
         apertureInfo.beam(i).time = apertureInfo.beam(i).time/factor;
         
-        factorMURate = machine.constraints.monitorUnitRate(1)/apertureInfo.beam(i).shape{1}.MURate;
-        
-        if factorMURate > 1
-            apertureInfo.beam(i).shape{1}.MURate = factorMURate*apertureInfo.beam(i).shape{1}.MURate;
-            apertureInfo.beam(i).shape{1}(1).weight = factorMURate*apertureInfo.beam(i).shape{1}(1).weight;
+        for phase = 1:apertureInfo.numPhases
+            factorMURate = machine.constraints.monitorUnitRate(1)/apertureInfo.beam(i).shape{phase}.MURate;
             
-            doInterp = 1;
+            if factorMURate > 1
+                apertureInfo.beam(i).shape{phase}.MURate = factorMURate*apertureInfo.beam(i).shape{phase}.MURate;
+                apertureInfo.beam(i).shape{phase}(1).weight = factorMURate*apertureInfo.beam(i).shape{phase}(1).weight;
+            end
         end
     end
 end
 
-%recalculate vector with new times
-
-%%%LOOK PAST THIS
+%recalculate vector with new times and weights
 [apertureInfo.apertureVector,~,~] = matRad_daoApertureInfo2Vec(apertureInfo);
 
-%redo interpolation
+%redo bixel weight calculation
 apertureInfo = matRad_daoVec2ApertureInfo(apertureInfo,apertureInfo.apertureVector);
-
-if doInterp
-    fprintf('\n\nWE ARE REDOING INTERPOLATION\n\n');
-else
-    fprintf('\n\nWE ARE NOT REDOING INTERPOLATION\n\n');
-end
 
 result.apertureInfo = apertureInfo;
 

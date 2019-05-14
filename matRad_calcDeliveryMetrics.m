@@ -42,7 +42,9 @@ apertureInfo.planMU = 0;
 if pln.propOpt.runVMAT
     
     for i = 1:numel(apertureInfo.beam)
-        apertureInfo.planMU = apertureInfo.planMU+apertureInfo.beam(i).shape{1}(1).MU;
+        for phase = 1:apertureInfo.numPhases
+            apertureInfo.planMU = apertureInfo.planMU+apertureInfo.beam(i).shape{phase}(1).MU;
+        end
     end
     
     %initInd = find([apertureInfo.beam.initializeBeam]);
@@ -157,7 +159,7 @@ if pln.propOpt.runVMAT
     end
     apertureInfo.time = totTime;
     
-    
+    %{
     apertureInfoVec = apertureInfo.apertureVector;
     if pln.propOpt.VMAToptions.continuousAperture
         leftLeafPos  = apertureInfoVec([1:apertureInfo.totalNumOfLeafPairs]+apertureInfo.totalNumOfShapes);
@@ -277,6 +279,7 @@ if pln.propOpt.runVMAT
         %apertureInfo.totalFracForward = sum(apertureInfo.fracForward.*timeInInit)./sum(timeInInit);
         apertureInfo.totalFracBackward = 1-apertureInfo.totalFracForward;
     end
+    %}
     
 end
 

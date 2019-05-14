@@ -292,6 +292,7 @@ end
 apertureInfo.runVMAT            = pln.propOpt.runVMAT;
 apertureInfo.preconditioner     = pln.propOpt.preconditioner;
 apertureInfo.run4D              = pln.propOpt.run4D;
+apertureInfo.varOpt             = pln.propOpt.varOpt;
 apertureInfo.numPhases          = sequencing.numPhases;
 apertureInfo.bixelWidth         = bixelWidth;
 apertureInfo.numOfMLCLeafPairs  = numOfMLCLeafPairs;
@@ -498,7 +499,8 @@ if pln.propOpt.runVMAT
             % keep weight and time variables when calculating gradients for
             % d2
             apertureInfo.beam(i).d2KeepVar = true(apertureInfo.beam(i).numUniqueVar,1);
-            apertureInfo.beam(i).d2KeepVar((apertureInfo.beam(i).numOfShapes.*apertureInfo.numPhases+1):(end-apertureInfo.totalNumOfShapes)) = false;
+            %apertureInfo.beam(i).d2KeepVar((apertureInfo.beam(i).numOfShapes.*apertureInfo.numPhases+1):end) = false;
+            %apertureInfo.beam(i).d2KeepVar((apertureInfo.beam(i).numOfShapes.*apertureInfo.numPhases+1):(end-apertureInfo.totalNumOfShapes)) = false;
             
         else
             apertureInfo.beam(i).bixelJApVec_sz = nnz(~isnan(apertureInfo.beam(i).bixelIndMap)).*intBixelFactor.*apertureInfo.numPhases;
@@ -524,11 +526,16 @@ if pln.propOpt.runVMAT
             % keep weight and time variables when calculating gradients for
             % d2
             apertureInfo.beam(i).d2KeepVar = true(apertureInfo.beam(i).numUniqueVar,1);
-            apertureInfo.beam(i).d2KeepVar((2.*apertureInfo.numPhases+1):(end-apertureInfo.totalNumOfShapes)) = false;
+            %apertureInfo.beam(i).d2KeepVar((2.*apertureInfo.numPhases+1):end) = false;
+            %apertureInfo.beam(i).d2KeepVar((2.*apertureInfo.numPhases+1):(end-apertureInfo.totalNumOfShapes)) = false;
         end
         
+        apertureInfo.beam(i).d2KeepVar = find(apertureInfo.beam(i).d2KeepVar);
+        
+        apertureInfo.beam(i).numKeepVar = numel(apertureInfo.beam(i).d2KeepVar);
+        
         apertureInfo.beam(i).gradOffset = gradOffset;
-        gradOffset = gradOffset+apertureInfo.beam(i).numUniqueVar.*apertureInfo.numPhases.^2;
+        gradOffset = gradOffset+apertureInfo.beam(i).numKeepVar.*apertureInfo.numPhases.^2;
     end
     
 else

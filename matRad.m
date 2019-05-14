@@ -116,6 +116,7 @@ pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing = 8;      % Max gantry angle sp
 pln.propOpt.VMAToptions.maxFMOGantryAngleSpacing = 32;      % Max gantry angle spacing for FMO
 
 pln.propOpt.run4D = true;
+pln.propOpt.varOpt = true;
 pln.propOpt.prop4D.singlePhaseFMO = true;
 % multi-phase FMO hasn't been implemented fully (would have to do changes in FMO and leaf
 % sequencing - probably better only for fluence, not DAO).
