@@ -148,25 +148,47 @@ end
 % determine probabilities
 [Pij_transT,Pij_transT_dot,Pi_T,Pi_T_dot] = matRad_transAndTProb(apertureInfo.beam(i).time,sum([apertureInfo.beam(1:(i-1)).time]),apertureInfo.motionModel);
 
+% determine probability and gradient matrices
+pMat_sub    = Pi_T'.*Pij_transT;
+pMat        = accumarray([apertureInfo.motionModel.indices.subPhase2PosPhase_gridI(:) apertureInfo.motionModel.indices.subPhase2PosPhase_gridJ(:)],pMat_sub(:));
+
+pGradMat1_sub       = Pi_T_dot'.*Pij_transT;
+pGradMat1           = accumarray([apertureInfo.motionModel.indices.subPhase2PosPhase_gridI(:) apertureInfo.motionModel.indices.subPhase2PosPhase_gridJ(:)],pGradMat1_sub(:));
+pGradMat1_part      = accumarray([apertureInfo.motionModel.indices.subPhase2PosPhase_gridI(:) repelem((1:apertureInfo.motionModel.indices.nSubPhases)',apertureInfo.motionModel.indices.nSubPhases)],pGradMat1_sub(:));
+pGradMat2_sub       = Pi_T'.*Pij_transT_dot;
+pGradMat2           = accumarray([apertureInfo.motionModel.indices.subPhase2PosPhase_gridI(:) apertureInfo.motionModel.indices.subPhase2PosPhase_gridJ(:)],pGradMat2_sub(:));
+pGradMat2_part      = accumarray([apertureInfo.motionModel.indices.subPhase2PosPhase_gridI(:) repelem((1:apertureInfo.motionModel.indices.nSubPhases)',apertureInfo.motionModel.indices.nSubPhases)],pGradMat2_sub(:));
+PijGrad_transT      = accumarray([apertureInfo.motionModel.indices.subPhase2PosPhase_gridI(:) apertureInfo.motionModel.indices.subPhase2PosPhase_gridJ(:)],Pij_transT_dot(:));
+PijGrad_transT_part = accumarray([repmat((1:apertureInfo.motionModel.indices.nSubPhases)',[apertureInfo.motionModel.indices.nSubPhases 1]) apertureInfo.motionModel.indices.subPhase2PosPhase_gridJ(:)],Pij_transT_dot(:));
+
+pGradMat                = reshape(sum(apertureInfo.propVMAT.jacobT(:,1:(i-1)),2),[1 1 numel(apertureInfo.beam)]).*pGradMat1 + reshape(apertureInfo.propVMAT.jacobT(:,i),[1 1 numel(apertureInfo.beam)]).*pGradMat2;
+pGradMat_part           = reshape(sum(apertureInfo.propVMAT.jacobT(:,1:(i-1)),2),[1 1 numel(apertureInfo.beam)]).*pGradMat1_part + reshape(apertureInfo.propVMAT.jacobT(:,i),[1 1 numel(apertureInfo.beam)]).*pGradMat2_part;
+PijGradMat_transT       = reshape(apertureInfo.propVMAT.jacobT(:,i),[1 1 numel(apertureInfo.beam)]).*PijGrad_transT;
+PijGradMat_transT_part  = reshape(apertureInfo.propVMAT.jacobT(:,i),[1 1 numel(apertureInfo.beam)]).*PijGrad_transT_part;
+
+% put probability and gradient matrices into struct
+apertureInfo.probI_IJ{i}        = pMat;
+apertureInfo.probIGrad_IJ{i}    = pGradMat;
+
+apertureInfo.probF_KL{i}        = accumarray([apertureInfo.motionModel.indices.subPhase2PosPhase_gridI(:) apertureInfo.motionModel.indices.subPhase2PosPhase_gridJ(:)],Pij_transT(:));
+apertureInfo.probFGrad_KL{i}    = PijGradMat_transT;
+
+apertureInfo.probI_Ij{i}        = accumarray([apertureInfo.motionModel.indices.subPhase2PosPhase_gridI(:) repelem((1:apertureInfo.motionModel.indices.nSubPhases)',apertureInfo.motionModel.indices.nSubPhases)],pMat_sub(:));
+apertureInfo.probIGrad_Ij{i}    = pGradMat_part;
+
+apertureInfo.probF_kL{i}        = accumarray([repmat((1:apertureInfo.motionModel.indices.nSubPhases)',[apertureInfo.motionModel.indices.nSubPhases 1]) apertureInfo.motionModel.indices.subPhase2PosPhase_gridJ(:)],Pij_transT(:));
+apertureInfo.probFGrad_kL{i}    = PijGradMat_transT_part;
+
 for j = 1:numOfShapes
     
     for phase_I = 1:apertureInfo.numPhases
-        
-        % skip to next phase if probability to be in phase_I and its
-        % derivative are both 0
-        if Pi_T(phase_I)  == 0 && Pi_T_dot(phase_I) == 0
-            continue
-        end
-        
-        %transitions = apertureInfo.propVMAT.beam(i).transMask(phase_I,:);
-        %transitions(transitions == 0) = [];
         
         % loop over all (final) phases
         for phase_F = 1:apertureInfo.numPhases
             
             % skip to next phase if probability to transition from phase_I
             % to phase_F and its derivative are both 0
-            if Pij_transT(phase_I,phase_F)  == 0 && Pij_transT_dot(phase_I,phase_F) == 0
+            if pMat(phase_I,phase_F)  == 0 && pGradMat1(phase_I,phase_F) == 0 && pGradMat2(phase_I,phase_F) == 0
                 continue
             end
             
@@ -290,8 +312,10 @@ for j = 1:numOfShapes
             end
             
             % determine probabilities and derivatives
-            probability         = Pi_T(phase_I).*Pij_transT(phase_I,phase_F);
-            probability_dTVec   = sum(apertureInfo.propVMAT.jacobT(:,1:(i-1)),2).*Pi_T_dot(phase_I).*Pij_transT(phase_I,phase_F) + apertureInfo.propVMAT.jacobT(:,i).*Pi_T(phase_I).*Pij_transT_dot(phase_I,phase_F);
+            %probability         = Pi_T(phase_I).*Pij_transT(phase_I,phase_F);
+            probability         = pMat(phase_I,phase_F);
+            %probability_dTVec   = sum(apertureInfo.propVMAT.jacobT(:,1:(i-1)),2).*Pi_T_dot(phase_I).*Pij_transT(phase_I,phase_F) + apertureInfo.propVMAT.jacobT(:,i).*Pi_T(phase_I).*Pij_transT_dot(phase_I,phase_F);
+            probability_dTVec   = squeeze(pGradMat(phase_I,phase_F,:));
             
             % delete any derivatives with value less than eps
             delInd = abs(probability_dTVec) < eps;

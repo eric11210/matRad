@@ -413,8 +413,17 @@ if pln.propOpt.runVMAT
             initPosPhase = find(posPhaseProb == max(posPhaseProb));
             
             % determine initial probabililty
-            apertureInfo.motionModel.initProb = apertureInfo.motionModel.indices.subPhase2PosPhase == initPosPhase;
-            apertureInfo.motionModel.initProb = apertureInfo.motionModel.initProb'./sum(apertureInfo.motionModel.initProb);
+            apertureInfo.motionModel.initProb = zeros(1,apertureInfo.motionModel.indices.nSubPhases);
+            % let all subphases corresponding to the initial position phase
+            % have the same probability
+            
+            %%% TRIGGER ALSO ON EXHALE?
+            apertureInfo.motionModel.initProb(apertureInfo.motionModel.indices.subPhase2PosPhase == initPosPhase) = 1;
+            % let all other subphases have the same (much smaller, but
+            % nonzero) probability
+            apertureInfo.motionModel.initProb(apertureInfo.motionModel.indices.subPhase2PosPhase ~= initPosPhase) = 1e-8;
+            % normalize
+            apertureInfo.motionModel.initProb = apertureInfo.motionModel.initProb./sum(apertureInfo.motionModel.initProb);
             
         else
             
@@ -447,8 +456,9 @@ if pln.propOpt.runVMAT
     for i = 1:numel(apertureInfo.beam)
         
         maxTime = apertureInfo.propVMAT.beam(i).doseAngleBordersDiff./machine.constraints.gantryRotationSpeed(1);
-        [Pij_transT,~,~,~] = matRad_transAndTProb(maxTime,maxTime,apertureInfo.motionModel);
-        transMask = Pij_transT > 0.01;
+        [Pij_transT,~,~,~] = matRad_transAndTProb(maxTime,0,apertureInfo.motionModel);
+        PIJ_transT = accumarray([apertureInfo.motionModel.indices.subPhase2PosPhase_gridI(:) apertureInfo.motionModel.indices.subPhase2PosPhase_gridJ(:)],Pij_transT(:))./apertureInfo.motionModel.indices.nSubPhasePerPosPhase;
+        transMask = PIJ_transT > 0.01;
         
         apertureInfo.propVMAT.beam(i).transMask             = repmat(1:apertureInfo.numPhases,[apertureInfo.numPhases 1]);
         apertureInfo.propVMAT.beam(i).transMask(~transMask) = 0;

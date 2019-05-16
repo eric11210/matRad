@@ -107,24 +107,21 @@ bixWeightAndGradBase_angle.bixelJApVec_vec = cell(updatedInfo.numPhases.^2,1);
 bixWeightAndGradBase_angle.bixelJApVec_i = cell(updatedInfo.numPhases.^2,1);
 % bixel indices
 bixWeightAndGradBase_angle.bixelJApVec_j = cell(updatedInfo.numPhases.^2,1);
-% FIGURE OUT IF WE NEED 32BIT OR 16BIT
 % offset
 bixWeightAndGradBase_angle.bixelJApVec_offset = cell(updatedInfo.numPhases.^2,1);
 
 updatedInfo.arcI.bixelJApVec = cell(numel(updatedInfo.beam).*updatedInfo.numPhases.^2,1);
 updatedInfo.arcF.bixelJApVec = cell(numel(updatedInfo.beam).*updatedInfo.numPhases.^2,1);
 
-%{
-for i = 1:numel(updatedInfo.beam)
-    for phase = 1:updatedInfo.numPhases
-        
-        updatedInfo.arcI.bixelJApVec{(i-1).*updatedInfo.numPhases+phase} = spalloc(updatedInfo.beam(i).numUniqueVar,updatedInfo.beam(i).numBixels,updatedInfo.beam(i).bixelJApVec_sz./updatedInfo.numPhases);
-        updatedInfo.arcF.bixelJApVec{(i-1).*updatedInfo.numPhases+phase} = spalloc(updatedInfo.beam(i).numUniqueVar,updatedInfo.beam(i).numBixels,updatedInfo.beam(i).bixelJApVec_sz./updatedInfo.numPhases);
-        %updatedInfo.arcI.bixelJApVec{(i-1).*updatedInfo.numPhases+phase} = spalloc(numel(apertureInfoVect),updatedInfo.totalNumOfBixels,updatedInfo.bixelJApVec_sz./updatedInfo.numPhases);
-        %updatedInfo.arcF.bixelJApVec{(i-1).*updatedInfo.numPhases+phase} = spalloc(numel(apertureInfoVect),updatedInfo.totalNumOfBixels,updatedInfo.bixelJApVec_sz./updatedInfo.numPhases);
-    end
-end
-%}
+% probabilities
+updatedInfo.probI_IJ        = cell(numel(updatedInfo.beam),1);
+updatedInfo.probI_Ij        = cell(numel(updatedInfo.beam),1);
+updatedInfo.probF_KL        = cell(numel(updatedInfo.beam),1);
+updatedInfo.probF_kL        = cell(numel(updatedInfo.beam),1);
+updatedInfo.probIGrad_IJ    = cell(numel(updatedInfo.beam),1);
+updatedInfo.probIGrad_Ij    = cell(numel(updatedInfo.beam),1);
+updatedInfo.probFGrad_KL    = cell(numel(updatedInfo.beam),1);
+updatedInfo.probFGrad_kL    = cell(numel(updatedInfo.beam),1);
 
 %% update the shapeMaps
 % here the new colimator positions are used to create new shapeMaps that
@@ -283,7 +280,6 @@ for i = 1:numel(updatedInfo.beam)
     bixWeightAndGradBase_angle.bixelJApVec_i(:) = {zeros(updatedInfo.beam(i).bixelJApVec_sz,1,iBitStr)};
     % bixel indices
     bixWeightAndGradBase_angle.bixelJApVec_j(:) = {zeros(updatedInfo.beam(i).bixelJApVec_sz,1,jBitStr)};
-    % FIGURE OUT IF WE NEED 32BIT OR 16BIT
     % offset
     bixWeightAndGradBase_angle.bixelJApVec_offset(:) = {0};
     

@@ -264,8 +264,9 @@ if pln.propOpt.preconditioner
 end
 
 if pln.propOpt.varOpt
-    % get dose variance
-    [dVarSum,~] = matRad_doseVarianceSum(resultGUI.apertureInfo,dij);
+    % get dose variance; make this be variance instead of sum of variance?
+    %[dVarSum,~] = matRad_doseVarianceSum(resultGUI.apertureInfo,dij);
+    %resultGUI.physicalDoseVarSum    = dVarSum;
 end
 
 resultGUI.w          = sequencing.w;
@@ -285,7 +286,6 @@ options.FMO = false;
 d = matRad_backProjection(sequencing.w,dij,options);
 
 resultGUI.physicalDose          = reshape(d,dij.dimensions);
-resultGUI.physicalDoseVarSum    = dVarSum;
 
 % if weights exists from an former DAO remove it
 if isfield(resultGUI,'wDao')

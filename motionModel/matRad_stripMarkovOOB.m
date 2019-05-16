@@ -57,4 +57,7 @@ model.Pij_deltaTSample  = model.Pij_deltaTSample./normPij;
 model.Pi_deltaTSample   = model.Pi_deltaTSample./sum(model.Pi_deltaTSample);
 model.qij               = (model.Pij_deltaTSample-eye(size(model.Pij_deltaTSample)))./model.deltaT_sample;
 
+% get gridded maps
+[model.indices.subPhase2PosPhase_gridJ, model.indices.subPhase2PosPhase_gridI] = meshgrid(model.indices.subPhase2PosPhase);
+
 end

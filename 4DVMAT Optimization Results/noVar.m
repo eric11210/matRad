@@ -66,4 +66,4 @@ resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,res
 
 cd(currentDir);
 
-save('noVar')
+save('noVar','resultGUI');

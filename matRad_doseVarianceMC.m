@@ -23,6 +23,9 @@ apertureInfo_hist                       = apertureInfo;
 apertureInfo_hist                       = rmfield(apertureInfo_hist,'motionModel');
 apertureInfo_hist.motionModel.type      = 'single';
 apertureInfo_hist.motionModel.numPhases = apertureInfo_hist.numPhases;
+apertureInfo_hist.motionModel.indices.nSubPhases = apertureInfo_hist.numPhases;
+
+[apertureInfo_hist.motionModel.indices.subPhase2PosPhase_gridJ,apertureInfo_hist.motionModel.indices.subPhase2PosPhase_gridI] = meshgrid(1:apertureInfo_hist.numPhases);
 
 % loop over number of histories
 for hist = 1:nHistories
@@ -31,7 +34,7 @@ for hist = 1:nHistories
     [lSimulated_hist,tSimulated_hist]= matRad_runMarkovChain_Q(apertureInfo.motionModel.qij,apertureInfo.motionModel.initProb,tTrans);
     
     % insert trajectory in apertureInfo struct
-    apertureInfo_hist.motionModel.lSimulated = lSimulated_hist;
+    apertureInfo_hist.motionModel.lSimulated = apertureInfo.motionModel.indices.subPhase2Phase(lSimulated_hist);
     apertureInfo_hist.motionModel.tSimulated = tSimulated_hist;
     
     % get weights for this particular history

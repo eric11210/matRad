@@ -26,7 +26,7 @@ options.ipopt.print_user_options            = 'no';
 options.ipopt.print_options_documentation   = 'no';
 
 % Termination (C.2)
-options.ipopt.tol                           = 1e-8; % (Opt1)
+options.ipopt.tol                           = 1e-4; % (Opt1)
 options.ipopt.dual_inf_tol                  = 1;    % (Opt2)
 options.ipopt.constr_viol_tol               = 1e-4; % (Opt3)
 options.ipopt.compl_inf_tol                 = 1e-4; % (Opt4), Optimal Solution Found if (Opt1),...,(Opt4) fullfiled
