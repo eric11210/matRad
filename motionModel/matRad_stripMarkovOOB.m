@@ -18,6 +18,7 @@ model.Pi_deltaTSample(indOOB_subPhase)      = [];
 model.indices.subPhase2PosSubPhase(indOOB_subPhase) = [];
 model.indices.subPhase2VelSubPhase(indOOB_subPhase) = [];
 model.indices.subPhase2State(indOOB_subPhase)       = [];
+model.indices.subPhase2FS(indOOB_subPhase)          = [];
 model.indices.subPhase2PosPhase(indOOB_subPhase)    = [];
 model.indices.subPhase2VelPhase(indOOB_subPhase)    = [];
 model.indices.subPhase2Phase(indOOB_subPhase)       = [];

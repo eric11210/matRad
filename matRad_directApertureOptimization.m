@@ -185,10 +185,11 @@ if isfield(pln,'scaleDRx') && pln.scaleDRx
     resultGUI.QI = matRad_calcQualityIndicators(cst,pln,resultGUI.physicalDose);
     
     resultGUI.apertureInfo.scaleFacRx = max((pln.DRx/pln.numOfFractions)./[resultGUI.QI(pln.RxStruct).D_95]');
-    optApertureInfoVec(1:resultGUI.apertureInfo.totalNumOfShapes) = optApertureInfoVec(1:resultGUI.apertureInfo.totalNumOfShapes)*resultGUI.apertureInfo.scaleFacRx;
+    resultGUI.apertureInfo.apertureVector(1:resultGUI.apertureInfo.totalNumOfShapes*apertureInfo.numPhases) = ...
+        resultGUI.apertureInfo.apertureVector(1:resultGUI.apertureInfo.totalNumOfShapes*apertureInfo.numPhases)*resultGUI.apertureInfo.scaleFacRx;
     
     % update the apertureInfoStruct and calculate bixel weights
-    resultGUI.apertureInfo = matRad_daoVec2ApertureInfo(resultGUI.apertureInfo,optApertureInfoVec);
+    resultGUI.apertureInfo = matRad_daoVec2ApertureInfo(resultGUI.apertureInfo,resultGUI.apertureInfo.apertureVector);
     
     % override also bixel weight vector in optResult struct
     resultGUI.w    = resultGUI.apertureInfo.bixelWeights;
@@ -202,7 +203,9 @@ if pln.propOpt.runVMAT
     resultGUI.apertureInfo = matRad_maxLeafSpeed(resultGUI.apertureInfo);
     
     %optimize delivery
-    resultGUI = matRad_optDelivery(resultGUI,1);
+    if ~pln.propOpt.run4D
+        resultGUI = matRad_optDelivery(resultGUI,1);
+    end
     resultGUI = matRad_calcDeliveryMetrics(resultGUI,pln,stf);
 end
 

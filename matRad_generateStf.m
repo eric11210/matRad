@@ -63,9 +63,8 @@ voiTarget    = zeros(ct.cubeDim);
 voiTarget(V) = 1;
 
 % add margin
-addmarginBool = 0;
-if addmarginBool
-    voiTarget = matRad_addMargin(voiTarget,cst,ct.resolution,ct.resolution,true);
+if pln.propDoseCalc.marginOptions.addMargin
+    voiTarget = matRad_addMargin(voiTarget,cst,ct.resolution,pln.propDoseCalc.marginOptions.margin,true);
     V   = find(voiTarget>0);
 end
 

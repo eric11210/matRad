@@ -349,6 +349,7 @@ data.deltaT_sample              = deltaT_sample_dec;
 indices.subPhase2PosSubPhase    = subPhase2PosSubPhase;
 indices.subPhase2VelSubPhase    = subPhase2VelSubPhase;
 indices.subPhase2State          = subPhase2State;
+indices.subPhase2FS             = floor((subPhase2State-1)/options.FSM.nTimeFracs)+1;
 
 indices.posSubPhase2PosPhase    = posSubPhase2PosPhase;
 indices.subPhase2PosPhase       = subPhase2PosPhase;

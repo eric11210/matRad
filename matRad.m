@@ -87,6 +87,10 @@ pln.machine         = 'Generic';
 pln.propStf.bixelWidth = 5;
 
 % dose calculation settings
+pln.propDoseCalc.marginOptions.addMargin    = true; % margin around targets for determining which bixels to calculate dose
+pln.propDoseCalc.marginOptions.margin.x     = 10; % margin size in mm
+pln.propDoseCalc.marginOptions.margin.y     = 10; % margin size in mm
+pln.propDoseCalc.marginOptions.margin.z     = 10; % margin size in mm
 pln.propDoseCalc.memorySaverPhoton          = false;
 pln.propDoseCalc.vmc                        = true;
 pln.propDoseCalc.vmcOptions.keepError       = false;

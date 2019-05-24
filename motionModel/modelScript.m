@@ -20,7 +20,7 @@ options.data.amplitude          = 1.5;
 
 % for binning
 options.processing.percExtTarg  = 1;
-options.processing.nPosPhases   = 10;
+options.processing.nPosPhases   = 5;
 options.processing.nVelPhases   = 1;    % is this necessary?
 options.processing.velBinning   = true; % is this necessary? just set nVelSubPhases to 1
 

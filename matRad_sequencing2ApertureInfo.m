@@ -414,14 +414,14 @@ if pln.propOpt.runVMAT
             
             % determine initial probabililty
             apertureInfo.motionModel.initProb = zeros(1,apertureInfo.motionModel.indices.nSubPhases);
+            % trigger on first phase and EOE
+            initSubPhases   = apertureInfo.motionModel.indices.subPhase2PosPhase == initPosPhase & apertureInfo.motionModel.indices.subPhase2FS == 3;
             % let all subphases corresponding to the initial position phase
-            % have the same probability
-            
-            %%% TRIGGER ALSO ON EXHALE?
-            apertureInfo.motionModel.initProb(apertureInfo.motionModel.indices.subPhase2PosPhase == initPosPhase) = 1;
+            % and FS (EOE) have the same probability
+            apertureInfo.motionModel.initProb(initSubPhases) = 1;
             % let all other subphases have the same (much smaller, but
             % nonzero) probability
-            apertureInfo.motionModel.initProb(apertureInfo.motionModel.indices.subPhase2PosPhase ~= initPosPhase) = 1e-8;
+            apertureInfo.motionModel.initProb(~initSubPhases) = 1e-8;
             % normalize
             apertureInfo.motionModel.initProb = apertureInfo.motionModel.initProb./sum(apertureInfo.motionModel.initProb);
             

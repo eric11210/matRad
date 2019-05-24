@@ -153,7 +153,7 @@ for i = 1:numel(numSteps)
     
     % p is the probability of getting a worse disagreement than that
     % observed, just by random chance (under the assumption that our model
-    % is correct)j
+    % is correct)
     % use our MC calculated chi squares instead of the chi square
     % distribution (ours probably doesn't follow chi square)
     p(i) = nnz(chiSquaresMC(:,i) > chiSquares(i))./nHistories;

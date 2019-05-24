@@ -15,12 +15,13 @@ model.Pi_deltaTSample(deleteSubPhase)       = [];
 nSubPhases_new = nnz(~deleteSubPhase);
 
 % update indices (by deleting some)
-model.indices.subPhase2PosSubPhase(deleteSubPhase)   = [];
-model.indices.subPhase2VelSubPhase(deleteSubPhase)   = [];
-model.indices.subPhase2State(deleteSubPhase)         = [];
-model.indices.subPhase2PosPhase(deleteSubPhase)      = [];
-model.indices.subPhase2VelPhase(deleteSubPhase)      = [];
-model.indices.subPhase2Phase(deleteSubPhase)         = [];
+model.indices.subPhase2PosSubPhase(deleteSubPhase)  = [];
+model.indices.subPhase2VelSubPhase(deleteSubPhase)  = [];
+model.indices.subPhase2State(deleteSubPhase)        = [];
+model.indices.subPhase2FS(deleteSubPhase)           = [];
+model.indices.subPhase2PosPhase(deleteSubPhase)     = [];
+model.indices.subPhase2VelPhase(deleteSubPhase)     = [];
+model.indices.subPhase2Phase(deleteSubPhase)        = [];
 
 model.indices.nSubPhasePerPhase     = accumarray(model.indices.subPhase2Phase,1);
 model.indices.nSubPhasePerVelPhase  = accumarray(model.indices.subPhase2VelPhase,1);

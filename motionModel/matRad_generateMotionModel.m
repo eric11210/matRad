@@ -29,9 +29,14 @@ fprintf('matRad: Calculating position histograms... ');
 model = matRad_calcPosHist(model,data_test,options.hist);
 fprintf('Done!\n')
 
+% clean up unused matrix elements
 fprintf('matRad: Cleaning up probability matrices and indices... ');
 model = matRad_cleanProbMat(model);
 fprintf('Done!\n');
+
+% insert options in model struct
+model.options = options;
+
 %{
 % estimate standard deviation of matrices
 fprintf('matRad: Estimating standard deviation... ');
