@@ -1,4 +1,4 @@
-function [dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(apertureInfo,dij,cst,nHistories)
+function [pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(apertureInfo,dij,cst,pln,nHistories,p)
 
 % initialize options
 if apertureInfo.run4D
@@ -9,6 +9,11 @@ end
 options.bioOpt = 'none';
 options.run4D = apertureInfo.run4D;
 options.FMO = false;
+
+% default percentiles
+if nargin < 6
+    p = [5 25 50 75 95];
+end
 
 % get dose for mean
 d_mean = matRad_backProjection(apertureInfo.bixelWeights,dij,options);
@@ -22,6 +27,7 @@ dvh_mean = matRad_calcDVH(cst,dCubes_Mean,'cum');
 dvh_mean_unique = dvh_mean;
 dvh_sum         = dvh_mean;
 dvh_2sum        = dvh_mean;
+dvh_hists       = dvh_mean;
 
 for struct = 1:numel(dvh_mean)
     
@@ -39,35 +45,50 @@ for struct = 1:numel(dvh_mean)
     dvh_2sum(struct).doseGrid               = zeros(1,numel(volumePointsUnique));
     dvh_2sum(struct).name                   = dvh_mean(struct).name;
     
+    % prepare DVH for all histories
+    dvh_hists(struct).volumePoints  = zeros(nHistories,1000);
+    dvh_hists(struct).doseGrid      = zeros(nHistories,1000);
+    
 end
 
 % determine transition times
 tTrans = [apertureInfo.beam.time]';
 
 % prepare motionModel structure
-apertureInfo_hist                       = apertureInfo;
-apertureInfo_hist                       = rmfield(apertureInfo_hist,'motionModel');
-apertureInfo_hist.motionModel.type      = 'single';
-apertureInfo_hist.motionModel.numPhases = apertureInfo_hist.numPhases;
-apertureInfo_hist.motionModel.indices.nSubPhases = apertureInfo_hist.numPhases;
+apertureInfo_frac                       = apertureInfo;
+apertureInfo_frac                       = rmfield(apertureInfo_frac,'motionModel');
+apertureInfo_frac.motionModel.type      = 'single';
+apertureInfo_frac.motionModel.numPhases = apertureInfo_frac.numPhases;
+apertureInfo_frac.motionModel.indices.nSubPhases = apertureInfo_frac.numPhases;
 
-[apertureInfo_hist.motionModel.indices.subPhase2PosPhase_gridJ,apertureInfo_hist.motionModel.indices.subPhase2PosPhase_gridI] = meshgrid(1:apertureInfo_hist.numPhases);
+[apertureInfo_frac.motionModel.indices.subPhase2PosPhase_gridJ,apertureInfo_frac.motionModel.indices.subPhase2PosPhase_gridI] = meshgrid(1:apertureInfo_frac.numPhases);
 
 % loop over number of histories
 for hist = 1:nHistories
     
-    % MC simulation of tumour trajectory
-    [lSimulated_hist,tSimulated_hist]= matRad_runMarkovChain_Q(apertureInfo.motionModel.qij,apertureInfo.motionModel.initProb,tTrans);
+    % initialize dose for history (sum over fractions)
+    d_hist = zeros(dij.numOfVoxels,1);
     
-    % insert trajectory in apertureInfo struct
-    apertureInfo_hist.motionModel.lSimulated = apertureInfo.motionModel.indices.subPhase2Phase(lSimulated_hist);
-    apertureInfo_hist.motionModel.tSimulated = tSimulated_hist;
-    
-    % get weights for this particular history
-    apertureInfo_hist = matRad_daoVec2ApertureInfo(apertureInfo_hist,apertureInfo_hist.apertureVector);
-    
-    % get dose for this particular trajectory
-    d_hist = matRad_backProjection(apertureInfo_hist.bixelWeights,dij,options);
+    % loop over number of fractions
+    for frac = 1:pln.numOfFractions
+        
+        % MC simulation of tumour trajectory
+        [lSimulated_frac,tSimulated_frac]= matRad_runMarkovChain_Q(apertureInfo.motionModel.qij,apertureInfo.motionModel.initProb,tTrans);
+        
+        % insert trajectory in apertureInfo_frac struct
+        apertureInfo_frac.motionModel.lSimulated = apertureInfo.motionModel.indices.subPhase2Phase(lSimulated_frac);
+        apertureInfo_frac.motionModel.tSimulated = tSimulated_frac;
+        
+        % get weights for this particular history
+        apertureInfo_frac = matRad_daoVec2ApertureInfo(apertureInfo_frac,apertureInfo_frac.apertureVector);
+        
+        % get dose for this particular trajectory
+        d_frac = matRad_backProjection(apertureInfo_frac.bixelWeights,dij,options);
+        
+        % sum fraction dose into total dose
+        d_hist = d_hist+d_frac;
+        
+    end
     
     % reshape dose
     dCubes_hist = reshape(d_hist,dij.dimensions);
@@ -84,16 +105,42 @@ for hist = 1:nHistories
         
         %doseGrid_hist = interp1(dvh_mean_unique(struct).volumePoints,dvh_mean_unique(struct).doseGrid,dvh_hist(struct).volumePoints);
         
+        
+        % calculate sum of dose and sum of square dose
         dvh_sum(struct).doseGrid    = dvh_sum(struct).doseGrid+doseGrid_hist;
         dvh_2sum(struct).doseGrid   = dvh_2sum(struct).doseGrid+doseGrid_hist.^2;
         
+        % insert DVH for history into DVH for all histories
+        dvh_hists(struct).doseGrid(hist,:)      = dvh_hist(struct).doseGrid;
+        dvh_hists(struct).volumePoints(hist,:)  = dvh_hist(struct).volumePoints;
+        
     end
+    
 end
 
 dvh_mean_MC = dvh_mean_unique;
 dvh_std_MC  = dvh_mean_unique;
 
+pdvh_MC = dvh_mean;
+
+% construct percentile DVHs for each structure
 for struct = 1:numel(dvh_mean)
+    
+    % get max dose for structure
+    maxDose = max(dvh_hists(struct).doseGrid(:,end));
+    
+    % construct dose grid for structure
+    pdvh_MC(struct).doseGrid = linspace(0,maxDose,1000);
+    
+    for hist = 1:nHistories
+        % reinterpolate the DVH of each history to match this grid
+        dvh_hists(struct).volumePoints(hist,:)  = interp1(dvh_hists(struct).doseGrid(hist,:),dvh_hists(struct).volumePoints(hist,:),pdvh_MC(struct).doseGrid);
+        dvh_hists(struct).doseGrid(hist,:)      = pdvh_MC(struct).doseGrid;
+        
+    end
+    
+    % get the percentiles
+    pdvh_MC(struct).volumePoints = prctile(dvh_hists(struct).volumePoints,p);
     
     dvh_mean_MC(struct).volumePoints    = dvh_mean_unique(struct).volumePoints;
     dvh_mean_MC(struct).doseGrid        = dvh_sum(struct).doseGrid./nHistories;

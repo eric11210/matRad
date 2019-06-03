@@ -439,8 +439,14 @@ if pln.propOpt.runVMAT
         end
         
     else
+        apertureInfo.motionModel.type   = 'Markov';
         apertureInfo.motionModel.qij       = 0;
         apertureInfo.motionModel.initProb  = 1;
+        
+        apertureInfo.motionModel.indices.subPhase2PosPhase_gridI    = 1;
+        apertureInfo.motionModel.indices.subPhase2PosPhase_gridJ    = 1;
+        apertureInfo.motionModel.indices.nSubPhasePerPosPhase       = 1;
+        apertureInfo.motionModel.indices.nSubPhases                 = 1;
     end
     
     fileName = apertureInfo.propVMAT.machineConstraintFile;

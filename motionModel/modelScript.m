@@ -49,9 +49,9 @@ options.hist.timePoints = [1 4 6 22.5 45 90 180 270 360]/6; %s
 
 %% parameter options
 
-nSubPerPosPhaseVec  = 1:5;
+nSubPerPosPhaseVec  = 1:10;
 nSubPerVelPhaseVec  = 1:10;
-nTimeFracsVec       = 11:20;
+nTimeFracsVec       = 1:10;
 
 totNumPosSubPhases  = numel(nSubPerPosPhaseVec);
 totNumVelSubPhases  = numel(nSubPerVelPhaseVec);

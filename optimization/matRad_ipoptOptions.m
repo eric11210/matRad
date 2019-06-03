@@ -26,7 +26,7 @@ options.ipopt.print_user_options            = 'no';
 options.ipopt.print_options_documentation   = 'no';
 
 % Termination (C.2)
-options.ipopt.tol                           = 1e-4; % (Opt1)
+options.ipopt.tol                           = 1e-5; % (Opt1)
 options.ipopt.dual_inf_tol                  = 1;    % (Opt2)
 options.ipopt.constr_viol_tol               = 1e-4; % (Opt3)
 options.ipopt.compl_inf_tol                 = 1e-4; % (Opt4), Optimal Solution Found if (Opt1),...,(Opt4) fullfiled
@@ -36,9 +36,9 @@ options.ipopt.acceptable_tol                = 1e10; % (Acc2)
 options.ipopt.acceptable_constr_viol_tol    = 1e10; % (Acc3)
 options.ipopt.acceptable_dual_inf_tol       = 1e10; % (Acc4)
 options.ipopt.acceptable_compl_inf_tol      = 1e10; % (Acc5)
-options.ipopt.acceptable_obj_change_tol     = 1e-4; % (Acc6), Solved To Acceptable Level if (Acc1),...,(Acc6) fullfiled
+options.ipopt.acceptable_obj_change_tol     = 1e-5; % (Acc6), Solved To Acceptable Level if (Acc1),...,(Acc6) fullfiled
 
-options.ipopt.max_iter                      = double(intmax('uint16'));
+options.ipopt.max_iter                      = 400;
 options.ipopt.max_cpu_time                  = 3000*10^10;
 
 % Barrier Parameter (C.6)

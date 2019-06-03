@@ -1,4 +1,4 @@
-function matRad_showDVHBands(dvh,dvh_std,cst,pln,lineStyleIndicator)
+function matRad_showDVHBands(dvh,pdvh,percentileIndices,cst,pln,lineStyleIndicator)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % matRad dvh visualizaion
 % 
@@ -58,24 +58,31 @@ for i = 1:numOfVois
         % cut off at the first zero value where there is no more signal
         % behind
         ix      = max([1 find(dvh(i).volumePoints>0,1,'last')]);
-        currDvh = [dvh(i).doseGrid(1:ix).*pln.numOfFractions; dvh(i).volumePoints(1:ix)];
+        dvhOfMean = [dvh(i).doseGrid(1:ix).*pln.numOfFractions; dvh(i).volumePoints(1:ix)];
         
-        plot(currDvh(1,:),currDvh(2,:),'LineWidth',4,'Color',colorMx(i,:), ...
+        plot(dvhOfMean(1,:),dvhOfMean(2,:),'LineWidth',4,'Color',colorMx(i,:), ...
             'LineStyle',lineStyles{lineStyleIndicator},'DisplayName',cst{i,2})
         
-        if nargin == 5
-            currDvh_lower = [dvh(i).doseGrid(1:ix).*pln.numOfFractions - dvh_std(i).doseGrid(1:ix).*sqrt(pln.numOfFractions); dvh(i).volumePoints(1:ix)];
-            currDvh_upper = [dvh(i).doseGrid(1:ix).*pln.numOfFractions + dvh_std(i).doseGrid(1:ix).*sqrt(pln.numOfFractions); dvh(i).volumePoints(1:ix)];
-            
-            plot(currDvh_lower(1,:),currDvh_lower(2,:),'LineWidth',4,'Color',colorMx(i,:), ...
-                'LineStyle',lineStyles{lineStyleIndicator+1},'DisplayName',cst{i,2},'HandleVisibility','off')
-            
-            plot(currDvh_upper(1,:),currDvh_upper(2,:),'LineWidth',4,'Color',colorMx(i,:), ...
-                'LineStyle',lineStyles{lineStyleIndicator+1},'DisplayName',cst{i,2},'HandleVisibility','off')
-        end
+        ix = pdvh(i).volumePoints(percentileIndices(1),:) > 0;
+        lowerDVH = [pdvh(i).doseGrid(ix); pdvh(i).volumePoints(percentileIndices(1),ix)];
         
-        maxDVHvol  = max(maxDVHvol,max(currDvh(2,:)));
-        maxDVHdose = max(maxDVHdose,max(currDvh(1,:)));
+        ix = pdvh(i).volumePoints(percentileIndices(2),:) > 0;
+        medianDVH = [pdvh(i).doseGrid(ix); pdvh(i).volumePoints(percentileIndices(2),ix)];
+        
+        ix = pdvh(i).volumePoints(percentileIndices(3),:) > 0;
+        upperDVH = [pdvh(i).doseGrid(ix); pdvh(i).volumePoints(percentileIndices(3),ix)];
+        
+        plot(lowerDVH(1,:),lowerDVH(2,:),'LineWidth',4,'Color',colorMx(i,:), ...
+            'LineStyle',lineStyles{lineStyleIndicator+1},'DisplayName',cst{i,2},'HandleVisibility','off')
+        
+        plot(medianDVH(1,:),medianDVH(2,:),'LineWidth',4,'Color',colorMx(i,:), ...
+            'LineStyle',lineStyles{lineStyleIndicator+2},'DisplayName',cst{i,2},'HandleVisibility','off')
+        
+        plot(upperDVH(1,:),upperDVH(2,:),'LineWidth',4,'Color',colorMx(i,:), ...
+            'LineStyle',lineStyles{lineStyleIndicator+1},'DisplayName',cst{i,2},'HandleVisibility','off')
+        
+        maxDVHvol  = max(maxDVHvol,max(upperDVH(2,:)));
+        maxDVHdose = max(maxDVHdose,max(upperDVH(1,:)));
     end
 end
 
@@ -85,7 +92,7 @@ set(myLegend,'FontSize',10,'Interpreter','none');
 legend boxoff
 
 ylim([0 1.1*maxDVHvol]);
-xlim([0 1.2*maxDVHdose]);
+xlim([0 1.1*maxDVHdose]);
 
 grid on,grid minor
 box(gca,'on');

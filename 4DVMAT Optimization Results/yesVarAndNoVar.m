@@ -1,3 +1,5 @@
+%% setup
+
 load lungPatient0_5mm_rep
 
 currentDir = pwd;
@@ -13,6 +15,10 @@ pln.machine         = 'Generic';
 pln.propStf.bixelWidth = 5;
 
 % dose calculation settings
+pln.propDoseCalc.marginOptions.addMargin    = true; % margin around targets for determining which bixels to calculate dose
+pln.propDoseCalc.marginOptions.margin.x     = 10; % margin size in mm
+pln.propDoseCalc.marginOptions.margin.y     = 10; % margin size in mm
+pln.propDoseCalc.marginOptions.margin.z     = 10; % margin size in mm
 pln.propDoseCalc.memorySaverPhoton          = false;
 pln.propDoseCalc.vmc                        = true;
 pln.propDoseCalc.vmcOptions.keepError       = false;
@@ -53,8 +59,19 @@ pln = matRad_VMATGantryAngles(pln,cst,ct);
 stf = matRad_generateStf(ct,cst,pln);
 
 
-dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
+%dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
 
+cst{9,6}.penalty    = 50;
+cst{24,6}           = cst{25,6};
+cst{24,6}.penalty   = 4000;
+cst{25,6}           = [];
+pln.RxStruct        = 24;
+
+%% no variance term
+
+%{
+pln.propOpt.run4D = true;
+pln.propOpt.varOpt = false;
 
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
 cd(currentDir);
@@ -68,13 +85,14 @@ cd(currentDir);
 savefig('noVar_DAO')
 
 cd(currentDir);
-save('noVar1','resultGUI');
-
-
-
+save('noVar2','resultGUI');
 
 clear resultGUI
+%}
 
+%% yes variance term
+
+pln.propOpt.run4D = true;
 pln.propOpt.varOpt = true;
 
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
@@ -89,5 +107,72 @@ resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,res
 cd(currentDir);
 savefig('yesVar_DAO')
 
+[pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,50);
+
 cd(currentDir);
-save('yesVar1','resultGUI');
+save('yesVar2','resultGUI','*dvh*');
+
+clear resultGUI *dvh*
+
+
+
+load('noVar2','resultGUI');
+
+[pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,50);
+
+save('noVar2','resultGUI','*dvh*');
+
+clear resultGUI *dvh*
+
+%{
+%% 3D optimization on CTV
+
+pln.propOpt.run4D = true;
+pln.propOpt.varOpt = false;
+
+resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
+cd(currentDir);
+savefig('3DCTV_FMO')
+
+pln.propOpt.run4D = false;
+
+
+resultGUI = matRad_siochiLeafSequencing(resultGUI,stf,dij,pln,0);
+
+
+resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,resultGUI,pln,stf);
+cd(currentDir);
+savefig('3DCTV_DAO')
+
+cd(currentDir);
+save('3DCTV','resultGUI');
+
+clear resultGUI
+
+%% 3D optimization on ITV
+
+pln.propOpt.run4D = false;
+pln.propOpt.varOpt = false;
+
+cst{26,6}       = cst{25,6};
+cst{25,6}       = [];
+pln.RxStruct    = 26;
+
+resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
+cd(currentDir);
+savefig('3DITV_FMO')
+
+
+resultGUI = matRad_siochiLeafSequencing(resultGUI,stf,dij,pln,0);
+
+
+resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,resultGUI,pln,stf);
+cd(currentDir);
+savefig('3DITV_DAO')
+
+cd(currentDir);
+save('3DITV','resultGUI');
+
+clear resultGUI
+%}
+

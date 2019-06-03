@@ -160,8 +160,12 @@ for k = 1:numRow
             uncoveredByLeftLeaf(k,xPosIndLeftLeafI(k)) = (edges_r(xPosIndLeftLeafI(k))-leftLeafPosI(k))./widths(xPosIndLeftLeafI(k));
             uncoveredByLeftLeaf(k,xPosIndLeftLeafF(k)) = (edges_r(xPosIndLeftLeafF(k))-leftLeafPosF(k))./widths(xPosIndLeftLeafF(k));
             
-            dUl_dLI(k,xPosIndLeftLeafI(k)-1) = -1/(2*widths(xPosIndLeftLeafI(k))');
-            dUl_dLF(k,xPosIndLeftLeafF(k)+1) = -1/(2*widths(xPosIndLeftLeafF(k))');
+            if xPosIndLeftLeafI(k) > 1
+                dUl_dLI(k,xPosIndLeftLeafI(k)-1) = -1/(2*widths(xPosIndLeftLeafI(k))');
+            end
+            if xPosIndLeftLeafF(k) < size(dUl_dLF,2)
+                dUl_dLF(k,xPosIndLeftLeafF(k)+1) = -1/(2*widths(xPosIndLeftLeafF(k))');
+            end
         end
     end
     
@@ -172,8 +176,12 @@ for k = 1:numRow
             coveredByRightLeaf(k,xPosIndRightLeafI(k)) = (edges_r(xPosIndRightLeafI(k))-rightLeafPosI(k))./widths(xPosIndRightLeafI(k));
             coveredByRightLeaf(k,xPosIndRightLeafF(k)) = (edges_r(xPosIndRightLeafF(k))-rightLeafPosF(k))./widths(xPosIndRightLeafF(k));
             
-            dCr_dRI(k,xPosIndRightLeafI(k)-1) = -1/(2*widths(xPosIndRightLeafI(k)-1)');
-            dCr_dRF(k,xPosIndRightLeafF(k)+1) = -1/(2*widths(xPosIndRightLeafF(k)+1)');
+            if xPosIndRightLeafI(k) > 1
+                dCr_dRI(k,xPosIndRightLeafI(k)-1) = -1/(2*widths(xPosIndRightLeafI(k)-1)');
+            end
+            if xPosIndRightLeafF(k) < size(dCr_dRF,2)
+                dCr_dRF(k,xPosIndRightLeafF(k)+1) = -1/(2*widths(xPosIndRightLeafF(k)+1)');
+            end
         end
     end
 end
