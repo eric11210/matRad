@@ -1,4 +1,4 @@
-angularResS = [0.5 1 2 4];
+angularResS = [0.5 1 2 4 8];
 
 %dynamic, interpolated
 
@@ -91,7 +91,7 @@ for angularRes = angularResS
         weight_NY(i) = weight_NY(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
     end
     %obj_NY(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,recalc.apertureInfo,dij,cst_Over,options);
-    
+    %{
     %next, do interpolation and dynamic fluence, but using the Dij matrices
     %at the original 4degree resolution
     fname = sprintf('%.1f degrees, dyn + interp oldDij.mat',angularRes);
@@ -110,6 +110,7 @@ for angularRes = angularResS
         weight_NN(i) = weight_NN(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
     end
     %obj_NN(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,recalc.apertureInfo,dij,cst_Over,options);
+    %}
     
     
     i = i+1;

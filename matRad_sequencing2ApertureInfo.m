@@ -179,7 +179,7 @@ for i=1:size(stf,2)
             % update index for bookkeeping
             vectorOffset = vectorOffset + dimZ*nnz(stf(i).propVMAT.doseAngleDAO);
         else
-            apertureInfo.beam(i).shape{1}(m).vectorOffset = vectorOffset;
+            apertureInfo.beam(i).shape{1}(m).vectorOffset = [vectorOffset vectorOffset];
             
             % update index for bookkeeping
             vectorOffset = vectorOffset + dimZ;
@@ -512,11 +512,13 @@ if pln.propOpt.runVMAT
                     (apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+(1:apertureInfo.totalNumOfShapes);
             end
             
-            % keep weight and time variables when calculating gradients for
-            % d2
-            apertureInfo.beam(i).d2KeepVar = true(apertureInfo.beam(i).numUniqueVar,1);
-            %apertureInfo.beam(i).d2KeepVar((apertureInfo.beam(i).numOfShapes.*apertureInfo.numPhases+1):end) = false;
-            %apertureInfo.beam(i).d2KeepVar((apertureInfo.beam(i).numOfShapes.*apertureInfo.numPhases+1):(end-apertureInfo.totalNumOfShapes)) = false;
+            if apertureInfo.varOpt
+                % keep weight and time variables when calculating gradients for
+                % d2
+                apertureInfo.beam(i).d2KeepVar = true(apertureInfo.beam(i).numUniqueVar,1);
+                %apertureInfo.beam(i).d2KeepVar((apertureInfo.beam(i).numOfShapes.*apertureInfo.numPhases+1):end) = false;
+                %apertureInfo.beam(i).d2KeepVar((apertureInfo.beam(i).numOfShapes.*apertureInfo.numPhases+1):(end-apertureInfo.totalNumOfShapes)) = false;
+            end
             
         else
             apertureInfo.beam(i).bixelJApVec_sz = nnz(~isnan(apertureInfo.beam(i).bixelIndMap)).*intBixelFactor.*apertureInfo.numPhases;
@@ -539,19 +541,23 @@ if pln.propOpt.runVMAT
                     (apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+(1:apertureInfo.totalNumOfShapes);
             end
             
-            % keep weight and time variables when calculating gradients for
-            % d2
-            apertureInfo.beam(i).d2KeepVar = true(apertureInfo.beam(i).numUniqueVar,1);
-            %apertureInfo.beam(i).d2KeepVar((2.*apertureInfo.numPhases+1):end) = false;
-            %apertureInfo.beam(i).d2KeepVar((2.*apertureInfo.numPhases+1):(end-apertureInfo.totalNumOfShapes)) = false;
+            if apertureInfo.varOpt
+                % keep weight and time variables when calculating gradients for
+                % d2
+                apertureInfo.beam(i).d2KeepVar = true(apertureInfo.beam(i).numUniqueVar,1);
+                %apertureInfo.beam(i).d2KeepVar((2.*apertureInfo.numPhases+1):end) = false;
+                %apertureInfo.beam(i).d2KeepVar((2.*apertureInfo.numPhases+1):(end-apertureInfo.totalNumOfShapes)) = false;
+            end
         end
         
-        apertureInfo.beam(i).d2KeepVar = find(apertureInfo.beam(i).d2KeepVar);
-        
-        apertureInfo.beam(i).numKeepVar = numel(apertureInfo.beam(i).d2KeepVar);
-        
-        apertureInfo.beam(i).gradOffset = gradOffset;
-        gradOffset = gradOffset+apertureInfo.beam(i).numKeepVar.*apertureInfo.numPhases.^2;
+        if apertureInfo.varOpt
+            
+            apertureInfo.beam(i).d2KeepVar = find(apertureInfo.beam(i).d2KeepVar);
+            apertureInfo.beam(i).numKeepVar = numel(apertureInfo.beam(i).d2KeepVar);
+            
+            apertureInfo.beam(i).gradOffset = gradOffset;
+            gradOffset = gradOffset+apertureInfo.beam(i).numKeepVar.*apertureInfo.numPhases.^2;
+        end
     end
     
 else

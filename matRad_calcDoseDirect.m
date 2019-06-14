@@ -42,7 +42,7 @@ end
 
 % copy bixel weight vector into stf struct
 if exist('w','var')
-    for phase = 1:ct.tumourMotion.numPhases
+    for phase = 1:numel(w)
         if sum([stf.totalNumOfBixels]) ~= numel(w{phase})
             error('weighting does not match steering information')
         end

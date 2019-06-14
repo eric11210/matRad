@@ -45,9 +45,8 @@ updatedInfo = apertureInfo;
 updatedInfo.apertureVector = apertureInfoVect;
 
 % options for bixel and Jacobian calculation
-mlcOptions.bixelWidth = apertureInfo.bixelWidth;
-calcOptions.continuousAperture = updatedInfo.propVMAT.continuousAperture;
-vectorIndices.totalNumOfShapes = apertureInfo.totalNumOfShapes;
+static.bixelWidth = apertureInfo.bixelWidth;
+variable.totalNumOfShapes = apertureInfo.totalNumOfShapes;
 
 w = cell(apertureInfo.numPhases,1);
 w(:) = {zeros(apertureInfo.totalNumOfBixels,1)};
@@ -73,24 +72,10 @@ if updatedInfo.runVMAT && ~all([updatedInfo.propVMAT.beam.DAOBeam])
     end
 end
 
-bixelJApVec_vec = cell(apertureInfo.numPhases,1);
-
-% dummy variables
-bixelJApVec_i = cell(apertureInfo.numPhases,1);
-bixelJApVec_j = cell(apertureInfo.numPhases,1);
-bixelJApVec_offset = cell(apertureInfo.numPhases,1);
-counters.bixelJApVec_offset = bixelJApVec_offset;
-
-% Interpolate segment between adjacent optimized gantry angles.
-% Include in updatedInfo, but NOT the vector (since these are not
-% optimized by DAO).  Also update bixel weights to include these.
-
 
 %% update the shapeMaps
 % here the new colimator positions are used to create new shapeMaps that
 % now include decimal values instead of binary
-
-calcOptions.saveJacobian = false;
 
 % loop over all beams
 for i = 1:numel(updatedInfo.beam)
@@ -112,30 +97,33 @@ for i = 1:numel(updatedInfo.beam)
     % we are necessarily doing VMAT
     numOfShapes = 1;
     
-    mlcOptions.lim_l = apertureInfo.beam(i).lim_l;
-    mlcOptions.lim_r = apertureInfo.beam(i).lim_r;
-    mlcOptions.edges_l = edges_l;
-    mlcOptions.edges_r = edges_r;
-    mlcOptions.centres = (edges_l+edges_r)/2;
-    mlcOptions.widths = edges_r-edges_l;
-    mlcOptions.n = n;
-    mlcOptions.numBix = size(apertureInfo.beam(i).bixelIndMap,2);
-    mlcOptions.bixelIndMap = apertureInfo.beam(i).bixelIndMap;
-    calcOptions.DAOBeam = updatedInfo.propVMAT.beam(i).DAOBeam;
+    static.lim_r        = apertureInfo.beam(i).lim_r;
+    static.edges_l      = edges_l;
+    static.edges_r      = edges_r;
+    static.centres      = (edges_l+edges_r)/2;
+    static.widths       = edges_r-edges_l;
+    static.numRow       = n;
+    static.numCol       = size(apertureInfo.beam(i).bixelIndMap,2);
+    static.numBix       = apertureInfo.beam(i).numBixels;
+    static.bixelIndMap  = apertureInfo.beam(i).bixelIndMap-max(apertureInfo.beam(i).bixelIndMap(:))+apertureInfo.beam(i).numBixels;
+    static.DAOBeam      = updatedInfo.propVMAT.beam(i).DAOBeam;
+    static.bixIndVec    = 1:static.numBix;
     
-    
+    % dummies
+    variable.probability_dTVec          = ones(numel(apertureInfo.beam),1);
+    variable.tIx_Vec                    = ones(apertureInfo.totalNumOfShapes,1);
+    variable.numShapbixIndVec           = 1:(variable.totalNumOfShapes*static.numBix);
+    variable.DAOindex                   = 1;
+    variable.jacobiScale                = 1;
+    variable.vectorIx_LI                = ones(static.numRow,1);
+    variable.vectorIx_LF                = ones(static.numRow,1);
+    variable.vectorIx_RI                = ones(static.numRow,1);
+    variable.vectorIx_RF                = ones(static.numRow,1);
+    variable.bixelJApVec_sz             = static.numBix.*(7+variable.totalNumOfShapes);
+    variable.arcF                       = false;
     
     % loop over all shapes
     for j = 1:numOfShapes
-        
-        % shapeMap
-        shapeMap_I = cell(updatedInfo.numPhases,1);
-        shapeMap_I(:) = {zeros(size(updatedInfo.beam(i).bixelIndMap))};
-        shapeMap_F = cell(updatedInfo.numPhases,1);
-        shapeMap_F(:) = {zeros(size(updatedInfo.beam(i).bixelIndMap))};
-        % sumGradSq
-        sumGradSq = cell(apertureInfo.numPhases,1);
-        sumGradSq(:) = {0};
         
         % loop over all phases
         for phase = 1:apertureInfo.numPhases
@@ -167,61 +155,101 @@ for i = 1:numel(updatedInfo.beam)
             %calculation
             
             %INITIAL
-            variables.weight_I          = weight_I;
-            variables.weight_F          = weight_I;
-            variables.phase_I           = phase;%_I
-            variables.phase_F           = phase;%_I
-            variables.weightFactor_I    = 1/2;
-            variables.weightFactor_F    = 1/2;
-            variables.probability       = 1;
+            variable.weight             = weight_I;
+            variable.weightFactor_I     = 1;
+            variable.weightFactor_F     = 1;
+            variable.probability        = 1;
             
             if updatedInfo.propVMAT.continuousAperture
-                variables.leftLeafPos_I     = updatedInfo.beam(i).shape{phase}(j).leftLeafPos_I;
-                variables.leftLeafPos_F     = updatedInfo.beam(i).shape{phase}(j).leftLeafPos;
-                variables.rightLeafPos_I    = updatedInfo.beam(i).shape{phase}(j).rightLeafPos_I;
-                variables.rightLeafPos_F    = updatedInfo.beam(i).shape{phase}(j).rightLeafPos;
+                leftLeafPosI    = updatedInfo.beam(i).shape{phase}(j).leftLeafPos_I;
+                leftLeafPosF    = updatedInfo.beam(i).shape{phase}(j).leftLeafPos;
+                rightLeafPosI   = updatedInfo.beam(i).shape{phase}(j).rightLeafPos_I;
+                rightLeafPosF   = updatedInfo.beam(i).shape{phase}(j).rightLeafPos;
             else
-                variables.leftLeafPos_I     = updatedInfo.beam(i).shape{phase}(j).leftLeafPos;
-                variables.leftLeafPos_F     = updatedInfo.beam(i).shape{phase}(j).leftLeafPos;
-                variables.rightLeafPos_I    = updatedInfo.beam(i).shape{phase}(j).rightLeafPos;
-                variables.rightLeafPos_F    = updatedInfo.beam(i).shape{phase}(j).rightLeafPos;
+                leftLeafPosI    = updatedInfo.beam(i).shape{phase}(j).leftLeafPos;
+                leftLeafPosF    = updatedInfo.beam(i).shape{phase}(j).leftLeafPos;
+                rightLeafPosI   = updatedInfo.beam(i).shape{phase}(j).rightLeafPos;
+                rightLeafPosF   = updatedInfo.beam(i).shape{phase}(j).rightLeafPos;
             end
             
+            % set the initial leaf positions to the minimum leaf positions
+            % always, instead of the leaf positions at the actual beginning
+            % of the arc
+            % this simplifies the calculation
+            variable.leftLeafPosI   = min([leftLeafPosI,leftLeafPosF],[],2);
+            variable.leftLeafPosF   = max([leftLeafPosI,leftLeafPosF],[],2);
+            variable.rightLeafPosI  = min([rightLeafPosI,rightLeafPosF],[],2);
+            variable.rightLeafPosF  = max([rightLeafPosI,rightLeafPosF],[],2);
+            
+            % find bixel indices where leaves are located
+            variable.xPosIndLeftLeafI    = min(floor((variable.leftLeafPosI-edges_l(1))./apertureInfo.bixelWidth)+1,static.numCol);
+            variable.xPosIndLeftLeafF    = max(ceil((variable.leftLeafPosF-edges_r(1))./apertureInfo.bixelWidth)+1,1);
+            variable.xPosIndRightLeafI   = min(floor((variable.rightLeafPosI-edges_l(1))./apertureInfo.bixelWidth)+1,static.numCol);
+            variable.xPosIndRightLeafF   = max(ceil((variable.rightLeafPosF-edges_r(1))./apertureInfo.bixelWidth)+1,1);
+            %
+            variable.xPosLinearIndLeftLeafI      = sub2ind([static.numRow static.numCol],(1:static.numRow)',variable.xPosIndLeftLeafI);
+            variable.xPosLinearIndLeftLeafF      = sub2ind([static.numRow static.numCol],(1:static.numRow)',variable.xPosIndLeftLeafF);
+            variable.xPosLinearIndRightLeafI     = sub2ind([static.numRow static.numCol],(1:static.numRow)',variable.xPosIndRightLeafI);
+            variable.xPosLinearIndRightLeafF     = sub2ind([static.numRow static.numCol],(1:static.numRow)',variable.xPosIndRightLeafF);
+            
             % calculate bixel weight and derivative in function
-            [w,~,bixelJApVec_i,bixelJApVec_j,sumGradSq,shapeMap_I,counters] = ...
-                matRad_bixWeightAndGrad(calcOptions,mlcOptions,variables,vectorIndices,counters,w,bixelJApVec_vec,bixelJApVec_i,bixelJApVec_j,sumGradSq,shapeMap_I);
+            tempResults = matRad_bixWeightAndGrad(static,variable);
+            
+            % put tempResults into results
+            w{phase}(apertureInfo.beam(i).bixelIndMap(~isnan(apertureInfo.beam(i).bixelIndMap))) = w{phase}(apertureInfo.beam(i).bixelIndMap(~isnan(apertureInfo.beam(i).bixelIndMap)))+tempResults.w;
+            shapeMap_I = tempResults.shapeMap;
+            
             
             %FINAL
-            variables.weight_I          = weight_F;
-            variables.weight_F          = weight_F;
-            variables.phase_I           = phase;%_F
-            variables.phase_F           = phase;%_F
-            variables.weightFactor_I    = 1/2;
-            variables.weightFactor_F    = 1/2;
-            variables.probability       = 1;
+            variable.weight             = weight_F;
+            variable.weightFactor_I     = 1;
+            variable.weightFactor_F     = 1;
+            variable.probability        = 1;
             if updatedInfo.propVMAT.continuousAperture
-                variables.leftLeafPos_I     = updatedInfo.beam(i).shape{phase}(j).leftLeafPos;
-                variables.leftLeafPos_F     = updatedInfo.beam(i).shape{phase}(j).leftLeafPos_F;
-                variables.rightLeafPos_I    = updatedInfo.beam(i).shape{phase}(j).rightLeafPos;
-                variables.rightLeafPos_F    = updatedInfo.beam(i).shape{phase}(j).rightLeafPos_F;
+                leftLeafPosI    = updatedInfo.beam(i).shape{phase}(j).leftLeafPos;
+                leftLeafPosF    = updatedInfo.beam(i).shape{phase}(j).leftLeafPos_F;
+                rightLeafPosI   = updatedInfo.beam(i).shape{phase}(j).rightLeafPos;
+                rightLeafPosF   = updatedInfo.beam(i).shape{phase}(j).rightLeafPos_F;
             else
-                variables.leftLeafPos_I     = updatedInfo.beam(i).shape{phase}(j).leftLeafPos;
-                variables.leftLeafPos_F     = updatedInfo.beam(i).shape{phase}(j).leftLeafPos;
-                variables.rightLeafPos_I    = updatedInfo.beam(i).shape{phase}(j).rightLeafPos;
-                variables.rightLeafPos_F    = updatedInfo.beam(i).shape{phase}(j).rightLeafPos;
+                leftLeafPosI    = updatedInfo.beam(i).shape{phase}(j).leftLeafPos;
+                leftLeafPosF    = updatedInfo.beam(i).shape{phase}(j).leftLeafPos;
+                rightLeafPosI   = updatedInfo.beam(i).shape{phase}(j).rightLeafPos;
+                rightLeafPosF   = updatedInfo.beam(i).shape{phase}(j).rightLeafPos;
             end
             
+            % set the initial leaf positions to the minimum leaf positions
+            % always, instead of the leaf positions at the actual beginning
+            % of the arc
+            % this simplifies the calculation
+            variable.leftLeafPosI   = min([leftLeafPosI,leftLeafPosF],[],2);
+            variable.leftLeafPosF   = max([leftLeafPosI,leftLeafPosF],[],2);
+            variable.rightLeafPosI  = min([rightLeafPosI,rightLeafPosF],[],2);
+            variable.rightLeafPosF  = max([rightLeafPosI,rightLeafPosF],[],2);
+            
+            % find bixel indices where leaves are located
+            variable.xPosIndLeftLeafI    = min(floor((variable.leftLeafPosI-edges_l(1))./apertureInfo.bixelWidth)+1,static.numCol);
+            variable.xPosIndLeftLeafF    = max(ceil((variable.leftLeafPosF-edges_r(1))./apertureInfo.bixelWidth)+1,1);
+            variable.xPosIndRightLeafI   = min(floor((variable.rightLeafPosI-edges_l(1))./apertureInfo.bixelWidth)+1,static.numCol);
+            variable.xPosIndRightLeafF   = max(ceil((variable.rightLeafPosF-edges_r(1))./apertureInfo.bixelWidth)+1,1);
+            %
+            variable.xPosLinearIndLeftLeafI      = sub2ind([static.numRow static.numCol],(1:static.numRow)',variable.xPosIndLeftLeafI);
+            variable.xPosLinearIndLeftLeafF      = sub2ind([static.numRow static.numCol],(1:static.numRow)',variable.xPosIndLeftLeafF);
+            variable.xPosLinearIndRightLeafI     = sub2ind([static.numRow static.numCol],(1:static.numRow)',variable.xPosIndRightLeafI);
+            variable.xPosLinearIndRightLeafF     = sub2ind([static.numRow static.numCol],(1:static.numRow)',variable.xPosIndRightLeafF);
+            
             % calculate bixel weight and derivative in function
-            [w,~,bixelJApVec_i,bixelJApVec_j,sumGradSq,shapeMap_F,counters] = ...
-                matRad_bixWeightAndGrad(calcOptions,mlcOptions,variables,vectorIndices,counters,w,bixelJApVec_vec,bixelJApVec_i,bixelJApVec_j,sumGradSq,shapeMap_F);
+            tempResults = matRad_bixWeightAndGrad(static,variable);
+            
+            % put tempResults into results
+            w{phase}(apertureInfo.beam(i).bixelIndMap(~isnan(apertureInfo.beam(i).bixelIndMap))) = w{phase}(apertureInfo.beam(i).bixelIndMap(~isnan(apertureInfo.beam(i).bixelIndMap)))+tempResults.w;
+            shapeMap_F = tempResults.shapeMap;
             
             % save the tempMap
-            shapeMap = shapeMap_I{phase}+shapeMap_F{phase};
+            shapeMap = shapeMap_I+shapeMap_F;
             updatedInfo.beam(i).shape{phase}(j).shapeMap = shapeMap;
             
         end
     end
-    
 end
 
 % save bixelWeight, apertureVector, and Jacobian between the two

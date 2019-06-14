@@ -166,7 +166,7 @@ for i = 1:numel(updatedInfo.beam)
                 
                 if ~updatedInfo.propVMAT.continuousAperture
                     % extract left and right leaf positions from shape vector
-                    vectorIx_L = updatedInfo.beam(i).shape{phase}(j).vectorOffset + ((1:n)-1);
+                    vectorIx_L = updatedInfo.beam(i).shape{phase}(j).vectorOffset(1) + ((1:n)-1);
                     vectorIx_R = vectorIx_L+updatedInfo.totalNumOfLeafPairs*updatedInfo.numPhases;
                     leftLeafPos  = apertureInfoVect(vectorIx_L);
                     rightLeafPos = apertureInfoVect(vectorIx_R);

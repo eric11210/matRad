@@ -10,17 +10,17 @@ roundTimePoints = numSteps.*model.deltaT_sample;
 %% determine initial distribution for histograms
 
 % find position phase with max probability; this is the triggering phase
-[~,triggerPhase] = max(accumarray(data.indices.subPhase2PosPhase,model.Pi_deltaTSample));
+[~,triggerPhase] = max(accumarray(model.indices.subPhase2PosPhase,model.Pi_deltaTSample));
 
 % initial distribution is all subphases giving the initial phase equally likely
-triggerInd = data.indices.subPhase2PosPhase == triggerPhase;
+triggerInd = model.indices.subPhase2PosPhase == triggerPhase;
 triggerDist = model.Pi_deltaTSample;
 triggerDist(~triggerInd) = 0;
 triggerDist = triggerDist./sum(triggerDist);
 
 % determine distribution of initial subphases for simulation
-initPhase = data.indices.subPhase2State(data.l_sample(1));
-initInd = data.indices.subPhase2PosPhase == initPhase;
+initPhase = data.indices.subPhase2PosPhase(data.l_sample(1));
+initInd = model.indices.subPhase2PosPhase == initPhase;
 initDist = model.Pi_deltaTSample;
 initDist(~initInd) = 0;
 initDist = initDist./sum(initDist);
@@ -46,7 +46,7 @@ for history = 1:nHistories
     l_simulated = matRad_runMarkovChain_P(model.Pij_deltaTSample,numel(data.l_sample),initSubPhase,false);
     
     % convert l_sample to p_sample
-    p_MCsample = data.indices.subPhase2PosPhase(l_simulated);
+    p_MCsample = model.indices.subPhase2PosPhase(l_simulated);
     
     % loop through time points
     for i = 1:numel(numSteps)
@@ -90,7 +90,7 @@ for i = 1:numel(numSteps)
     % calculate probability of observing a phase nSteps after the
     % triggering phase
     distObsSubPhase     = triggerDist'*nStepTransPart;
-    distObsPhase        = accumarray(data.indices.subPhase2PosPhase,distObsSubPhase);
+    distObsPhase        = accumarray(model.indices.subPhase2PosPhase,distObsSubPhase);
     
     % calculate combined histogram: probability of observing a phase nSteps
     % after the triggering phase multiplied by the number of times the
@@ -133,7 +133,7 @@ for history = 1:nHistories
     l_simulated = matRad_runMarkovChain_P(model.Pij_deltaTSample,numel(p_sample),initSubPhase,false);
     
     % convert l_sample to p_sample
-    p_MCsample = data.indices.subPhase2PosPhase(l_simulated);
+    p_MCsample = model.indices.subPhase2PosPhase(l_simulated);
     
     % calculate histograms
     [hist_MCobs,initMCDists] = calcHist(p_MCsample,l_simulated,triggerPhase,data.indices.nPosPhases,data.indices.nSubPhases,numSteps);

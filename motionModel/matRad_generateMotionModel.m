@@ -23,16 +23,16 @@ fprintf('matRad: Generating probability matrix... ');
 model = matRad_generateProbMat(data_train);
 fprintf('Done!\n')
 
+% clean up unused matrix elements
+fprintf('matRad: Cleaning up probability matrices and indices... ');
+model = matRad_cleanProbMat(model);
+fprintf('Done!\n');
+
 % calculate predicted and observed position histograms (as a function of t)
 % this time use testing data
 fprintf('matRad: Calculating position histograms... ');
 model = matRad_calcPosHist(model,data_test,options.hist);
 fprintf('Done!\n')
-
-% clean up unused matrix elements
-fprintf('matRad: Cleaning up probability matrices and indices... ');
-model = matRad_cleanProbMat(model);
-fprintf('Done!\n');
 
 % insert options in model struct
 model.options = options;

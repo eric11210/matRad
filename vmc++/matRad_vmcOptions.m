@@ -55,7 +55,7 @@ switch pln.propDoseCalc.vmcOptions.source
     VmcOptions.source.type         = 'beamlet';
     
     case 'phsp'
-    VmcOptions.source.particleType  = 2;
+    VmcOptions.source.particleType  = 0;
     VmcOptions.source.type          = 'phsp';
 end
 

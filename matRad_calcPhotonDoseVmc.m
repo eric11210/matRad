@@ -108,6 +108,9 @@ end
 VTarget = unique(VTarget);
 dij.targetVox = VTarget;
 
+% find current directory
+currDir = pwd;
+
 % set environment variables for vmc++
 cd(fileparts(mfilename('fullpath')))
 
@@ -279,13 +282,13 @@ for frame = 1:dij.numFrames
                     dos('run_parallel_simulations.bat');
                     fprintf('Completed %d of %d beamlets...\n',writeCounter,dij.totalNumOfBixels);
                 else
-                    %[dummyOut1,dummyOut2] = dos('run_parallel_simulations.bat'); % supress output by assigning dummy output arguments
-                    dos('run_parallel_simulations.bat &','-echo'); % supress output by assigning dummy output arguments
+                    [dummyOut1,dummyOut2] = dos('run_parallel_simulations.bat'); % supress output by assigning dummy output arguments
+                    %dos('run_parallel_simulations.bat &','-echo');
                     
-                    while ~exist('EmptyFile.txt','file')
-                        pause(1);
-                    end
-                    delete('EmptyFile.txt');
+                    %while ~exist('EmptyFile.txt','file')
+                    %    pause(1);
+                    %end
+                    %delete('EmptyFile.txt');
                 end
                 cd(current);
                 
@@ -332,10 +335,10 @@ for frame = 1:dij.numFrames
                     end
                     
                     % apply absolute calibration factor
-                    bixelDose       = bixelDose*VmcOptions.run.absCalibrationFactorVmc;
                     if pln.propDoseCalc.vmcOptions.keepError
-                        bixelDoseError  = sqrt((VmcOptions.run.absCalibrationFactorVmc.*bixelDoseError).^2+(bixelDose.*VmcOptions.run.absCalibrationFactorVmc_err).^2);
+                        bixelDoseError = sqrt((VmcOptions.run.absCalibrationFactorVmc.*bixelDoseError).^2+(bixelDose.*VmcOptions.run.absCalibrationFactorVmc_err).^2);
                     end
+                    bixelDose = bixelDose*VmcOptions.run.absCalibrationFactorVmc;
                     
                     % determine the phase and normalization factor
                     if pln.propOpt.run4D
@@ -361,7 +364,9 @@ for frame = 1:dij.numFrames
                             if isfield(stf(beamNum(readCounter)).ray(rayNum(readCounter)),'weight')
                                 % score physical dose
                                 dij.physicalDose{phase}(:,i)        = dij.physicalDose{phase}(:,i) + stf(beamNum(readCounter)).ray(rayNum(readCounter)).weight{1} * doseTmpContainer{1,1};
-                                dij.physicalDoseError{phase}(:,i)   = sqrt(dij.physicalDoseError{phase}(:,i).^2 + (stf(beamNum(readCounter)).ray(rayNum(readCounter)).weight{1} * doseTmpContainerError{1,1}).^2);
+                                if pln.propDoseCalc.vmcOptions.keepError
+                                    dij.physicalDoseError{phase}(:,i)   = sqrt(dij.physicalDoseError{phase}(:,i).^2 + (stf(beamNum(readCounter)).ray(rayNum(readCounter)).weight{1} * doseTmpContainerError{1,1}).^2);
+                                end
                             else
                                 error(['No weight available for beam ' num2str(beamNum(readCounter)) ', ray ' num2str(rayNum(readCounter))]);
                             end
@@ -391,7 +396,9 @@ fprintf('Done all phases!\n');
 %% delete temporary files
 delete(fullfile(VMCPath, 'run_parallel_simulations.bat'));  % batch file
 delete(fullfile(phantomPath, 'matRad_CT.ct'));              % phantom file
-delete(fullfile(vectorsPath, 'matRad_MVF.vectors'));        % vectors file
+if pln.propOpt.run4D
+    delete(fullfile(vectorsPath, 'matRad_MVF.vectors'));        % vectors file
+end
 for j = 1:maxNumOfParMCSim
     delete(fullfile(runsPath, ['MCpencilbeam_temp_',num2str(mod(j-1,VmcOptions.run.numOfParMCSim)+1),'.vmc'])); % vmc inputfile
     switch pln.propDoseCalc.vmcOptions.version
@@ -409,4 +416,9 @@ try
     delete(allWaitBarFigures);
     pause(0.1);
 catch
+end
+
+% cd to old directory
+cd(currDir);
+
 end

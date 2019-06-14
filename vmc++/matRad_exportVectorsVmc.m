@@ -68,11 +68,15 @@ defZVertex_writeFormat = reshape(defZVertex_writeFormat,[],1);
 fid = fopen(filename,'w');
 
 % first write the number of vertices
-fprintf(fid,'%d\n',numVertices);
+%fprintf(fid,'%d\n',numVertices);
+fwrite(fid,numVertices,'int32');
 
 % now loop through and write the deformations for each vertex
 for i = 1:numVertices
-    fprintf(fid,'%6.6f, %6.6f, %6.6f\n',defXVertex_writeFormat(i),defYVertex_writeFormat(i),defZVertex_writeFormat(i));
+    %fprintf(fid,'%6.6f, %6.6f, %6.6f\n',defXVertex_writeFormat(i),defYVertex_writeFormat(i),defZVertex_writeFormat(i));
+    fwrite(fid,defXVertex_writeFormat(i),'float32');
+    fwrite(fid,defYVertex_writeFormat(i),'float32');
+    fwrite(fid,defZVertex_writeFormat(i),'float32');
 end
 
 % close file

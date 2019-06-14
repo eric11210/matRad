@@ -1,4 +1,4 @@
-load lungPatient0_3DVMAT.mat
+load lungPatient0_5mm_rep
 
 % meta information for treatment plan
 
@@ -6,8 +6,13 @@ pln.radiationMode   = 'photons';   % either photons / protons / carbon
 pln.machine         = 'Generic';
 
 % dose calculation settings
+pln.propDoseCalc.marginOptions.addMargin    = true; % margin around targets for determining which bixels to calculate dose
+pln.propDoseCalc.marginOptions.margin.x     = 10; % margin size in mm
+pln.propDoseCalc.marginOptions.margin.y     = 10; % margin size in mm
+pln.propDoseCalc.marginOptions.margin.z     = 10; % margin size in mm
 pln.propDoseCalc.memorySaverPhoton          = false;
 pln.propDoseCalc.vmc                        = true;
+pln.propDoseCalc.vmcOptions.keepError       = true;
 pln.propDoseCalc.vmcOptions.source          = 'phsp';
 pln.propDoseCalc.vmcOptions.phspBaseName    = '5cmx5cm_SSD50cm';
 pln.propDoseCalc.vmcOptions.SCD             = 500;

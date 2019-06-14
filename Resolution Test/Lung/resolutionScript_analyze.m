@@ -1,4 +1,4 @@
-load lungPatient0_3DVMAT.mat
+load lungPatient0_5mm_rep
 
 %this is the reference plan, the most accurate way of calculating dose
 fname = sprintf('0.5 degrees, dyn + interp.mat');
@@ -44,12 +44,6 @@ ub = [inf   1   inf     1   inf]';
 A = [0      1   0       1   0];
 b = 1;
 
-global matRad_global_x;
-global matRad_global_d;
-global matRad_global_apertureInfo;
-options.bioOpt = 'none';
-dij = 1;
-
 %dynamic, interpolated
 
 %percentage of the volume with at least a x% error relative to the
@@ -65,7 +59,6 @@ percVErr5_NN_itself = zeros(size(angularResS));
 percVErr10_NN_itself = zeros(size(angularResS));
 fluence_NN = zeros(size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,1), size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,2), numel(angularResS));
 weight_NN = zeros(size(angularResS));
-obj_NN = zeros(size(angularResS));
 
 percVErr1_NY = zeros(size(angularResS));
 percVErr3_NY = zeros(size(angularResS));
@@ -73,7 +66,11 @@ percVErr5_NY = zeros(size(angularResS));
 percVErr10_NY = zeros(size(angularResS));
 fluence_NY = zeros(size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,1), size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,2), numel(angularResS));
 weight_NY = zeros(size(angularResS));
-obj_NY = zeros(size(angularResS));
+sigma_NY = zeros(size(angularResS));
+alpha1_NY = zeros(size(angularResS));
+delta1_NY = zeros(size(angularResS));
+alpha2_NY = zeros(size(angularResS));
+delta2_NY = zeros(size(angularResS));
 
 percVErr1_YN = zeros(size(angularResS));
 percVErr3_YN = zeros(size(angularResS));
@@ -81,7 +78,6 @@ percVErr5_YN = zeros(size(angularResS));
 percVErr10_YN = zeros(size(angularResS));
 fluence_YN = zeros(size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,1), size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,2), numel(angularResS));
 weight_YN = zeros(size(angularResS));
-obj_YN = zeros(size(angularResS));
 
 percVErr1_YY = zeros(size(angularResS));
 percVErr3_YY = zeros(size(angularResS));
@@ -89,7 +85,11 @@ percVErr5_YY = zeros(size(angularResS));
 percVErr10_YY = zeros(size(angularResS));
 fluence_YY = zeros(size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,1), size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,2), numel(angularResS));
 weight_YY = zeros(size(angularResS));
-obj_YY = zeros(size(angularResS));
+sigma_YY = zeros(size(angularResS));
+alpha1_YY = zeros(size(angularResS));
+delta1_YY = zeros(size(angularResS));
+alpha2_YY = zeros(size(angularResS));
+delta2_YY = zeros(size(angularResS));
 
 percVErr1_YY_oldDij = zeros(size(angularResS));
 percVErr3_YY_oldDij = zeros(size(angularResS));
@@ -167,11 +167,6 @@ for angularRes = angularResS
         weight_YY(i) = weight_YY(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
     end
     
-    matRad_global_x = recalc.apertureInfo.bixelWeights;
-    matRad_global_d = recalc.resultGUI.physicalDose;
-    matRad_global_apertureInfo = recalc.apertureInfo;
-    obj_YY(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,dij,cst_Over,options);
-    
     
     %{
     %NOT SURE IT MAKES SENSE TO DO THIS
@@ -232,11 +227,6 @@ for angularRes = angularResS
         fluence_NY(:,:,i) = fluence_NY(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
         weight_NY(i) = weight_NY(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
     end
-    
-    matRad_global_x = recalc.apertureInfo.bixelWeights;
-    matRad_global_d = recalc.resultGUI.physicalDose;
-    matRad_global_apertureInfo = recalc.apertureInfo;
-    obj_NY(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,dij,cst_Over,options);
     
     %{
     

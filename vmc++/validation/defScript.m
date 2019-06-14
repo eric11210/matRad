@@ -1,6 +1,6 @@
 fname_defCT = fullfile('C:\Users\eric\Documents\GitHub\matRad\vmc++\run\phantoms','testDeformation_def.ct');
 fname_defvec = fullfile('C:\Users\eric\Documents\GitHub\matRad\vmc++\run\vectors','testDeformation_def.vectors');
-fname_defDose = fullfile('C:\Users\eric\Documents\GitHub\matRad\vmc++\run\','testDeformation_def.dos');
+fname_defDose = fullfile('C:\Users\eric\Documents\GitHub\matRad\vmc++\run\','testDeformation_def_bin.dos');
 
 fname_CT = fullfile('C:\Users\eric\Documents\GitHub\matRad\vmc++\run\phantoms','testDeformation.ct');
 fname_dose = fullfile('C:\Users\eric\Documents\GitHub\matRad\vmc++\run\','testDeformation.dos');

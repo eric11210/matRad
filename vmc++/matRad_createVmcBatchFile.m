@@ -31,11 +31,11 @@ end
 
 if ispc % parallelization only possible on windows systems
 
-    parallelProcesses = cell(1,2*parallelSimulations);
-    %parallelProcesses = cell(1,parallelSimulations);
+    %parallelProcesses = cell(1,2*parallelSimulations);
+    parallelProcesses = cell(1,parallelSimulations);
     for i = 1:parallelSimulations
-        parallelProcesses{1,2*i-1} = sprintf('start "" 9>"%%lock%%%d" %s .\\bin\\vmc_Windows.exe -i MCpencilbeam_temp_%d -j %d',i,verboseString,i,randi(30000));
-        parallelProcesses{1,2*i} = 'timeout /T 2';
+        parallelProcesses{1,i} = sprintf('start "" 9>"%%lock%%%d" %s .\\bin\\vmc_Windows.exe -i MCpencilbeam_temp_%d',i,verboseString,i);
+        %parallelProcesses{1,2*i} = 'timeout /T 2';
     end
 
     batchFile = {...
@@ -53,8 +53,8 @@ if ispc % parallelization only possible on windows systems
         [''],...
         ['del "%lock%*"'],...
         ['']...
-        ['copy NUL EmptyFile.txt']...
         ['exit']...
+        %['copy NUL EmptyFile.txt']...
         %,['echo Done - ready to continue processing']
         };
     

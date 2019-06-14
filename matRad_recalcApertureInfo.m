@@ -143,6 +143,7 @@ for phase = 1:apertureInfoOld.numPhases
             apertureInfoNew.beam(j).posOfCornerBixel = posOfCornerBixel;
             apertureInfoNew.beam(j).MLCWindow = MLCWindow;
             apertureInfoNew.beam(j).bixOffset = 1+(j-1)*dimZ;
+            apertureInfoNew.beam(j).numBixels = nnz(~isnan(bixelIndMap));
             apertureInfoNew.beam(j).shape{phase}(1).vectorOffset = totalNumOfShapes+1+(j-1)*dimZ;
             
             %inherit from old beam

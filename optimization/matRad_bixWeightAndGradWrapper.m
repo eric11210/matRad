@@ -237,36 +237,40 @@ for j = 1:numOfShapes
             rightLeafPosM  = weightFactor_F.*rightLeafPosI+weightFactor_I.*rightLeafPosF;
             
             % find bixel indices where leaves are located
-            xPosIndLeftLeafI = min(floor((leftLeafPosI-edges_l(1))./bixelWidth)+1,numCol);
-            xPosIndLeftLeafM = min(floor((leftLeafPosM-edges_l(1))./bixelWidth)+1,numCol);
-            xPosIndLeftLeafF = max(ceil((leftLeafPosF-edges_r(1))./bixelWidth)+1,1);
-            xPosIndRightLeafI = min(floor((rightLeafPosI-edges_l(1))./bixelWidth)+1,numCol);
-            xPosIndRightLeafM = min(floor((rightLeafPosM-edges_l(1))./bixelWidth)+1,numCol);
-            xPosIndRightLeafF = max(ceil((rightLeafPosF-edges_r(1))./bixelWidth)+1,1);
+            xPosIndLeftLeafI    = min(floor((leftLeafPosI-edges_l(1))./bixelWidth)+1,numCol);
+            xPosIndLeftLeafMI   = max(ceil((leftLeafPosM-edges_r(1))./bixelWidth)+1,1);
+            xPosIndLeftLeafMF   = min(floor((leftLeafPosM-edges_l(1))./bixelWidth)+1,numCol);
+            xPosIndLeftLeafF    = max(ceil((leftLeafPosF-edges_r(1))./bixelWidth)+1,1);
+            xPosIndRightLeafI   = min(floor((rightLeafPosI-edges_l(1))./bixelWidth)+1,numCol);
+            xPosIndRightLeafMI  = max(ceil((rightLeafPosM-edges_r(1))./bixelWidth)+1,1);
+            xPosIndRightLeafMF  = min(floor((rightLeafPosM-edges_l(1))./bixelWidth)+1,numCol);
+            xPosIndRightLeafF   = max(ceil((rightLeafPosF-edges_r(1))./bixelWidth)+1,1);
             %
-            xPosLinearIndLeftLeafI = sub2ind([numRow numCol],(1:numRow)',xPosIndLeftLeafI);
-            xPosLinearIndLeftLeafM = sub2ind([numRow numCol],(1:numRow)',xPosIndLeftLeafM);
-            xPosLinearIndLeftLeafF = sub2ind([numRow numCol],(1:numRow)',xPosIndLeftLeafF);
-            xPosLinearIndRightLeafI = sub2ind([numRow numCol],(1:numRow)',xPosIndRightLeafI);
-            xPosLinearIndRightLeafM = sub2ind([numRow numCol],(1:numRow)',xPosIndRightLeafM);
-            xPosLinearIndRightLeafF = sub2ind([numRow numCol],(1:numRow)',xPosIndRightLeafF);
+            xPosLinearIndLeftLeafI      = sub2ind([numRow numCol],(1:numRow)',xPosIndLeftLeafI);
+            xPosLinearIndLeftLeafMI     = sub2ind([numRow numCol],(1:numRow)',xPosIndLeftLeafMI);
+            xPosLinearIndLeftLeafMF     = sub2ind([numRow numCol],(1:numRow)',xPosIndLeftLeafMF);
+            xPosLinearIndLeftLeafF      = sub2ind([numRow numCol],(1:numRow)',xPosIndLeftLeafF);
+            xPosLinearIndRightLeafI     = sub2ind([numRow numCol],(1:numRow)',xPosIndRightLeafI);
+            xPosLinearIndRightLeafMI    = sub2ind([numRow numCol],(1:numRow)',xPosIndRightLeafMI);
+            xPosLinearIndRightLeafMF    = sub2ind([numRow numCol],(1:numRow)',xPosIndRightLeafMF);
+            xPosLinearIndRightLeafF     = sub2ind([numRow numCol],(1:numRow)',xPosIndRightLeafF);
             
             if apertureInfo.propVMAT.beam(i).DAOBeam
                 
                 jacobiScale_I = apertureInfo.beam(i).shape{phase_I}(1).jacobiScale;
                 jacobiScale_F = apertureInfo.beam(i).shape{phase_F}(1).jacobiScale;
                 
-                if apertureInfo.propVMAT.continuousAperture
+                %if apertureInfo.propVMAT.continuousAperture
                     vectorIx_LI   = numOfShapes.*apertureInfo.numPhases+2.*numRow.*(phase_I-1)+(1:numRow);%apertureInfo.beam(i).shape{phase_I}(j).vectorOffset(1) + ((1:n)-1);
                     vectorIx_LF   = numOfShapes.*apertureInfo.numPhases+2.*numRow.*(phase_F-1)+numRow+(1:numRow);%apertureInfo.beam(i).shape{phase_F}(j).vectorOffset(2) + ((1:n)-1);
                     vectorIx_RI   = vectorIx_LI+2.*numRow.*apertureInfo.numPhases;%vectorIx_LI+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
                     vectorIx_RF   = vectorIx_LF+2.*numRow.*apertureInfo.numPhases;%vectorIx_LF+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
-                else
-                    vectorIx_LI   = apertureInfo.beam(i).shape{phase_I}(j).vectorOffset + ((1:numRow)-1);
-                    vectorIx_LF   = apertureInfo.beam(i).shape{phase_F}(j).vectorOffset + ((1:numRow)-1);
-                    vectorIx_RI   = vectorIx_LI+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
-                    vectorIx_RF   = vectorIx_LF+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
-                end
+                %else
+                %    vectorIx_LI   = apertureInfo.beam(i).shape{phase_I}(j).vectorOffset + ((1:numRow)-1);
+                %    vectorIx_LF   = apertureInfo.beam(i).shape{phase_F}(j).vectorOffset + ((1:numRow)-1);
+                %    vectorIx_RI   = vectorIx_LI+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
+                %    vectorIx_RF   = vectorIx_LF+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
+                %end
                 
                 % change the vectorIx_xy elements to remember which
                 % apertureVector elements the "new" I and F
@@ -289,17 +293,17 @@ for j = 1:numOfShapes
                 jacobiScale_next_I = apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_I}(1).jacobiScale;
                 jacobiScale_next_F = apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_F}(1).jacobiScale;
                 
-                if apertureInfo.propVMAT.continuousAperture
+                %if apertureInfo.propVMAT.continuousAperture
                     vectorIx_LF_last  = 2.*apertureInfo.numPhases+2.*numRow.*(phase_I-1)+(1:numRow);%apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_I}(j).vectorOffset(2) + ((1:numRow)-1);
                     vectorIx_LI_next  = 2.*apertureInfo.numPhases+2.*numRow.*(phase_F-1)+numRow+(1:numRow);%apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_F}(j).vectorOffset(1) + ((1:numRow)-1);
                     vectorIx_RF_last  = vectorIx_LF_last+2.*numRow.*apertureInfo.numPhases;%vectorIx_LF_last+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
                     vectorIx_RI_next  = vectorIx_LI_next+2.*numRow.*apertureInfo.numPhases;%vectorIx_LI_next+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
-                else
-                    vectorIx_LF_last  = apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_I}(j).vectorOffset + ((1:numRow)-1);
-                    vectorIx_LI_next  = apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_F}(j).vectorOffset + ((1:numRow)-1);
-                    vectorIx_RF_last  = vectorIx_LF_last+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
-                    vectorIx_RI_next  = vectorIx_LI_next+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
-                end
+                %else
+                %    vectorIx_LF_last  = apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_I}(j).vectorOffset + ((1:numRow)-1);
+                %    vectorIx_LI_next  = apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_F}(j).vectorOffset + ((1:numRow)-1);
+                %    vectorIx_RF_last  = vectorIx_LF_last+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
+                %    vectorIx_RI_next  = vectorIx_LI_next+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
+                %end
                 
                 tempL = vectorIx_LF_last;
                 tempR = vectorIx_RF_last;
@@ -336,14 +340,14 @@ for j = 1:numOfShapes
             variable.rightLeafPosF  = rightLeafPosM;
             
             variable.xPosLinearIndLeftLeafI     = xPosLinearIndLeftLeafI;
-            variable.xPosLinearIndLeftLeafF     = xPosLinearIndLeftLeafM;
+            variable.xPosLinearIndLeftLeafF     = xPosLinearIndLeftLeafMI;
             variable.xPosLinearIndRightLeafI    = xPosLinearIndRightLeafI;
-            variable.xPosLinearIndRightLeafF    = xPosLinearIndRightLeafM;
+            variable.xPosLinearIndRightLeafF    = xPosLinearIndRightLeafMI;
             
             variable.xPosIndLeftLeafI   = xPosIndLeftLeafI;
-            variable.xPosIndLeftLeafF   = xPosIndLeftLeafM;
+            variable.xPosIndLeftLeafF   = xPosIndLeftLeafMI;
             variable.xPosIndRightLeafI  = xPosIndRightLeafI;
-            variable.xPosIndRightLeafF  = xPosIndRightLeafM;
+            variable.xPosIndRightLeafF  = xPosIndRightLeafMI;
             
             variable.phase              = phase_I;
             variable.probability        = probability;
@@ -400,14 +404,14 @@ for j = 1:numOfShapes
             variable.rightLeafPosI  = rightLeafPosM;
             variable.rightLeafPosF  = rightLeafPosF;
             
-            variable.xPosLinearIndLeftLeafI     = xPosLinearIndLeftLeafM;
+            variable.xPosLinearIndLeftLeafI     = xPosLinearIndLeftLeafMF;
             variable.xPosLinearIndLeftLeafF     = xPosLinearIndLeftLeafF;
-            variable.xPosLinearIndRightLeafI    = xPosLinearIndRightLeafM;
+            variable.xPosLinearIndRightLeafI    = xPosLinearIndRightLeafMF;
             variable.xPosLinearIndRightLeafF    = xPosLinearIndRightLeafF;
             
-            variable.xPosIndLeftLeafI   = xPosIndLeftLeafM;
+            variable.xPosIndLeftLeafI   = xPosIndLeftLeafMF;
             variable.xPosIndLeftLeafF   = xPosIndLeftLeafF;
-            variable.xPosIndRightLeafI  = xPosIndRightLeafM;
+            variable.xPosIndRightLeafI  = xPosIndRightLeafMF;
             variable.xPosIndRightLeafF  = xPosIndRightLeafF;
             
             variable.phase              = phase_F;
