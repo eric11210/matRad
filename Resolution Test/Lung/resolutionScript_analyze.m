@@ -1,4 +1,9 @@
+%% load in CT and setup
+
 load lungPatient0_5mm_rep
+
+% threshold factor
+threshFac = 0.25;
 
 %this is the reference plan, the most accurate way of calculating dose
 fname = sprintf('0.5 degrees, dyn + interp.mat');
@@ -6,18 +11,6 @@ load(fname)
 refDose = recalc.resultGUI.physicalDose;
 refDoseError = recalc.resultGUI.physicalDoseError;
 
-%{
-%refDose for not interpolated, not dynamic
-fname = sprintf('0.5 degrees, Ndyn + Ninterp.mat');
-load(fname)
-refDose_NN = recalc.resultGUI.physicalDose;
-refDoseError_NN = recalc.resultGUI.physicalDoseError;
-
-%refDose for interpolated, dynamic, old Dij
-fname = sprintf('0.5 degrees, dyn + interp oldDij.mat');
-load(fname)
-refDose_YY_oldDij = recalc.resultGUI.physicalDose;
-%}
 % adjust overlap priorities
 cst_Over = matRad_setOverlapPriorities(cst);
 
@@ -35,30 +28,9 @@ for i = 1:size(cst_Over,1)
     end
 end
 
-angularResS = [0.5 1 2 4];
-
-global D;
-x0 = [1     0   0       0   0]';
-lb = [0     0   -inf    0   -inf]';
-ub = [inf   1   inf     1   inf]';
-A = [0      1   0       1   0];
-b = 1;
-
-%dynamic, interpolated
-
 %percentage of the volume with at least a x% error relative to the
 %reference dose
-%also record objective function value
-percVErr1_NN = zeros(size(angularResS));
-percVErr3_NN = zeros(size(angularResS));
-percVErr5_NN = zeros(size(angularResS));
-percVErr10_NN = zeros(size(angularResS));
-percVErr1_NN_itself = zeros(size(angularResS));
-percVErr3_NN_itself = zeros(size(angularResS));
-percVErr5_NN_itself = zeros(size(angularResS));
-percVErr10_NN_itself = zeros(size(angularResS));
-fluence_NN = zeros(size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,1), size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,2), numel(angularResS));
-weight_NN = zeros(size(angularResS));
+angularResS = [0.5 1 2 4 8];
 
 percVErr1_NY = zeros(size(angularResS));
 percVErr3_NY = zeros(size(angularResS));
@@ -66,18 +38,10 @@ percVErr5_NY = zeros(size(angularResS));
 percVErr10_NY = zeros(size(angularResS));
 fluence_NY = zeros(size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,1), size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,2), numel(angularResS));
 weight_NY = zeros(size(angularResS));
-sigma_NY = zeros(size(angularResS));
 alpha1_NY = zeros(size(angularResS));
 delta1_NY = zeros(size(angularResS));
 alpha2_NY = zeros(size(angularResS));
 delta2_NY = zeros(size(angularResS));
-
-percVErr1_YN = zeros(size(angularResS));
-percVErr3_YN = zeros(size(angularResS));
-percVErr5_YN = zeros(size(angularResS));
-percVErr10_YN = zeros(size(angularResS));
-fluence_YN = zeros(size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,1), size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,2), numel(angularResS));
-weight_YN = zeros(size(angularResS));
 
 percVErr1_YY = zeros(size(angularResS));
 percVErr3_YY = zeros(size(angularResS));
@@ -85,37 +49,96 @@ percVErr5_YY = zeros(size(angularResS));
 percVErr10_YY = zeros(size(angularResS));
 fluence_YY = zeros(size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,1), size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,2), numel(angularResS));
 weight_YY = zeros(size(angularResS));
-sigma_YY = zeros(size(angularResS));
 alpha1_YY = zeros(size(angularResS));
 delta1_YY = zeros(size(angularResS));
 alpha2_YY = zeros(size(angularResS));
 delta2_YY = zeros(size(angularResS));
 
-percVErr1_YY_oldDij = zeros(size(angularResS));
-percVErr3_YY_oldDij = zeros(size(angularResS));
-percVErr5_YY_oldDij = zeros(size(angularResS));
-percVErr10_YY_oldDij = zeros(size(angularResS));
-percVErr1_YY_oldDij_itself = zeros(size(angularResS));
-percVErr3_YY_oldDij_itself = zeros(size(angularResS));
-percVErr5_YY_oldDij_itself = zeros(size(angularResS));
-percVErr10_YY_oldDij_itself = zeros(size(angularResS));
-fluence_YY_oldDij = zeros(size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,1), size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,2), numel(angularResS));
-weight_YY_oldDij = zeros(size(angularResS));
-
 numPVHPoints = 1e3;
 
 PVH_YY = zeros(numel(angularResS),numPVHPoints);
 PVH_NY = zeros(numel(angularResS),numPVHPoints);
-PVH_YY_oldDij = zeros(numel(angularResS),numPVHPoints);
-PVH_NN = zeros(numel(angularResS),numPVHPoints);
 
 PVHPoints_YY = zeros(numel(angularResS),numPVHPoints);
 PVHPoints_NY = zeros(numel(angularResS),numPVHPoints);
-PVHPoints_YY_oldDij = zeros(numel(angularResS),numPVHPoints);
-PVHPoints_NN = zeros(numel(angularResS),numPVHPoints);
 
-%deleteInd = ~V_TargAndNorm | refDose < 0.5*max(refDose(:));
-deleteInd = ~V_TargAndNorm;
+sigma = zeros(size(angularResS));
+
+
+%% determine the correlation factor for each gantry angle resolution
+
+% determine which voxels to delete
+deleteInd = refDose < threshFac*max(refDose(:));
+%deleteInd = ~V_TargAndNorm;
+
+% setup optimization
+global D;
+x0 = 1;
+
+i = 1;
+for angularRes = angularResS
+    
+    % load two calcs of same plan
+    fname = sprintf('%.1f degrees, dyn + interp.mat',angularRes);
+    load(fname)
+    dose1 = recalc.resultGUI.physicalDose;
+    doseError1 = recalc.resultGUI.physicalDoseError;
+    
+    fname = sprintf('%.1f degrees, dyn + interp, repeat.mat',angularRes);
+    load(fname)
+    dose2 = recalc.resultGUI.physicalDose;
+    doseError2 = recalc.resultGUI.physicalDoseError;
+    
+    % calculate deltas
+    doseDiff = dose1-dose2;
+    doseDiffError = sqrt(doseError1.^2+doseError2.^2);
+    delta = doseDiff./doseDiffError;
+    delta(doseDiffError == 0) = 0;
+    delta(deleteInd) = [];
+    delta = delta(:);
+    
+    D = delta;
+    
+    % perform fit to K-F
+    x = fminsearch(@mll_KF_noDelta,x0);
+    
+    % extract parameters
+    sigma(i) = x(1);
+    alpha1 = 0;
+    delta1 = 0;
+    alpha2 = 0;
+    delta2 = 0;
+    
+    % graph results
+    figure
+    histogram(delta,'Normalization','pdf');
+    hold on
+    
+    delta_limits    = xlim;
+    delta_fit       = linspace(delta_limits(1),delta_limits(2),1000);
+    pdf_fit         = pdf_KF(delta_fit,sigma(i),alpha1,delta1,alpha2,delta2);
+    
+    plot(delta_fit,pdf_fit,'r-')
+    
+    xlabel('\Delta')
+    ylabel('pdf')
+    title(sprintf('%.1f^\\circ resolution, RNG seed change only, \\sigma = %f',angularRes,sigma(i)))
+    savefig(sprintf('Sigma for %.1f degrees.fig',angularRes))
+    
+    i = i+1;
+end
+
+%% determine K-F parameters when comparing doses to reference dose
+
+% setup optimization
+x0  = [0    0       0   0]';
+lb  = [0    -inf    0   -inf]';
+ub  = [1    inf     1   inf]';
+A   = [1    0       1   0];
+b   = 1;
+
+% scale the reference dose error by sigma(1) to account for correlations
+refDoseError = sigma(1).*refDoseError;
 
 i = 1;
 for angularRes = angularResS
@@ -126,7 +149,8 @@ for angularRes = angularResS
     fname = sprintf('%.1f degrees, dyn + interp.mat',angularRes);
     load(fname);
     dose = recalc.resultGUI.physicalDose;
-    doseError = recalc.resultGUI.physicalDoseError;
+    % scale the dose error by sigma(i) to account for correlations
+    doseError = sigma(i).*recalc.resultGUI.physicalDoseError;
     
     doseDiff = dose-refDose;
     doseDiffError = sqrt(doseError.^2+refDoseError.^2);
@@ -137,14 +161,48 @@ for angularRes = angularResS
     
     D = delta;
     
-    x = fmincon(@minusLogLikelihood,x0,A,b,[],[],lb,ub);
-    sigma_YY(i) = x(1);
-    alpha1_YY(i) = x(2);
-    delta1_YY(i) = x(3);
-    alpha2_YY(i) = x(4);
-    delta2_YY(i) = x(5);
+    x = fmincon(@mll_KF_noSigma,x0,A,b,[],[],lb,ub);
+    alpha1_YY(i) = x(1);
+    delta1_YY(i) = x(2);
+    alpha2_YY(i) = x(3);
+    delta2_YY(i) = x(4);
+    
+    % graph pdf
+    figure
+    subplot(1,3,1)
+    histogram(delta,'Normalization','pdf');
+    hold on
+    
+    delta_limits    = xlim;
+    delta_fit       = linspace(delta_limits(1),delta_limits(2),1000);
+    pdf_fit         = pdf_KF(delta_fit,1,alpha1_YY(i),delta1_YY(i),alpha2_YY(i),delta2_YY(i));
+    
+    plot(delta_fit,pdf_fit,'r-')
+    
+    xlabel('\Delta')
+    ylabel('pdf')
+    title(sprintf('%.1f^\\circ resolution, CA: K-F pdf',angularRes))
+    
+    % graph systematic differences
+    relDiff = doseDiffError./refDose;
+    relDiff(deleteInd) = [];
+    
+    subplot(1,3,2)
+    histogram(abs(delta1_YY(i).*relDiff),'Normalization','pdf')
+    xlabel('\delta_1 \cdot RCSU')
+    ylabel('pdf')
+    title(sprintf('%.1f^\\circ resolution, CA, \\alpha_1 = %f, \\delta_1 = %f',angularRes,alpha1_YY(i),delta1_YY(i)))
+    
+    subplot(1,3,3)
+    histogram(abs(delta2_YY(i).*relDiff),'Normalization','pdf')
+    xlabel('\delta_2 \cdot RCSU')
+    ylabel('pdf')
+    title(sprintf('%.1f^\\circ resolution, CA, \\alpha_2 = %f, \\delta_2 = %f',angularRes,alpha2_YY(i),delta2_YY(i)))
+    
+    savefig(sprintf('K-F for CA, %.1f degrees.fig',angularRes))
     
     
+    % percent difference stuff
     percDiff = 100*abs(dose-refDose)./refDose;
     percDiff(refDose == 0) = 0;
     percDiff(deleteInd) = [];
@@ -167,28 +225,12 @@ for angularRes = angularResS
         weight_YY(i) = weight_YY(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
     end
     
-    
-    %{
-    %NOT SURE IT MAKES SENSE TO DO THIS
-    %next, do dynamic fluence but no interpolation
-    fname = sprintf('%.1f degrees, dyn + Ninterp.mat',angularRes);
-    load(fname);
-    dose = recalc.resultGUI.physicalDose;
-    percVErr3_YN(i) = 100*nnz(abs(dose-refDose)./refDose >= 0.03 & V_TargAndNorm)./nnz(V_TargAndNorm);
-    percVErr5_YN(i) = 100*nnz(abs(dose-refDose)./refDose >= 0.05 & V_TargAndNorm)./nnz(V_TargAndNorm);
-    percVErr10_YN(i) = 100*nnz(abs(dose-refDose)./refDose >= 0.10 & V_TargAndNorm)./nnz(V_TargAndNorm);
-    for j = 1:numel(recalc.apertureInfo.beam)
-        fluence_YN(:,:,i) = fluence_YN(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).weight*recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
-        weight_YN(i) = weight_YN(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
-    end
-    %obj_YN(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,recalc.apertureInfo,dij,cst_Over,options);
-    %}
-    
     %next, do interpolation but no dynamic fluence
     fname = sprintf('%.1f degrees, Ndyn + interp.mat',angularRes);
     load(fname);
     dose = recalc.resultGUI.physicalDose;
-    doseError = recalc.resultGUI.physicalDoseError;
+    % scale the dose error by sigma(i) to account for correlations
+    doseError = sigma(i).*recalc.resultGUI.physicalDoseError;
     
     doseDiff = dose-refDose;
     doseDiffError = sqrt(doseError.^2+refDoseError.^2);
@@ -199,12 +241,45 @@ for angularRes = angularResS
     
     D = delta;
     
-    x = fmincon(@minusLogLikelihood,x0,A,b,[],[],lb,ub);
-    sigma_NY(i) = x(1);
-    alpha1_NY(i) = x(2);
-    delta1_NY(i) = x(3);
-    alpha2_NY(i) = x(4);
-    delta2_NY(i) = x(5);
+    x = fmincon(@mll_KF_noSigma,x0,A,b,[],[],lb,ub);
+    alpha1_NY(i) = x(1);
+    delta1_NY(i) = x(2);
+    alpha2_NY(i) = x(3);
+    delta2_NY(i) = x(4);
+    
+    % graph results
+    figure
+    subplot(1,3,1)
+    histogram(delta,'Normalization','pdf');
+    hold on
+    
+    delta_limits    = xlim;
+    delta_fit       = linspace(delta_limits(1),delta_limits(2),1000);
+    pdf_fit         = pdf_KF(delta_fit,1,alpha1_NY(i),delta1_NY(i),alpha2_NY(i),delta2_NY(i));
+    
+    plot(delta_fit,pdf_fit,'r-')
+    
+    xlabel('\Delta')
+    ylabel('pdf')
+    title(sprintf('%.1f^\\circ resolution, DA: K-F pdf',angularRes))
+    
+    % graph systematic differences
+    relDiff = doseDiffError./refDose;
+    relDiff(deleteInd) = [];
+    
+    subplot(1,3,2)
+    histogram(abs(delta1_NY(i).*relDiff),'Normalization','pdf')
+    xlabel('\delta_1 \cdot RCSU')
+    ylabel('pdf')
+    title(sprintf('%.1f^\\circ resolution, DA, \\alpha_1 = %f, \\delta_1 = %f',angularRes,alpha1_NY(i),delta1_NY(i)))
+    
+    subplot(1,3,3)
+    histogram(abs(delta2_NY(i).*relDiff),'Normalization','pdf')
+    xlabel('\delta_2 \cdot RCSU')
+    ylabel('pdf')
+    title(sprintf('%.1f^\\circ resolution, DA, \\alpha_2 = %f, \\delta_2 = %f',angularRes,alpha2_NY(i),delta2_NY(i)))
+    
+    savefig(sprintf('K-F for DA, %.1f degrees.fig',angularRes))
     
     
     percDiff = 100*abs(dose-refDose)./refDose;
@@ -228,118 +303,11 @@ for angularRes = angularResS
         weight_NY(i) = weight_NY(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
     end
     
-    %{
-    
-    %next, do interpolation and dynamic fluence, but using the Dij matrices
-    %at the original 4degree resolution
-    fname = sprintf('%.1f degrees, dyn + interp oldDij.mat',angularRes);
-    load(fname);
-    dose = recalc.resultGUI.physicalDose;
-    doseError = recalc.resultGUI.physicalDoseError;
-    
-    doseDiff = dose-refDose;
-    doseDiffError = sqrt(doseError.^2+refDoseError.^2);
-    delta = doseDiff./doseDiffError;
-    delta(doseDiffError == 0) = 0;
-    delta(deleteInd) = [];
-    delta = delta(:);
-    
-    D = delta;
-    
-    x = fmincon(@minusLogLikelihood,x0,A,b,[],[],lb,ub);
-    sigma_YY_oldDij(i) = x(1);
-    alpha1_YY_oldDij(i) = x(2);
-    delta1_YY_oldDij(i) = x(3);
-    alpha2_YY_oldDij(i) = x(4);
-    delta2_YY_oldDij(i) = x(5);
-    
-    
-    percDiff = 100*abs(dose-refDose)./refDose;
-    percDiff(refDose == 0) = 0;
-    percDiff(deleteInd) = [];
-    percDiff = percDiff(:);
-    numVox = numel(percDiff);
-    
-    PVHPoints_YY_oldDij(i,:) = linspace(0,max(percDiff)*1.05,numPVHPoints);
-    for j = 1:numPVHPoints
-        PVH_YY_oldDij(i,j) = sum(percDiff > PVHPoints_YY_oldDij(i,j));
-    end
-    PVH_YY_oldDij(i,:) = 100.*PVH_YY_oldDij(i,:)./numVox;
-    
-    percVErr1_YY_oldDij(i) = 100*nnz(abs(dose-refDose)./refDose >= 0.01 & V_TargAndNorm)./nnz(V_TargAndNorm);
-    percVErr3_YY_oldDij(i) = 100*nnz(abs(dose-refDose)./refDose >= 0.03 & V_TargAndNorm)./nnz(V_TargAndNorm);
-    percVErr5_YY_oldDij(i) = 100*nnz(abs(dose-refDose)./refDose >= 0.05 & V_TargAndNorm)./nnz(V_TargAndNorm);
-    percVErr10_YY_oldDij(i) = 100*nnz(abs(dose-refDose)./refDose >= 0.10 & V_TargAndNorm)./nnz(V_TargAndNorm);
-    
-    percVErr1_YY_oldDij_itself(i) = 100*nnz(abs(dose-refDose_YY_oldDij)./refDose_YY_oldDij >= 0.01 & V_TargAndNorm)./nnz(V_TargAndNorm);
-    percVErr3_YY_oldDij_itself(i) = 100*nnz(abs(dose-refDose_YY_oldDij)./refDose_YY_oldDij >= 0.03 & V_TargAndNorm)./nnz(V_TargAndNorm);
-    percVErr5_YY_oldDij_itself(i) = 100*nnz(abs(dose-refDose_YY_oldDij)./refDose_YY_oldDij >= 0.05 & V_TargAndNorm)./nnz(V_TargAndNorm);
-    percVErr10_YY_oldDij_itself(i) = 100*nnz(abs(dose-refDose_YY_oldDij)./refDose_YY_oldDij >= 0.10 & V_TargAndNorm)./nnz(V_TargAndNorm);
-    for j = 1:numel(recalc.apertureInfo.beam)
-        fluence_YY_oldDij(:,:,i) = fluence_YY_oldDij(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
-        weight_YY_oldDij(i) = weight_YY_oldDij(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
-    end
-    %obj_NY(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,recalc.apertureInfo,dij,cst_Over,options);
-    
-    %finally, do neither interpolation nor dynamic fluence
-    fname = sprintf('%.1f degrees, Ndyn + Ninterp.mat',angularRes);
-    load(fname);
-    dose = recalc.resultGUI.physicalDose;
-    doseError = recalc.resultGUI.physicalDoseError;
-    
-    doseDiff = dose-refDose_NN;
-    doseDiffError = sqrt(doseError.^2+refDoseError_NN.^2);
-    delta = doseDiff./doseDiffError;
-    delta(doseDiffError == 0) = 0;
-    delta(deleteInd) = [];
-    delta = delta(:);
-    
-    D = delta;
-    
-    %{
-    x = fmincon(@minusLogLikelihood,x0,A,b,[],[],lb,ub);
-    sigma_NN(i) = x(1);
-    alpha1_NN(i) = x(2);
-    delta1_NN(i) = x(3);
-    alpha2_NN(i) = x(4);
-    delta2_NN(i) = x(5);
-    %}
-    
-    percDiff = 100*abs(dose-refDose)./refDose;
-    percDiff(refDose == 0) = 0;
-    percDiff(deleteInd) = [];
-    percDiff = percDiff(:);
-    numVox = numel(percDiff);
-    
-    PVHPoints_NN(i,:) = linspace(0,max(percDiff)*1.05,numPVHPoints);
-    for j = 1:numPVHPoints
-        PVH_NN(i,j) = sum(percDiff > PVHPoints_NN(i,j));
-    end
-    PVH_NN(i,:) = 100.*PVH_NN(i,:)./numVox;
-    
-    percVErr1_NN(i) = 100*nnz(abs(dose-refDose)./refDose >= 0.01 & V_TargAndNorm)./nnz(V_TargAndNorm);
-    percVErr3_NN(i) = 100*nnz(abs(dose-refDose)./refDose >= 0.03 & V_TargAndNorm)./nnz(V_TargAndNorm);
-    percVErr5_NN(i) = 100*nnz(abs(dose-refDose)./refDose >= 0.05 & V_TargAndNorm)./nnz(V_TargAndNorm);
-    percVErr10_NN(i) = 100*nnz(abs(dose-refDose)./refDose >= 0.10 & V_TargAndNorm)./nnz(V_TargAndNorm);
-    
-    percVErr1_NN_itself(i) = 100*nnz(abs(dose-refDose_NN)./refDose_NN >= 0.01 & V_TargAndNorm)./nnz(V_TargAndNorm);
-    percVErr3_NN_itself(i) = 100*nnz(abs(dose-refDose_NN)./refDose_NN >= 0.03 & V_TargAndNorm)./nnz(V_TargAndNorm);
-    percVErr5_NN_itself(i) = 100*nnz(abs(dose-refDose_NN)./refDose_NN >= 0.05 & V_TargAndNorm)./nnz(V_TargAndNorm);
-    percVErr10_NN_itself(i) = 100*nnz(abs(dose-refDose_NN)./refDose_NN >= 0.10 & V_TargAndNorm)./nnz(V_TargAndNorm);
-    for j = 1:numel(recalc.apertureInfo.beam)
-        fluence_NN(:,:,i) = fluence_NN(:,:,i)+recalc.apertureInfo.beam(j).shape{1}(1).shapeMap;
-        weight_NN(i) = weight_NN(i)+recalc.apertureInfo.beam(j).shape{1}(1).weight;
-    end
-    %obj_NN(i) = matRad_daoObjFunc(recalc.apertureInfo.apertureVector,recalc.apertureInfo,dij,cst_Over,options);
-    
-    
-    %}
-    
     i = i+1;
 end
 
 
-save('Res Results','*_NN', '*_NY', '*_YN', '*_YY','*_YY_oldDij')
+save('Res Results', '*_NY', '*_YY','sigma')
 %{
 figure
 hold
@@ -425,27 +393,22 @@ title(fname)
 grid
 savefig(fname)
 %}
+h_YY = figure;
+hold on
+h_NY = figure;
+hold on
+
 for i = 1:numel(angularResS)
-    figure(1)
+    figure(h_YY)
     semilogy(PVHPoints_YY(i,:),PVH_YY(i,:))
-    hold on
     
-    figure(2)
-    semilogy(PVHPoints_NN(i,:),PVH_NN(i,:))
-    hold on
-    
-    figure(3)
-    semilogy(PVHPoints_YY_oldDij(i,:),PVH_YY_oldDij(i,:))
-    hold on
-    
-    figure(4)
+    figure(h_NY)
     semilogy(PVHPoints_NY(i,:),PVH_NY(i,:))
-    hold on
 end
 
 path = 'C:\Users\eric\Carleton University\OneDrive - Carleton University\Carleton\PhD Project\Papers\Dynamic Fluence Calculation\Figures\';
 
-figure(1)
+figure(h_YY)
 xlabel('Relative dose difference (\%)')
 ylabel('Volume (\%)')
 ylim([1 100])
@@ -458,33 +421,7 @@ savefig(fname)
 fullpath = [path fname '.tex'];
 %matlab2tikz('filename',fullpath,'interpretTickLabelsAsTex',true,'parseStrings',false,'noSize',true,'extraAxisOptions','minor y tick num=4,minor x tick num=4,width=\linewidth,height=\linewidth','showInfo',false);
 
-figure(2)
-xlabel('Relative dose difference (\%)')
-ylabel('Volume (\%)')
-ylim([1 100])
-fname = 'Lung_Notdynamic_notinterpolated';
-%title(fname)
-legend({'$\Delta\theta_{\mathrm{dose}} = \SI{0.5}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{1}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{2}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{4}{\degree}$'},'Location','Best')
-grid on
-set(gca,'YMinorTick','on','XMinorTick','on')
-savefig(fname)
-fullpath = [path fname '.tex'];
-%matlab2tikz('filename',fullpath,'interpretTickLabelsAsTex',true,'parseStrings',false,'noSize',true,'extraAxisOptions','minor y tick num=4,minor x tick num=4,width=\linewidth,height=\linewidth','showInfo',false);
-
-figure(3)
-xlabel('Relative dose difference (\%)')
-ylabel('Volume (\%)')
-ylim([1 100])
-fname = 'Lung_Dynamic_interpolated_oldDij';
-%title(fname)
-legend({'$\Delta\theta_{\mathrm{dose}} = \SI{0.5}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{1}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{2}{\degree}$','$\Delta\theta_{\mathrm{dose}} = \SI{4}{\degree}$'},'Location','Best')
-grid on
-set(gca,'YMinorTick','on','XMinorTick','on')
-savefig(fname)
-fullpath = [path fname '.tex'];
-%matlab2tikz('filename',fullpath,'interpretTickLabelsAsTex',true,'parseStrings',false,'noSize',true,'extraAxisOptions','minor y tick num=4,minor x tick num=4,width=\linewidth,height=\linewidth','showInfo',false);
-
-figure(4)
+figure(h_NY)
 xlabel('Relative dose difference (\%)')
 ylabel('Volume (\%)')
 ylim([1 100])

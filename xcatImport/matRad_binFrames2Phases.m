@@ -56,7 +56,11 @@ if importOptions.binFrames2Phases
     ind_x_l_XCAT = zeros(importOptions.numPhases,1);
     for phase = 1:importOptions.numPhases
         x_l(phase) = mean(x_XCAT(l_XCAT == phase));
-        t_x_l(phase) = interp1(x_XCAT(l_XCAT == phase & timeMask),t(l_XCAT == phase & timeMask),x_l(phase));
+        if nnz(l_XCAT == phase & timeMask) > 1
+            t_x_l(phase) = interp1(x_XCAT(l_XCAT == phase & timeMask),t(l_XCAT == phase & timeMask),x_l(phase));
+        else
+            t_x_l(phase) = t(l_XCAT == phase & timeMask);
+        end
         t_x_l_XCAT(phase) = interp1(t,t,t_x_l(phase),'nearest','extrap');
         ind_x_l_XCAT(phase) = find(t == t_x_l_XCAT(phase));
     end
