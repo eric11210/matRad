@@ -363,9 +363,9 @@ for frame = 1:dij.numFrames
                         if calcDoseDirect
                             if isfield(stf(beamNum(readCounter)).ray(rayNum(readCounter)),'weight')
                                 % score physical dose
-                                dij.physicalDose{phase}(:,i)        = dij.physicalDose{phase}(:,i) + stf(beamNum(readCounter)).ray(rayNum(readCounter)).weight{1} * doseTmpContainer{1,1};
+                                dij.physicalDose{phase}(:,i)        = dij.physicalDose{phase}(:,i) + stf(beamNum(readCounter)).ray(rayNum(readCounter)).weight{phase} * doseTmpContainer{1,1};
                                 if pln.propDoseCalc.vmcOptions.keepError
-                                    dij.physicalDoseError{phase}(:,i)   = sqrt(dij.physicalDoseError{phase}(:,i).^2 + (stf(beamNum(readCounter)).ray(rayNum(readCounter)).weight{1} * doseTmpContainerError{1,1}).^2);
+                                    dij.physicalDoseError{phase}(:,i)   = sqrt(dij.physicalDoseError{phase}(:,i).^2 + (stf(beamNum(readCounter)).ray(rayNum(readCounter)).weight{phase} * doseTmpContainerError{1,1}).^2);
                                 end
                             else
                                 error(['No weight available for beam ' num2str(beamNum(readCounter)) ', ray ' num2str(rayNum(readCounter))]);

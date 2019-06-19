@@ -48,7 +48,7 @@ fprintf('matRad: Importing motion vectors from XCAT files ... \n');
 
 ct = matRad_parseMVF(ct,xcatLog,importOptions);
 
-fprintf('Done!\n');
+fprintf('\nDone!\n');
 
 %% pad ct and interpolate mvf with zeros from vmc++
 fprintf('matRad: Padding ct and interpolating motion vectors ... \n');

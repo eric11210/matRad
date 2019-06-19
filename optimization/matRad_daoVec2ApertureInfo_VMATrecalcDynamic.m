@@ -50,7 +50,7 @@ variable.totalNumOfShapes = apertureInfo.totalNumOfShapes;
 
 w = cell(apertureInfo.numPhases,1);
 w(:) = {zeros(apertureInfo.totalNumOfBixels,1)};
-
+%{
 if updatedInfo.runVMAT && ~all([updatedInfo.propVMAT.beam.DAOBeam])
     j = 1;
     for phase = 1:apertureInfo.numPhases
@@ -71,7 +71,7 @@ if updatedInfo.runVMAT && ~all([updatedInfo.propVMAT.beam.DAOBeam])
         end
     end
 end
-
+%}
 
 %% update the shapeMaps
 % here the new colimator positions are used to create new shapeMaps that
@@ -158,7 +158,7 @@ for i = 1:numel(updatedInfo.beam)
             variable.weight             = weight_I;
             variable.weightFactor_I     = 1;
             variable.weightFactor_F     = 1;
-            variable.probability        = 1;
+            variable.probability        = apertureInfo.motionModel.probPhase(phase);
             
             if updatedInfo.propVMAT.continuousAperture
                 leftLeafPosI    = updatedInfo.beam(i).shape{phase}(j).leftLeafPos_I;
@@ -204,7 +204,7 @@ for i = 1:numel(updatedInfo.beam)
             variable.weight             = weight_F;
             variable.weightFactor_I     = 1;
             variable.weightFactor_F     = 1;
-            variable.probability        = 1;
+            variable.probability        = apertureInfo.motionModel.probPhase(phase);
             if updatedInfo.propVMAT.continuousAperture
                 leftLeafPosI    = updatedInfo.beam(i).shape{phase}(j).leftLeafPos;
                 leftLeafPosF    = updatedInfo.beam(i).shape{phase}(j).leftLeafPos_F;

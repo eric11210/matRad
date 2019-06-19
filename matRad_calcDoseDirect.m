@@ -57,7 +57,7 @@ if exist('w','var')
         end
     end
 else % weights need to be in stf!
-    w = cell(apertureInfo.numPhases,1);
+    w = cell(numel(stf(1).ray(1).weight),1);
     w(:) = {zeros(sum([stf.totalNumOfBixels]),1)};
     
     for phase = 1:ct.tumourMotion.numPhases
@@ -90,8 +90,10 @@ end
 % calculate cubes; use uniform weights here, weighting with actual fluence
 % already performed in dij construction
 options.bioOpt          = 'none';
-options.numOfScenarios  = 1;
-resultGUI               = matRad_calcCubes({ones(pln.propStf.numOfBeams,1)},dij,cst,options);
+options.numOfScenarios  = numel(w);
+wOnes                   = cell(numel(w),1);
+wOnes(:)                = {ones(pln.propStf.numOfBeams,1)};
+resultGUI               = matRad_calcCubes(wOnes,dij,cst,options);
 
 % remember original fluence weights
 resultGUI.w  = w; 

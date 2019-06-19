@@ -56,7 +56,7 @@ end
 cd stf
 fname = sprintf('%.1f deg.mat',recalc.pln.propOpt.VMAToptions.maxGantryAngleSpacing);
 if exist(fname,'file')
-    load(fname);
+    load(fname,'stf');
 else
     stf = matRad_generateStf(ct,cst,recalc.pln);
     save(fname,'stf')
