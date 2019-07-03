@@ -2,7 +2,7 @@
 load('Results.mat');
 
 % prep for loop
-numPhases_vec   = 1:15;
+numPhases_vec   = 1;
 oldDir          = pwd;
 ctName_base     = 'lungPatient0_5mm';
 
@@ -12,9 +12,6 @@ recalc.interpNew = true;
 recalc.dijNew = true;
 
 for numPhases = numPhases_vec
-    
-    numPhases = 3;
-    
     %% prep
     % load ct, cst, pln
     ctName = sprintf('%s%dp_rep.mat',ctName_base,numPhases);
@@ -68,15 +65,27 @@ for numPhases = numPhases_vec
     
     pln = matRad_VMATGantryAngles(pln,cst,ct);
     
-    recalc.pln          = pln;
-    recalc.pln.propOpt.VMAToptions.maxGantryAngleSpacing = 4;
+    recalc.pln                                              = pln;
+    recalc.pln.propOpt.run4D                                = true;
+    recalc.pln.propOpt.VMAToptions.maxGantryAngleSpacing    = 4;
     recalc.numPhases    = numPhases;
+    
+    %% recalc
     
     % determine name
     fname = sprintf('%d phases.mat',numPhases);
     fprintf('%s\n',fname);
     
-    %% recalc
+    % do recalc, save
+    recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo);
+    cd(oldDir);
+    save(fname,'resultGUI','recalc');
+    
+    % do it again for correlation
+    
+    % determine name
+    fname = sprintf('%d phases, repeat.mat',numPhases);
+    fprintf('%s\n',fname);
     
     % do recalc, save
     recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo);
