@@ -161,10 +161,10 @@ pGradMat2_part      = accumarray([apertureInfo.motionModel.indices.subPhase2PosP
 PijGrad_transT      = accumarray([apertureInfo.motionModel.indices.subPhase2PosPhase_gridI(:) apertureInfo.motionModel.indices.subPhase2PosPhase_gridJ(:)],Pij_transT_dot(:));
 PijGrad_transT_part = accumarray([repmat((1:apertureInfo.motionModel.indices.nSubPhases)',[apertureInfo.motionModel.indices.nSubPhases 1]) apertureInfo.motionModel.indices.subPhase2PosPhase_gridJ(:)],Pij_transT_dot(:));
 
-pGradMat                = reshape(sum(apertureInfo.propVMAT.jacobT(:,1:(i-1)),2),[1 1 numel(apertureInfo.beam)]).*pGradMat1 + reshape(apertureInfo.propVMAT.jacobT(:,i),[1 1 numel(apertureInfo.beam)]).*pGradMat2;
-pGradMat_part           = reshape(sum(apertureInfo.propVMAT.jacobT(:,1:(i-1)),2),[1 1 numel(apertureInfo.beam)]).*pGradMat1_part + reshape(apertureInfo.propVMAT.jacobT(:,i),[1 1 numel(apertureInfo.beam)]).*pGradMat2_part;
-PijGradMat_transT       = reshape(apertureInfo.propVMAT.jacobT(:,i),[1 1 numel(apertureInfo.beam)]).*PijGrad_transT;
-PijGradMat_transT_part  = reshape(apertureInfo.propVMAT.jacobT(:,i),[1 1 numel(apertureInfo.beam)]).*PijGrad_transT_part;
+pGradMat                = reshape(sum(apertureInfo.propVMAT.jacobT(:,1:(i-1)),2),[1 1 apertureInfo.totalNumOfShapes]).*pGradMat1 + reshape(apertureInfo.propVMAT.jacobT(:,i),[1 1 apertureInfo.totalNumOfShapes]).*pGradMat2;
+pGradMat_part           = reshape(sum(apertureInfo.propVMAT.jacobT(:,1:(i-1)),2),[1 1 apertureInfo.totalNumOfShapes]).*pGradMat1_part + reshape(apertureInfo.propVMAT.jacobT(:,i),[1 1 apertureInfo.totalNumOfShapes]).*pGradMat2_part;
+PijGradMat_transT       = reshape(apertureInfo.propVMAT.jacobT(:,i),[1 1 apertureInfo.totalNumOfShapes]).*PijGrad_transT;
+PijGradMat_transT_part  = reshape(apertureInfo.propVMAT.jacobT(:,i),[1 1 apertureInfo.totalNumOfShapes]).*PijGrad_transT_part;
 
 % put probability and gradient matrices into struct
 apertureInfo.probI_IJ{i}        = pMat;

@@ -115,11 +115,11 @@ pln.propOpt.VMAToptions.continuousAperture = true;
 
 pln.propOpt.VMAToptions.startingAngle = -180;
 pln.propOpt.VMAToptions.finishingAngle = 180;
-pln.propOpt.VMAToptions.maxGantryAngleSpacing = 8;      % Max gantry angle spacing for dose calculation
+pln.propOpt.VMAToptions.maxGantryAngleSpacing = 4;      % Max gantry angle spacing for dose calculation
 pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing = 8;      % Max gantry angle spacing for DAO
 pln.propOpt.VMAToptions.maxFMOGantryAngleSpacing = 32;      % Max gantry angle spacing for FMO
 
-pln.propOpt.run4D = true;
+pln.propOpt.run4D = false;
 pln.propOpt.varOpt = true;
 pln.propOpt.prop4D.singlePhaseFMO = true;
 % multi-phase FMO hasn't been implemented fully (would have to do changes in FMO and leaf
