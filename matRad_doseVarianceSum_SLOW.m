@@ -1,4 +1,4 @@
-function [dVarSum,dVarSumGrad] = matRad_doseVarianceSum(apertureInfo,dij)
+function [dVarSum,dVarSumGrad] = matRad_doseVarianceSum_SLOW(apertureInfo,dij)
 
 %% setup
 
@@ -7,12 +7,12 @@ numPhases       = apertureInfo.numPhases;
 numSubPhases    = apertureInfo.motionModel.indices.nSubPhases;
 
 % allocate raw doses
-dRawCell_sumI   = cell(numel(apertureInfo.beam),1);
-dRawCell_sumF   = cell(numel(apertureInfo.beam),1);
+dRawCell_sumI   = cell(numel(apertureInfo.beam).*numSubPhases,1);
+dRawCell_sumF   = cell(numel(apertureInfo.beam).*numSubPhases,1);
 
 % allocate gradient of raw doses
-dRawGradCell_sumI   = cell(numel(apertureInfo.beam),1);
-dRawGradCell_sumF   = cell(numel(apertureInfo.beam),1);
+dRawGradCell_sumI   = cell(numel(apertureInfo.beam).*numPhases,1);
+dRawGradCell_sumF   = cell(numel(apertureInfo.beam).*numPhases,1);
 
 % allocate mean of dose
 d = zeros(numel(dij.targetVox),1);
@@ -56,12 +56,12 @@ for i = 1:numel(apertureInfo.beam)
     d2SumGrad_i = zeros(1,apertureInfo.beam(i).numKeepVar);
     
     % allocate raw doses
-    dRawCell_sumI{i} = zeros(numel(dij.targetVox),numSubPhases);
-    dRawCell_sumF{i} = zeros(numel(dij.targetVox),numSubPhases);
+    dRawCell_sumI((i-1).*numSubPhases+(1:numSubPhases)) = {zeros(1,numel(dij.targetVox))};
+    dRawCell_sumF((i-1).*numSubPhases+(1:numSubPhases)) = {zeros(1,numel(dij.targetVox))};
     
     % allocate gradient of raw doses
-    dRawGradCellTemp_sumI = zeros(numel(dij.targetVox),numel(d2KeepVar),numPhases);
-    dRawGradCellTemp_sumF = zeros(numel(dij.targetVox),numel(d2KeepVar),numPhases);
+    dRawGradCell_sumI((i-1).*numPhases+(1:numPhases)) = {zeros(numel(dij.targetVox),numel(d2KeepVar))};
+    dRawGradCell_sumF((i-1).*numPhases+(1:numPhases)) = {zeros(numel(dij.targetVox),numel(d2KeepVar))};
     
     % calculate probability normalization and gradient matrices
     pNormMat        = 1./apertureInfo.probI_IJ{i};
@@ -123,7 +123,7 @@ for i = 1:numel(apertureInfo.beam)
                 factor_I = apertureInfo.probI_Ij{i}(phase_I,subPhase_F)./apertureInfo.probI_IJ{i}(phase_I,phase_F);
                 
                 % store sums of doses (over initial and final phases)
-                dRawCell_sumI{i}(:,subPhase_F) = dRawCell_sumI{i}(:,subPhase_F)+dRawTemp.*factor_I;
+                dRawCell_sumI{(i-1).*numSubPhases+subPhase_F} = dRawCell_sumI{(i-1).*numSubPhases+subPhase_F}+dRawTemp'.*factor_I;
             end
             
             for subPhase_I = find(apertureInfo.motionModel.indices.subPhase2PosPhase == phase_I)'
@@ -132,7 +132,7 @@ for i = 1:numel(apertureInfo.beam)
                 factor_F = apertureInfo.probF_kL{i}(subPhase_I,phase_F)./apertureInfo.probI_IJ{i}(phase_I,phase_F);
                 
                 % store sums of doses (over initial and final phases)
-                dRawCell_sumF{i}(:,subPhase_I) = dRawCell_sumF{i}(:,subPhase_I)+dRawTemp.*factor_F;
+                dRawCell_sumF{(i-1).*numSubPhases+subPhase_I} = dRawCell_sumF{(i-1).*numSubPhases+subPhase_I}+dRawTemp'.*factor_F;
             end
             
             % determine factors and gradients for sums
@@ -147,8 +147,8 @@ for i = 1:numel(apertureInfo.beam)
             %dRawCell_sumF{(i-1).*numPhases+phase_I} = dRawCell_sumF{(i-1).*numPhases+phase_I}+dRawTemp'.*factor_F;
             
             % insert gradients (averaged over all sub-phases in a phase
-            dRawGradCellTemp_sumI(:,:,phase_F) = dRawGradCellTemp_sumI(:,:,phase_F)+dRawGradCellTemp.*factor_I;
-            dRawGradCellTemp_sumF(:,:,phase_I) = dRawGradCellTemp_sumF(:,:,phase_I)+dRawGradCellTemp.*factor_F;
+            dRawGradCell_sumI{(i-1).*numPhases+phase_F} = dRawGradCell_sumI{(i-1).*numPhases+phase_F}+dRawGradCellTemp.*factor_I;
+            dRawGradCell_sumF{(i-1).*numPhases+phase_I} = dRawGradCell_sumF{(i-1).*numPhases+phase_I}+dRawGradCellTemp.*factor_F;
             
             % determine if we're doing time gradients
             deleteInd               = abs(factorGrad_F) < eps | isnan(factorGrad_F);
@@ -161,7 +161,7 @@ for i = 1:numel(apertureInfo.beam)
                 
                 [~,keepInd] = ismember(temptimeInd,d2KeepVar);
                 
-                dRawGradCellTemp_sumF(:,keepInd,phase_I) = dRawGradCellTemp_sumF(:,keepInd,phase_I)+dRawTemp.*factorGrad_F';
+                dRawGradCell_sumF{(i-1).*numPhases+phase_I}(:,keepInd) = dRawGradCell_sumF{(i-1).*numPhases+phase_I}(:,keepInd)+dRawTemp.*factorGrad_F';
             end
             
             
@@ -209,48 +209,89 @@ for i = 1:numel(apertureInfo.beam)
         end
     end
     
-    % permute gradients, concatenate
-    dRawGradCellTemp_sumI = permute(dRawGradCellTemp_sumI,[3 1 2]);
-    dRawGradCellTemp_sumF = permute(dRawGradCellTemp_sumF,[1 3 2]);
-    
-    dRawGradCell_sumI{i} = reshape(dRawGradCellTemp_sumI,[],numel(d2KeepVar));
-    dRawGradCell_sumF{i} = reshape(dRawGradCellTemp_sumF,[],numel(d2KeepVar));
-    
     % dump gradients for i
     dGrad(:,currVarIx(d2KeepVar))   = dGrad(:,currVarIx(d2KeepVar))+dGrad_i;
     d2SumGrad(currVarIx(d2KeepVar)) = d2SumGrad(currVarIx(d2KeepVar))+d2SumGrad_i;
 end
 
+%{
+% preallocate full values and indices
+V = zeros(nnzGrad,1);
+I = zeros(nnzGrad,1);
+J = zeros(nnzGrad,1);
+
+% initialize offset
+indOffset = 0;
+
+% extract gantry times
+gantryTimes = zeros(numel(apertureInfo.beam),1);
+
+% loop over all beams again to put individual values and indices into full
+for i = 1:numel(apertureInfo.beam)
+    
+    % get gradient offset
+    gradOffset = apertureInfo.beam(i).gradOffset;
+    
+    % get number of kept variables
+    numKeepVar = apertureInfo.beam(i).numKeepVar;
+    
+    % extract times
+    gantryTimes(i) = apertureInfo.beam(i).time;
+    
+    % loop over phases
+    for phase_I = 1:numPhases
+        
+        for phase_F = 1:numPhases
+            
+            % determine cell index
+            cellInd = (phase_I-1).*numPhases+phase_F;
+            
+            % extract gradients
+            dRawGradTemp    = dRawGradCell{(i-1).*numPhases.^2+cellInd};
+            
+            % get nonzero values and indices
+            vTemp   = nonzeros(dRawGradTemp);
+            [iTemp,jTemp]   = find(dRawGradTemp);
+            
+            % get indices for full
+            ind     = indOffset+(1:numel(vTemp));
+            
+            % put values and indives into full
+            V(ind)      = vTemp;
+            I(ind)      = iTemp;
+            J(ind)      = jTemp+gradOffset+(cellInd-1).*numKeepVar;
+            
+            % increase offset
+            indOffset       = indOffset+numel(vTemp);
+        end
+    end
+end
+
+% construct sparse matrix of gradients
+dRawGrad = sparse(I,J,V,numel(dij.targetVox),apertureInfo.beam(end).gradOffset+apertureInfo.beam(end).numKeepVar.*numPhases.^2);
+
+% clear unnecessary variables
+clear I J V
+%}
 % first loop over all beams
 for i1 = 1:numel(apertureInfo.beam)
-    
-    %% housekeeping for beam 1
-    
-    % find relevant variables
-    currVarIx1 = apertureInfo.beam(i1).local2GlobalVar;
-    
-    % find kept variables
-    d2KeepVar1 = apertureInfo.beam(i1).d2KeepVar;
-    
-    % get pre-calculated raw doses and gradients
-    dRaw_i1     = dRawCell_sumI{i1};
-    dRawGrad_i1 = dRawGradCell_sumI{i1};
-    
     
     % second loop over all beams
     for i2 = (i1+1):numel(apertureInfo.beam)
         
-        %% housekeeping for beam 2
+        %% housekeeping
         
-        % find relevant variables
+        % find relevant variables for beams 1 and 2
+        currVarIx1 = apertureInfo.beam(i1).local2GlobalVar;
         currVarIx2 = apertureInfo.beam(i2).local2GlobalVar;
         
-        % find kept variables
+        % find kept variables for beams 1 and 2
+        d2KeepVar1 = apertureInfo.beam(i1).d2KeepVar;
         d2KeepVar2 = apertureInfo.beam(i2).d2KeepVar;
         
-        % get pre-calculated raw doses and gradients
-        dRaw_i2_T   = dRawCell_sumF{i2}'; % fix this earlier?
-        dRawGrad_i2 = dRawGradCell_sumF{i2};
+        % allocate gradient of mean of squared dose for beams 1 and 2
+        d2SumGrad_i1 = zeros(1,nnz(d2KeepVar1));
+        d2SumGrad_i2 = zeros(1,nnz(d2KeepVar2));
         
         %% determine probabilities
         
@@ -268,36 +309,113 @@ for i1 = 1:numel(apertureInfo.beam)
         % calculate the probabilities
         [pNormMat,pNormGradMat,~,~] = matRad_transAndTProb(transT12,0,apertureInfo.motionModel);
         
-        %% calculate the contribution to d2 from this combination of beam angles
+        % determine thresholds
+        pNormThres      = eps;%max(pNormMat(:))*1e-2;
+        pNormGradThres  = eps;%max(pNormGradMat(:))*1e-2;
         
-        % get sum of dose squared
-        pNormMat_x_dRaw_i2_T = (pNormMat*dRaw_i2_T)';
-        pNormMat_x_dRaw_i2_T = pNormMat_x_dRaw_i2_T(:);
-        d2Temp  = 2*dRaw_i1(:).'*pNormMat_x_dRaw_i2_T;
-        %d2Temp  = trace(2*dRaw_i1*pNormMat*dRaw_i2);
-        d2Sum   = d2Sum+d2Temp;
+        %% loop over phases F1 and I2 only; we have already performed a sum over I1 and F2
+        % if we are looking at different beams, then we need to
+        % loop over initial and final phases for the second
+        % beam
         
-        % before we do the gradients, collapse the probability matrix along
-        % the row and columns (for grad i1, i2 respectively)
-        pNormMat_collapsedRows = accumarray([apertureInfo.motionModel.indices.subPhase2PosPhase_gridI(:) repelem((1:apertureInfo.motionModel.indices.nSubPhases)',apertureInfo.motionModel.indices.nSubPhases)],pNormMat(:));
-        pNormMat_collapsedColumns = accumarray([repmat((1:apertureInfo.motionModel.indices.nSubPhases)',[apertureInfo.motionModel.indices.nSubPhases 1]) apertureInfo.motionModel.indices.subPhase2PosPhase_gridJ(:)],pNormMat(:));
-        
-        % also do some matrix mutliplication
-        pNormMat_collapsed_x_dRaw_i1        = dRaw_i1*pNormMat_collapsedColumns;
-        pNormMat_collapsed_x_dRaw_i1        = pNormMat_collapsed_x_dRaw_i1(:)';
-        pNormMat_collapsed_x_dRaw_i2        = pNormMat_collapsedRows*dRaw_i2_T;
-        pNormMat_collapsed_x_dRaw_i2        = pNormMat_collapsed_x_dRaw_i2(:)';
-        pNormGradMat_x_dRaw_i2_T            = (pNormGradMat*dRaw_i2_T)';
-        
-        % now calculate gradients
-        d2SumGrad_i1        = 2*pNormMat_collapsed_x_dRaw_i2*dRawGrad_i1;
-        d2SumGrad_i2        = 2*pNormMat_collapsed_x_dRaw_i1*dRawGrad_i2;
-        d2SumTimeGrad_i1i2  = 2*dRaw_i1(:).'*pNormGradMat_x_dRaw_i2_T(:);
+        % first loop over final phases
+        for phase_F1 = 1:numPhases
+            
+            % find subphases in phase_F1
+            subPhases_F1 = find(apertureInfo.motionModel.indices.subPhase2PosPhase == phase_F1)';
+            
+            % get pre-calculated raw gradients
+            dRawGrad_1 = dRawGradCell_sumI{(i1-1).*numPhases+phase_F1};
+            
+            % second loop over initial phases
+            for phase_I2 = 1:numPhases
+                
+                % find subphases in phase_I2
+                subPhases_I2 = find(apertureInfo.motionModel.indices.subPhase2PosPhase == phase_I2)';
+                
+                % get pre-calculated raw gradients
+                dRawGrad_2 = dRawGradCell_sumF{(i2-1).*numPhases+phase_I2};
+                
+                % initialize sums of doses
+                dSum_1 = zeros(1,numel(dij.targetVox));
+                dSum_2 = zeros(1,numel(dij.targetVox));
+                
+                % loop over subphases in phase_F1
+                for subPhase_F1 = subPhases_F1
+                    
+                    % get pre-calculated raw doses
+                    dRaw_1 = dRawCell_sumI{(i1-1).*numSubPhases+subPhase_F1};
+                    
+                    % loop over subphases in phase_I2
+                    for subPhase_I2 = subPhases_I2
+                        
+                        % determine probability normalization
+                        pNorm = pNormMat(subPhase_F1,subPhase_I2);
+                        
+                        % determine gradient of probability normalization
+                        pNormGrad = pNormGradFactor.*pNormGradMat(subPhase_F1,subPhase_I2);
+                        
+                        % determine if we're doing d2 for this combo
+                        dod2 = abs(pNorm) > pNormThres && pNorm < inf;
+                        
+                        % determine if we're doing time gradients of d2 for
+                        % this combo
+                        %keepInd         = abs(pNormGrad) > pNormGradThres & ~isnan(pNormGrad);
+                        dod2TimeGrad    = any(abs(pNormGrad) > pNormGradThres & ~isnan(pNormGrad));
+                        
+                        % only do the following if we need d2 stuff,
+                        % i.e. if pNorm is > eps
+                        if dod2 || dod2TimeGrad
+                            
+                            % get pre-calculated raw doses
+                            dRaw_2      = dRawCell_sumF{(i2-1).*numSubPhases+subPhase_I2};
+                            
+                            % combine into a single multiplication
+                            d2SumRaw = dRaw_1 * dRaw_2';
+                            
+                            % determine if we're doing d2 for this combo
+                            if dod2
+                                
+                                % sum terms
+                                d2Sum = d2Sum + 2 .* pNorm .* d2SumRaw;
+                                
+                                % keep track of the sum of for the purposes
+                                % of gradient
+                                dSum_1 = dSum_1 + 2 .* pNorm .* dRaw_1;
+                                dSum_2 = dSum_2 + 2 .* pNorm .* dRaw_2;
+                                
+                                %d2SumGrad_i1    = d2SumGrad_i1 + 2.*pNorm .* dRaw_2 * dRawGrad_1;
+                                %d2SumGrad_i2    = d2SumGrad_i2 + 2.*pNorm .* dRaw_1 * dRawGrad_2;
+                            end
+                            
+                            % only do the following if we need time gradients
+                            % of d2
+                            if dod2TimeGrad
+                                
+                                % calculate gradients of mean squared doses, put
+                                % them directly in d2Grad
+                                % now only look at gradients wrt time
+                                
+                                % cut indices
+                                %pNormGrad_cut   = pNormGrad(keepInd);
+                                %tIx_Vec_cut     = tIx_Vec(keepInd);
+                                
+                                % combine into a single multiplication
+                                d2SumTimeGrad    = d2SumTimeGrad + 2.* pNormGrad .* d2SumRaw;
+                            end
+                        end
+                    end
+                end
+                
+                % do all of the gradients together
+                d2SumGrad_i1    = d2SumGrad_i1 + dSum_2 * dRawGrad_1;
+                d2SumGrad_i2    = d2SumGrad_i2 + dSum_1 * dRawGrad_2;
+            end
+        end
         
         % dump gradient for beams 1 and 2
-        d2SumGrad(currVarIx1(d2KeepVar1))   = d2SumGrad(currVarIx1(d2KeepVar1)) + d2SumGrad_i1;
-        d2SumGrad(currVarIx2(d2KeepVar2))   = d2SumGrad(currVarIx2(d2KeepVar2)) + d2SumGrad_i2;
-        d2SumTimeGrad                       = d2SumTimeGrad + d2SumTimeGrad_i1i2*pNormGradFactor;
+        d2SumGrad(currVarIx1(d2KeepVar1)) = d2SumGrad(currVarIx1(d2KeepVar1)) + d2SumGrad_i1;
+        d2SumGrad(currVarIx2(d2KeepVar2)) = d2SumGrad(currVarIx2(d2KeepVar2)) + d2SumGrad_i2;
     end
 end
 
