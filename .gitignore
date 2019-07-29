@@ -1,6 +1,6 @@
 *atn*.bin
 *vec_fram*.txt
-lungPatient0*.mat
+lungPatient*.mat
 *log
 *Slice*.dcm
 p*_f*_m*.csv

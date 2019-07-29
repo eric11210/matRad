@@ -10,7 +10,6 @@ tumourPosInit = tumourPosInit-[xcatLog.zeroIndPreX xcatLog.zeroIndPreY 0];
 
 tumourPos = zeros(xcatLog.numFrames+1,3);
 tumourPos(1,:) = tumourPosInit;
-tumourPos(xcatLog.numFrames+1,:) = tumourPos(1,:);
 t = xcatLog.deltaT.*((1:(xcatLog.numFrames+1))-1);
 
 ct.motionVecX = cell(xcatLog.numFrames,1);
@@ -104,9 +103,9 @@ for frame = 1:xcatLog.numFrames
         
     end
     
-    tumourPos(frame,1) = interp3(ct.motionVecX{frame},tumourPos(1,1),tumourPos(1,2),tumourPos(1,3));
-    tumourPos(frame,2) = interp3(ct.motionVecY{frame},tumourPos(1,1),tumourPos(1,2),tumourPos(1,3));
-    tumourPos(frame,3) = interp3(ct.motionVecZ{frame},tumourPos(1,1),tumourPos(1,2),tumourPos(1,3));
+    tumourPos(frame+1,1) = interp3(ct.motionVecX{frame},tumourPos(1,1),tumourPos(1,2),tumourPos(1,3));
+    tumourPos(frame+1,2) = interp3(ct.motionVecY{frame},tumourPos(1,1),tumourPos(1,2),tumourPos(1,3));
+    tumourPos(frame+1,3) = interp3(ct.motionVecZ{frame},tumourPos(1,1),tumourPos(1,2),tumourPos(1,3));
     
     fclose(fid);
     

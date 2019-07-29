@@ -8,25 +8,25 @@ tPos = zeros(1,3);
 
 while(ischar(tline))
     
-    if ~isempty(strfind(tline,'x_location'))
+    if contains(tline,'x_location')
         
         equalInd    = find(tline == '=');
         hashInd     = find(tline == '#');
         tPos(1)     = str2double(tline((equalInd(1)+1):(hashInd(1)-1)));
     
-    elseif ~isempty(strfind(tline,'y_location'))
+    elseif contains(tline,'y_location')
         
         equalInd    = find(tline == '=');
         hashInd     = find(tline == '#');
         tPos(2)     = str2double(tline((equalInd(1)+1):(hashInd(1)-1)));
         
-    elseif ~isempty(strfind(tline,'z_location'))
+    elseif contains(tline,'z_location')
         
         equalInd    = find(tline == '=');
         hashInd     = find(tline == '#');
         tPos(3)     = str2double(tline((equalInd(1)+1):(hashInd(1)-1)));
         
-    elseif ~isempty(strfind(tline,'lesn_diameter'))
+    elseif contains(tline,'lesn_diameter')
         
         equalInd    = find(tline == '=');
         hashInd     = find(tline == '#');
