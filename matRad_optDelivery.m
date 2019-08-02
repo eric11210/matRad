@@ -29,7 +29,7 @@ function result = matRad_optDelivery(result,fast)
 %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if nargin < 3
+if nargin < 2
     fast = 1;
 end
 

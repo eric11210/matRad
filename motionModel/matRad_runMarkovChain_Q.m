@@ -1,8 +1,13 @@
-function [lSimulated,tSimulated]= matRad_runMarkovChain_Q(qij,initProb,tTrans,indexMap)
+function [lSimulated,tSimulated] = matRad_runMarkovChain_Q(qij,initProb,tTrans,indexMap,maxProb)
 % simulate a history of the Markov Chain
 
 if nargin < 4
     indexMap = (1:numel(initProb))';
+    maxProb = false;
+end
+
+if nargin < 5
+    maxProb = false;
 end
 
 norm = accumarray(indexMap,1);
@@ -43,7 +48,12 @@ for step = 1:nSteps
     PijMapped_tStep = accumarray([indexMap_gridI(:) indexMap_gridJ(:)],Pij_tStep(:))./norm;
     
     % sample next frame
-    lNext = indexMap(randsample(numPhases,1,true,PijMapped_tStep(lCurrent,:)));
+    if maxProb
+        [~,lNext]   = max(PijMapped_tStep(lCurrent,:));
+        lNext       = indexMap(lNext);
+    else
+        lNext = indexMap(randsample(numPhases,1,true,PijMapped_tStep(lCurrent,:)));
+    end
     
     % insert next frame
     lSimulated(step+1) = lNext;

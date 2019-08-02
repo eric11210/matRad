@@ -73,14 +73,14 @@ for hist = 1:nHistories
     for frac = 1:pln.numOfFractions
         
         % MC simulation of tumour trajectory
-        [lSimulated_frac,tSimulated_frac]= matRad_runMarkovChain_Q(apertureInfo.motionModel.qij,apertureInfo.motionModel.initProb,tTrans);
+        [lSimulated_frac,tSimulated_frac] = matRad_runMarkovChain_Q(apertureInfo.motionModel.qij,apertureInfo.motionModel.initProb,tTrans);
         
         % insert trajectory in apertureInfo_frac struct
         apertureInfo_frac.motionModel.lSimulated = apertureInfo.motionModel.indices.subPhase2Phase(lSimulated_frac);
         apertureInfo_frac.motionModel.tSimulated = tSimulated_frac;
         
         % get weights for this particular history
-        apertureInfo_frac = matRad_daoVec2ApertureInfo(apertureInfo_frac,apertureInfo_frac.apertureVector);
+        apertureInfo_frac = matRad_daoVec2ApertureInfo_bixWeightOnly(apertureInfo_frac,apertureInfo_frac.apertureVector);
         
         % get dose for this particular trajectory
         d_frac = matRad_backProjection(apertureInfo_frac.bixelWeights,dij,options);

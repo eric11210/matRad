@@ -6,16 +6,18 @@ switch motionModel.type
         
         % extract transition matrix and initial probabilities
         qij         = motionModel.qij;
+        qij_D       = motionModel.qij_D;
+        qij_V       = motionModel.qij_V;
         initProb    = motionModel.initProb;
         
         % calculate transition probability matrix and derivative
-        Pij_transT      = expm(qij.*transT);
-        %Pij_transT      = real(qij_V*diag(exp(diag(qij.*transT)))/qij_V);
+        %Pij_transT      = expm(qij.*transT);
+        Pij_transT      = real(qij_V*diag(exp(diag(qij_D.*transT)))/qij_V);
         Pij_transT_dot  = qij*Pij_transT;
         
         % calculate probability to arrive at i at T and derivative
-        Pi_T        = initProb*expm(qij.*T);
-        %Pi_T        = initProb*real(qij_V*diag(exp(diag(qij.*T)))/qij_V);
+        %Pi_T        = initProb*expm(qij.*T);
+        Pi_T        = initProb*real(qij_V*diag(exp(diag(qij_D.*T)))/qij_V);
         Pi_T_dot    = Pi_T*qij;
         
     case 'single'

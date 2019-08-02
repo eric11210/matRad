@@ -1,2 +1,3 @@
 lungPatient0: 40 mm diameter tumour located near the right diaphragm.
 lungPatient1: 20 mm diameter tumour located in the right lung, near the heart.
+lungPatient2: 20 mm diameter tumour located near the right diaphragm.
