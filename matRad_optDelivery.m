@@ -1,4 +1,4 @@
-function result = matRad_optDelivery(result,fast)
+function apertureInfo = matRad_optDelivery(apertureInfo,fast)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % matRad: optimize VMAT delivery
 % 
@@ -38,8 +38,6 @@ end
 %constraints to consider: doserate, leaf speed, and gantry speed
 
 %Do this after DAO
-
-apertureInfo = result.apertureInfo;
 
 fileName = apertureInfo.propVMAT.machineConstraintFile;
 try
@@ -101,5 +99,5 @@ end
 %redo bixel weight calculation
 apertureInfo = matRad_daoVec2ApertureInfo(apertureInfo,apertureInfo.apertureVector);
 
-result.apertureInfo = apertureInfo;
+end
 

@@ -343,6 +343,9 @@ if pln.propOpt.runVMAT
                 %apertureInfo.propVMAT.beam(i).initialRightLeafInd = apertureInfo.propVMAT.beam(i).initialLeftLeafInd+apertureInfo.totalNumOfLeafPairs;
                 %apertureInfo.propVMAT.beam(i).finalRightLeafInd = apertureInfo.propVMAT.beam(i).finalLeftLeafInd+apertureInfo.totalNumOfLeafPairs;
                 
+                apertureInfo.propVMAT.beam(i).timeInd = apertureInfo.numPhases*(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)+shapeInd;
+                
+                %{
                 apertureInfo.propVMAT.beam(i).timeInd = repmat(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2+shapeInd,1,apertureInfo.beam(1).numOfActiveLeafPairs);
                 
                 if apertureInfo.propVMAT.beam(i).timeFac(1) ~= 0
@@ -383,6 +386,7 @@ if pln.propOpt.runVMAT
                 %apertureInfo.propVMAT.beam(i).initialRightLeafInd = initialRightLeafInd;
                 %apertureInfo.propVMAT.beam(i).finalLeftLeafInd = finalLeftLeafInd;
                 %apertureInfo.propVMAT.beam(i).finalRightLeafInd = finalRightLeafInd;
+                %}
                 
                 shapeInd = shapeInd+1;
             end
@@ -408,6 +412,9 @@ if pln.propOpt.runVMAT
         apertureInfo.motionModel.type   = 'Markov';
         apertureInfo.motionModel.qij       = 0;
         apertureInfo.motionModel.initProb  = 1;
+        
+        % diagonalize matrix
+        [apertureInfo.motionModel.qij_V,apertureInfo.motionModel.qij_D] = eig(apertureInfo.motionModel.qij);
         
         apertureInfo.motionModel.indices.subPhase2PosPhase_gridI    = 1;
         apertureInfo.motionModel.indices.subPhase2PosPhase_gridJ    = 1;

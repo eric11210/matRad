@@ -18,6 +18,9 @@ end
 % get dose for mean
 d_mean = matRad_backProjection(apertureInfo.bixelWeights,dij,options);
 
+% now the number of scenarios should be the actual number of phases
+options.numOfScenarios = dij.numPhases;
+
 % reshape dose
 dCubes_Mean = reshape(d_mean,dij.dimensions);
 

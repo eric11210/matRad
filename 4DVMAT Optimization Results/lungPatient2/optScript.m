@@ -145,14 +145,16 @@ cd(currentDir);
 savefig('3DCTV_DAO')
 save('3DCTV','resultGUI');
 
-%{
+% convert sequence to library
+resultGUI.apertureInfo = matRad_sequence2Library(resultGUI.apertureInfo,pln,dij.numPhases);
+
 % do dvhs
 [pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
 save('3DCTV','resultGUI','*dvh*');
-%}
+
 
 clear resultGUI *dvh*
 
@@ -165,6 +167,8 @@ pln.propOpt.varOpt = false;
 cst{26,6}       = cst{25,6};
 cst{25,6}       = [];
 pln.RxStruct    = 26;
+
+% CHANGE DIJ? USE AVERAGE OVER ALL PHASES?
 
 % do FMO
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
@@ -185,14 +189,16 @@ cd(currentDir);
 savefig('3DITV_DAO')
 save('3DITV','resultGUI');
 
-%{
+% convert sequence to library
+resultGUI.apertureInfo = matRad_sequence2Library(resultGUI.apertureInfo,pln,dij.numPhases);
+
 % do dvhs
 [pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
 save('3DITV','resultGUI','*dvh*');
-%}
+
 
 clear resultGUI *dvh*
 
@@ -211,12 +217,15 @@ load('3DCTV','resultGUI');
 resultGUI.apertureInfo.numPhases    = ct.tumourMotion.numPhases;
 resultGUI.apertureInfo              = matRad_doDAD(resultGUI.apertureInfo,stf);
 
+
 % update aperture vector
 [resultGUI.apertureInfo.apertureVector, resultGUI.apertureInfo.mappingMx, resultGUI.apertureInfo.limMx] = matRad_daoApertureInfo2Vec(resultGUI.apertureInfo);
 
 % save results
 cd(currentDir);
 save('DAD','resultGUI');
+
+%%%% TEST DAD!
 
 %{
 % do dvhs
@@ -237,10 +246,12 @@ pln.propOpt.VMAToptions.machineConstraintFile = [pln.radiationMode '_' pln.machi
 
 % construct effective dij from most probable trajectory
 % NOTE that right now this trajectory doesn't go through all of the phases
+
+%%% TEST THIS
 dij_STO = matRad_dijSTO(dij,pln,stf);
 
 % do FMO
-resultGUI = matRad_fluenceOptimization(dijEff,cst,pln,stf);
+resultGUI = matRad_fluenceOptimization(dij_STO,cst,pln,stf);
 cd(currentDir);
 savefig('STO_FMO')
 
@@ -251,23 +262,22 @@ pln.propOpt.run4D = false;
 resultGUI = matRad_siochiLeafSequencing(resultGUI,stf,dijEff,pln,0);
 
 % do DAO
-resultGUI = matRad_directApertureOptimization(dijEff,cst,resultGUI.apertureInfo,resultGUI,pln,stf);
+resultGUI = matRad_directApertureOptimization(dij_STO,cst,resultGUI.apertureInfo,resultGUI,pln,stf);
 
 % save results
 cd(currentDir);
 savefig('STO_DAO')
 save('STO','resultGUI');
 
-% convert set of apertures into aperture library by replication
+% convert sequence to library
+resultGUI.apertureInfo = matRad_sequence2Library(resultGUI.apertureInfo,pln,dij.numPhases);
 
-%{
 % do dvhs
 [pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
 save('STO','resultGUI','*dvh*');
-%}
 
 clear resultGUI *dvh*
 

@@ -166,7 +166,7 @@ if pln.propOpt.preconditioner
 end
 
 % update the apertureInfoStruct and calculate bixel weights
-resultGUI.apertureInfo = matRad_daoVec2ApertureInfo(apertureInfo,optApertureInfoVec);
+resultGUI.apertureInfo = matRad_daoVec2ApertureInfo(resultGUI.apertureInfo,optApertureInfoVec);
 
 % override also bixel weight vector in optResult struct
 resultGUI.w    = resultGUI.apertureInfo.bixelWeights;
@@ -204,7 +204,8 @@ if pln.propOpt.runVMAT
     
     %optimize delivery
     if ~pln.propOpt.run4D
-        resultGUI = matRad_optDelivery(resultGUI,1);
+        resultGUI.apertureInfo  = matRad_optDelivery(resultGUI.apertureInfo,1);
+        resultGUI.w             = resultGUI.apertureInfo.bixelWeights;
     end
     resultGUI = matRad_calcDeliveryMetrics(resultGUI,pln,stf);
 end

@@ -3,20 +3,14 @@ function apertureInfo = matRad_doDAD(apertureInfo,stf)
 % perform direct aperture deformation
 %
 % call
-%   apertureInfo = matRad_doDAD(apertureInfo)
+%   apertureInfo = matRad_doDAD(apertureInfo,stf)
 %
 % input
-%   resultGUI:          resultGUI struct to which the output data will be
-%                       added, if this field is empty resultGUI struct will
-%                       be created
+%   apertureInfo:       matRad aperture information struct
 %   stf:                matRad steering information struct
-%   dij:                matRad's dij matrix
-%   numOfLevels:        number of stratification levels
-%   visBool:            toggle on/off visualization (optional)
 %
 % output
-%   resultGUI:          matRad result struct containing the new dose cube
-%                       as well as the corresponding weights
+%   apertureInfo:       matRad aperture information struct
 %
 % References
 %   [1] https://doi.org/10.1118/1.2374675
@@ -35,7 +29,7 @@ function apertureInfo = matRad_doDAD(apertureInfo,stf)
 % LICENSE file.
 %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-shapeInd = 1;
+
 for i = 1:numel(apertureInfo.beam)
     
     % leafPairPos_phase1 is the z-position of each leaf (in phase 1 or P)
@@ -144,10 +138,6 @@ for i = 1:numel(apertureInfo.beam)
             apertureInfo.beam(i).shape{phase}(j).vectorOffset = apertureInfo.beam(i).shape{phase}(j).vectorOffset + (apertureInfo.numPhases-1)*apertureInfo.totalNumOfShapes + (phase-1)*apertureInfo.totalNumOfLeafPairs;
             apertureInfo.beam(i).shape{phase}(j).weightOffset = apertureInfo.beam(i).shape{phase}(j).weightOffset + (phase-1)*apertureInfo.totalNumOfShapes;
         end
-        
-        %% TEMP
-        apertureInfo.propVMAT.beam(i).timeInd = apertureInfo.numPhases*(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)+shapeInd;
-        shapeInd = shapeInd+1;
     end
 end
 
@@ -203,4 +193,6 @@ for i = 1:numel(apertureInfo.beam)
             
         end
     end
+end
+
 end
