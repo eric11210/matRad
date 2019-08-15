@@ -1,4 +1,4 @@
-function dij_STO = matRad_dijSTO(dij,pln,stf)
+function [dij_STO,trajectory] = matRad_dijSTO(dij,pln,stf)
 
 %% select most probable trajectory
 
@@ -31,6 +31,10 @@ maxProb     = true;
 % convert subphase to phase
 pSimulated = motionModel.indices.subPhase2PosPhase(lSimulated);
 
+% store trajectory information
+trajectory.tSimulated = tSimulated;
+trajectory.pSimulated = pSimulated;
+
 %% construct effective dij
 
 dij_fieldNames = fieldnames(dij);
@@ -43,7 +47,7 @@ for i = 1:numel(dij_fieldNames)
     end
 end
 
-dij_STO.physicalDose{1}  = spalloc(prod(ct.cubeDim),dij.totalNumOfBixels,1);
+dij_STO.physicalDose{1} = spalloc(dij.numOfVoxels,dij.totalNumOfBixels,1);
 dij.numOfScenarios      = 1;
 
 offset = 0;
