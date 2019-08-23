@@ -1,5 +1,5 @@
 %% setup
-
+%{
 load lungPatient2_3mm5p_rep
 
 currentDir = pwd;
@@ -70,6 +70,7 @@ pln.propOpt.varOpt = false;
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
 cd(currentDir);
 savefig('CO_FMO')
+close all
 
 % do leaf sequencing
 resultGUI = matRad_siochiLeafSequencing(resultGUI,stf,dij,pln,0);
@@ -81,6 +82,7 @@ resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,res
 cd(currentDir);
 savefig('CO_DAO')
 save('CO','resultGUI');
+close all
 
 % do dvhs
 [pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
@@ -100,6 +102,7 @@ pln.propOpt.varOpt = true;
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
 cd(currentDir);
 savefig('PO_FMO')
+close all
 
 % do leaf sequencing
 resultGUI = matRad_siochiLeafSequencing(resultGUI,stf,dij,pln,0);
@@ -111,6 +114,7 @@ resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,res
 cd(currentDir);
 savefig('PO_DAO')
 save('PO','resultGUI');
+close all
 
 % do dvhs
 [pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
@@ -121,6 +125,7 @@ save('PO','resultGUI','*dvh*');
 
 clear resultGUI *dvh*
 
+%}
 %% 3D optimization on CTV
 
 pln.propOpt.run4D = true;
@@ -130,6 +135,7 @@ pln.propOpt.varOpt = false;
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
 cd(currentDir);
 savefig('3DCTV_FMO')
+close all
 
 % turn off 4d
 pln.propOpt.run4D = false;
@@ -144,9 +150,10 @@ resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,res
 cd(currentDir);
 savefig('3DCTV_DAO')
 save('3DCTV','resultGUI');
+close all
 
 % convert sequence to library
-resultGUI.apertureInfo = matRad_sequence2Library(resultGUI.apertureInfo,pln,dij.numPhases);
+resultGUI.apertureInfo = matRad_apertures2Library(resultGUI.apertureInfo,pln,dij.numPhases);
 
 % do dvhs
 [pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
@@ -173,6 +180,13 @@ resultGUI.apertureInfo.motionModel = matRad_prepModelForOpt(pln.propOpt.prop4D);
 
 % update aperture vector
 [resultGUI.apertureInfo.apertureVector, resultGUI.apertureInfo.mappingMx, resultGUI.apertureInfo.limMx] = matRad_daoApertureInfo2Vec(resultGUI.apertureInfo);
+
+% update apertureInfo
+for i = 1:numel(resultGUI.apertureInfo.beam)
+    resultGUI.apertureInfo.beam(i).numUniqueVar = (resultGUI.apertureInfo.beam(i).numUniqueVar-resultGUI.apertureInfo.totalNumOfShapes).*resultGUI.apertureInfo.numPhases;
+end
+resultGUI.apertureInfo = matRad_daoVec2ApertureInfo(resultGUI.apertureInfo,resultGUI.apertureInfo.apertureVector);
+
 
 % save results
 cd(currentDir);
@@ -203,6 +217,7 @@ pln.propOpt.VMAToptions.machineConstraintFile = [pln.radiationMode '_' pln.machi
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
 cd(currentDir);
 savefig('STO_FMO')
+close all
 
 % do leaf sequencing
 resultGUI = matRad_siochiLeafSequencing(resultGUI,stf,dij,pln,0);
@@ -211,7 +226,7 @@ resultGUI = matRad_siochiLeafSequencing(resultGUI,stf,dij,pln,0);
 pln.propOpt.run4D = false;
 
 % pick out particular trajectory from library, convert to single sequence
-resultGUI.apertureInfo = matRad_library2ST(resultGUI.apertureInfo,trajectory);
+resultGUI.apertureInfo = matRad_library2ST(resultGUI.apertureInfo,pln,stf,trajectory);
 
 % do DAO
 resultGUI = matRad_directApertureOptimization(dij_STO,cst,resultGUI.apertureInfo,resultGUI,pln,stf);
@@ -220,9 +235,10 @@ resultGUI = matRad_directApertureOptimization(dij_STO,cst,resultGUI.apertureInfo
 cd(currentDir);
 savefig('STO_DAO')
 save('STO','resultGUI');
+close all
 
 % convert sequence to library
-resultGUI.apertureInfo = matRad_sequence2Library(resultGUI.apertureInfo,pln,dij.numPhases);
+resultGUI.apertureInfo = matRad_apertures2Library(resultGUI.apertureInfo,pln,dij.numPhases);
 
 % do dvhs
 [pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
@@ -258,6 +274,7 @@ dij_ITV = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
 resultGUI = matRad_fluenceOptimization(dij_ITV,cst,pln,stf);
 cd(currentDir);
 savefig('3DITV_FMO')
+close all
 
 % do leaf sequencing
 resultGUI = matRad_siochiLeafSequencing(resultGUI,stf,dij_ITV,pln,0);
@@ -269,9 +286,10 @@ resultGUI = matRad_directApertureOptimization(dij_ITV,cst,resultGUI.apertureInfo
 cd(currentDir);
 savefig('3DITV_DAO')
 save('3DITV','resultGUI');
+close all
 
 % convert sequence to library
-resultGUI.apertureInfo = matRad_sequence2Library(resultGUI.apertureInfo,pln,dij.numPhases);
+resultGUI.apertureInfo = matRad_apertures2Library(resultGUI.apertureInfo,pln,dij.numPhases);
 
 % do dvhs
 [pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);

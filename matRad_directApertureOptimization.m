@@ -161,12 +161,12 @@ if pln.propOpt.preconditioner
     % revert scaling
     
     dij.weightToMU = dij.weightToMU./dij.scaleFactor;
-    resultGUI.apertureInfo.weightToMU = resultGUI.apertureInfo.weightToMU./dij.scaleFactor;
+    apertureInfo.weightToMU = apertureInfo.weightToMU./dij.scaleFactor;
     optApertureInfoVec(1:apertureInfo.totalNumOfShapes*apertureInfo.numPhases) = optApertureInfoVec(1:apertureInfo.totalNumOfShapes*apertureInfo.numPhases).*dij.scaleFactor;
 end
 
 % update the apertureInfoStruct and calculate bixel weights
-resultGUI.apertureInfo = matRad_daoVec2ApertureInfo(resultGUI.apertureInfo,optApertureInfoVec);
+resultGUI.apertureInfo = matRad_daoVec2ApertureInfo(apertureInfo,optApertureInfoVec);
 
 % override also bixel weight vector in optResult struct
 resultGUI.w    = resultGUI.apertureInfo.bixelWeights;

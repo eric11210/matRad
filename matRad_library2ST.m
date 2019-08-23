@@ -1,4 +1,4 @@
-function apertureInfo = matRad_library2ST(apertureInfo,trajectory)
+function apertureInfo = matRad_library2ST(apertureInfo,pln,stf,trajectory)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % extract a sequence of apertures from a full library using the breathing
 % trajectory specified in the trajectory structure
@@ -29,9 +29,11 @@ function apertureInfo = matRad_library2ST(apertureInfo,trajectory)
 %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-numPhases = apertureInfo.numPhases;
+numPhasesReal = apertureInfo.numPhases;
 
-apertureInfo.numPhases = 1;
+apertureInfo.run4D          = false;
+apertureInfo.numPhases      = 1;
+apertureInfo.jacobiScale    = ones(apertureInfo.totalNumOfShapes.*apertureInfo.numPhases,1);
 
 shapeInd = 1;
 
@@ -45,39 +47,36 @@ for i = 1:numel(apertureInfo.beam)
     apertureInfo.beam(i).shape = cell(1,1);
     apertureInfo.beam(i).shape{1} = shape;
     
-    % fix the time indices
-    apertureInfo.propVMAT.beam(i).timeInd = apertureInfo.numPhases*(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)+shapeInd;
-    shapeInd = shapeInd+1;
-    
-    for j = 1:apertureInfo.beam(i).numOfShapes
+    if apertureInfo.propVMAT.beam(i).DAOBeam
+        % fix the time indices
+        apertureInfo.propVMAT.beam(i).timeInd = apertureInfo.numPhases*(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)+shapeInd;
+        shapeInd = shapeInd+1;
         
-        % fix the vectorOffsets
-        % there are two shifts: one to compensating for the lost weights,
-        % and another to comensate for the lost leaf positions at each
-        % phase
-        apertureInfo.beam(i).shape{1}(j).vectorOffset = shape(j).vectorOffset - (numPhases-1)*apertureInfo.totalNumOfShapes - (phase-1)*apertureInfo.totalNumOfLeafPairs;
-        
-        % also fix the weightOffsets
-        % there is one shift, to compensate for the lost weights
-        apertureInfo.beam(i).shape{1}(j).weightOffset = shape(j).weightOffset - (phase-1)*apertureInfo.totalNumOfShapes;
+        for j = 1:apertureInfo.beam(i).numOfShapes
+            
+            % fix the vectorOffsets
+            % there are two shifts: one to compensating for the lost weights,
+            % and another to comensate for the lost leaf positions at each
+            % phase
+            apertureInfo.beam(i).shape{1}(j).vectorOffset = shape(j).vectorOffset - (numPhasesReal-1)*apertureInfo.totalNumOfShapes - (phase-1)*apertureInfo.totalNumOfLeafPairs;
+            
+            % also fix the weightOffsets
+            % there is one shift, to compensate for the lost weights
+            apertureInfo.beam(i).shape{1}(j).weightOffset = shape(j).weightOffset - (phase-1)*apertureInfo.totalNumOfShapes;
+            
+            % correct jacobi scale
+            apertureInfo.jacobiScale(apertureInfo.beam(i).shape{1}(j).weightOffset) = apertureInfo.beam(i).shape{1}(j).jacobiScale;
+        end
     end
 end
 
-% use "dummy" motion model, which gives probability 1 for trivial
-% trajectory
-apertureInfo.motionModel.type   = 'Markov';
-apertureInfo.motionModel.qij       = 0;
-apertureInfo.motionModel.initProb  = 1;
-
-% diagonalize matrix
-[apertureInfo.motionModel.qij_V,apertureInfo.motionModel.qij_D] = eig(apertureInfo.motionModel.qij);
-
-apertureInfo.motionModel.indices.subPhase2PosPhase_gridI    = 1;
-apertureInfo.motionModel.indices.subPhase2PosPhase_gridJ    = 1;
-apertureInfo.motionModel.indices.nSubPhasePerPosPhase       = 1;
-apertureInfo.motionModel.indices.nSubPhases                 = 1;
+% refresh metadata
+apertureInfo = matRad_apertureInfoMeta(apertureInfo,pln,stf,apertureInfo.totalNumOfOptBixels);
 
 % update vector
 [apertureInfo.apertureVector, apertureInfo.mappingMx, apertureInfo.limMx] = matRad_daoApertureInfo2Vec(apertureInfo);
+
+% update  apertureInfo
+apertureInfo = matRad_daoVec2ApertureInfo(apertureInfo,apertureInfo.apertureVector);
 
 end

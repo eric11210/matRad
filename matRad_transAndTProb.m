@@ -27,8 +27,8 @@ switch motionModel.type
         Pi_T        = zeros(1,motionModel.numPhases);
         
         % determine phases at beginning and end of arc
-        phase_I = motionModel.lSimulated(abs(motionModel.tSimulated-T) <= eps.*T);
-        phase_F = motionModel.lSimulated(abs(motionModel.tSimulated-(T+transT)) <= eps.*(T+transT));
+        phase_I = motionModel.lSimulated(abs(motionModel.tSimulated-T) <= 1e-6.*T);
+        phase_F = motionModel.lSimulated(abs(motionModel.tSimulated-(T+transT)) <= 1e-6.*(T+transT));
         
         if isempty(phase_I) || isempty(phase_F)
             error('Phases not found!');

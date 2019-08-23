@@ -30,6 +30,10 @@ function apertureInfo = matRad_doDAD(apertureInfo,stf)
 %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% determine if all phases of the library already exist
+% this means that we have previously done a DAD-like transformation
+allPhases = numel(apertureInfo.beam(1).shape) == apertureInfo.numPhases;
+
 for i = 1:numel(apertureInfo.beam)
     
     % leafPairPos_phase1 is the z-position of each leaf (in phase 1 or P)
@@ -40,8 +44,15 @@ for i = 1:numel(apertureInfo.beam)
     DADz_phase1 = stf(i).DADz{1};
     
     shape = apertureInfo.beam(i).shape{1};
-    apertureInfo.beam(i).shape = cell(apertureInfo.numPhases,1);
-    apertureInfo.beam(i).shape(:) = {shape};
+    
+    if ~allPhases && numel(apertureInfo.beam(i).shape) == 1
+        % if all the phases don't exist already, create them
+        apertureInfo.beam(i).shape = cell(apertureInfo.numPhases,1);
+        apertureInfo.beam(i).shape(:) = {shape};
+    elseif ~allPhases
+        % throw error
+        error('Number of phases in library is more than 1, but not all phases exist');
+    end
     
     for j = 1:apertureInfo.beam(i).numOfShapes
         
@@ -131,12 +142,14 @@ for i = 1:numel(apertureInfo.beam)
             apertureInfo.beam(i).shape{phase}(j).leftLeafPos_F = leftLeafPos_F_phaseP;
             apertureInfo.beam(i).shape{phase}(j).rightLeafPos_F = rightLeafPos_F_phaseP;
             
-            % fix the vectorOffsets
-            % there are two shifts: one to make room for the weights, and
-            % another to make room for the new leaf positions at each
-            % phase
-            apertureInfo.beam(i).shape{phase}(j).vectorOffset = apertureInfo.beam(i).shape{phase}(j).vectorOffset + (apertureInfo.numPhases-1)*apertureInfo.totalNumOfShapes + (phase-1)*apertureInfo.totalNumOfLeafPairs;
-            apertureInfo.beam(i).shape{phase}(j).weightOffset = apertureInfo.beam(i).shape{phase}(j).weightOffset + (phase-1)*apertureInfo.totalNumOfShapes;
+            if ~allPhases
+                % fix the vectorOffsets
+                % there are two shifts: one to make room for the weights, and
+                % another to make room for the new leaf positions at each
+                % phase
+                apertureInfo.beam(i).shape{phase}(j).vectorOffset = apertureInfo.beam(i).shape{phase}(j).vectorOffset + (apertureInfo.numPhases-1)*apertureInfo.totalNumOfShapes + (phase-1)*apertureInfo.totalNumOfLeafPairs;
+                apertureInfo.beam(i).shape{phase}(j).weightOffset = apertureInfo.beam(i).shape{phase}(j).weightOffset + (phase-1)*apertureInfo.totalNumOfShapes;
+            end
         end
     end
 end
