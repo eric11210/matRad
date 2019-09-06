@@ -1,6 +1,11 @@
 %% setup
-%{
+
 load lungPatient2_3mm5p_rep
+
+
+cst{10,6}           = cst{5,6};
+cst{10,6}.penalty   = 300;
+
 
 currentDir = pwd;
 
@@ -59,7 +64,7 @@ stf = matRad_generateStf(ct,cst,pln);
 
 %% calculate dij
 
-dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
+%dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
 
 %% conventional optimization
 
@@ -125,7 +130,7 @@ save('PO','resultGUI','*dvh*');
 
 clear resultGUI *dvh*
 
-%}
+
 %% 3D optimization on CTV
 
 pln.propOpt.run4D = true;
