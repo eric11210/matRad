@@ -81,8 +81,8 @@ for i = 1:numOfVois
         plot(upperDVH(1,:),upperDVH(2,:),'LineWidth',4,'Color',colorMx(i,:), ...
             'LineStyle',lineStyles{lineStyleIndicator+1},'DisplayName',cst{i,2},'HandleVisibility','off')
         
-        maxDVHvol  = max(maxDVHvol,max(upperDVH(2,:)));
-        maxDVHdose = max(maxDVHdose,max(upperDVH(1,:)));
+        maxDVHvol  = max([maxDVHvol max(upperDVH(2,:)) max(dvhOfMean(2,:))]);
+        maxDVHdose = max([maxDVHdose max(upperDVH(1,:)) max(dvhOfMean(1,:))]);
     end
 end
 

@@ -64,7 +64,7 @@ stf = matRad_generateStf(ct,cst,pln);
 
 %% calculate dij
 
-%dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
+dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
 
 %% conventional optimization
 
@@ -83,7 +83,7 @@ resultGUI = matRad_siochiLeafSequencing(resultGUI,stf,dij,pln,0);
 % do DAO
 resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,resultGUI,pln,stf);
 
-% save results
+% save resultskk
 cd(currentDir);
 savefig('CO_DAO')
 save('CO','resultGUI');
@@ -259,7 +259,7 @@ pln.propOpt.VMAToptions.machineConstraintFile = [pln.radiationMode '_' pln.machi
 
 %% 3D optimization on ITV
 
-pln.propOpt.run4D = false;
+pln.propOpt.run4D = true;
 pln.propOpt.varOpt = false;
 
 % change obj function goals
@@ -274,6 +274,9 @@ ct.tumourMotion.nFramesPerPhase = 1./pln.propOpt.prop4D.motionModel.probPhase;
 
 % recalculate dij 
 dij_ITV = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
+
+% turn off 4d
+pln.propOpt.run4D = false;
 
 % do FMO
 resultGUI = matRad_fluenceOptimization(dij_ITV,cst,pln,stf);

@@ -42,6 +42,7 @@ for step = 1:nSteps
     tStep = tTrans(step);
     
     % calculate transition probability to arrive at i at T and derivative
+    % USE DIAGONALIZED MATRIX
     Pij_tStep = expm(qij.*tStep);
     
     % map the Pij matrix

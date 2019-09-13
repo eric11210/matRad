@@ -11,7 +11,7 @@ options.data.fileInfo.processed = true;
 
 % for binning
 options.processing.percExtTarg  = 1;
-options.processing.nPosPhases   = 10;
+options.processing.nPosPhases   = 5;
 options.processing.nVelPhases   = 1;    % is this necessary?
 options.processing.velBinning   = true; % is this necessary? just set nVelSubPhases to 1
 
@@ -42,7 +42,7 @@ options.hist.timePoints = [1 4 6 22.5 45 90 180 270 360]/6; %s
 
 % best fit parameters
 options.processing.nSubPerPosPhase  = 3;
-options.processing.nSubPerVelPhase  = 7;
+options.processing.nSubPerVelPhase  = 10;
 options.processing.FSM.nTimeFracs   = 10;
 
 % extract model
