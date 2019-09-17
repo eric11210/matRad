@@ -259,21 +259,22 @@ pln.propOpt.VMAToptions.machineConstraintFile = [pln.radiationMode '_' pln.machi
 
 %% 3D optimization on ITV
 
-pln.propOpt.run4D = true;
+pln.propOpt.run4D = false;
 pln.propOpt.varOpt = false;
+
+% load ITV CT
+load('lungPatient2_3mm5p_rep_ITV.mat','ct')
 
 % change obj function goals
 cst{26,6}       = cst{25,6};
 cst{25,6}       = [];
 pln.RxStruct    = 26;
 
-% change phase information in ct.tumourMotion struct
-ct.tumourMotion.numPhases       = 1;
-ct.tumourMotion.frames2Phases   = repelem(1,ct.tumourMotion.numFrames,1);
-ct.tumourMotion.nFramesPerPhase = 1./pln.propOpt.prop4D.motionModel.probPhase;
+% get average CT
+ct_ITV = matRad_ctITV(ct,pln);
 
 % recalculate dij 
-dij_ITV = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
+dij_ITV = matRad_calcPhotonDoseVmc(ct_ITV,stf,pln,cst);
 
 % turn off 4d
 pln.propOpt.run4D = false;
