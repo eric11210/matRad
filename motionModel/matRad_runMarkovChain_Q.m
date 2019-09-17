@@ -1,5 +1,11 @@
-function [lSimulated,tSimulated] = matRad_runMarkovChain_Q(qij,initProb,tTrans,indexMap,maxProb)
+function [lSimulated,tSimulated] = matRad_runMarkovChain_Q(motionModel,tTrans,indexMap,maxProb)
 % simulate a history of the Markov Chain
+
+% extract transition matrix and initial probabilities
+%qij         = motionModel.qij;
+qij_D       = motionModel.qij_D;
+qij_V       = motionModel.qij_V;
+initProb    = motionModel.initProb;
 
 if nargin < 4
     indexMap = (1:numel(initProb))';
@@ -41,9 +47,13 @@ for step = 1:nSteps
     % get time since last step
     tStep = tTrans(step);
     
-    % calculate transition probability to arrive at i at T and derivative
-    % USE DIAGONALIZED MATRIX
-    Pij_tStep = expm(qij.*tStep);
+    % calculate transition probability to arrive at i at T
+    %Pij_tStep = expm(qij.*tStep);
+    Pij_tStep      = real(qij_V*diag(exp(diag(qij_D.*tStep)))/qij_V);
+    
+    % set any negative values to 0 and renormalize
+    Pij_tStep(Pij_tStep < 0)    = 0;
+    Pij_tStep                   = Pij_tStep./sum(Pij_tStep,2);
     
     % map the Pij matrix
     PijMapped_tStep = accumarray([indexMap_gridI(:) indexMap_gridJ(:)],Pij_tStep(:))./norm;

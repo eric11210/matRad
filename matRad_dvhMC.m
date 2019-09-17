@@ -76,7 +76,7 @@ for hist = 1:nHistories
     for frac = 1:pln.numOfFractions
         
         % MC simulation of tumour trajectory
-        [lSimulated_frac,tSimulated_frac] = matRad_runMarkovChain_Q(apertureInfo.motionModel.qij,apertureInfo.motionModel.initProb,tTrans);
+        [lSimulated_frac,tSimulated_frac] = matRad_runMarkovChain_Q(apertureInfo.motionModel,tTrans);
         
         % insert trajectory in apertureInfo_frac struct
         apertureInfo_frac.motionModel.lSimulated = apertureInfo.motionModel.indices.subPhase2Phase(lSimulated_frac);
