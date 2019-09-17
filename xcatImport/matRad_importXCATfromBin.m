@@ -93,6 +93,11 @@ if ~importOptions.keepAllFrames && importOptions.averageMVF
     saveName = [saveName '_avMVF'];
 end
 
+% rename vmcDef to ITV?
+if ~importOptions.vmcDef
+    saveName = [saveName '_ITV'];
+end
+
 save(saveName,'ct','cst','importOptions','-v7.3');
 
 end

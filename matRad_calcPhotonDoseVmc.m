@@ -50,7 +50,6 @@ dij.scaleFactor         = 1;
 dij.memorySaverPhoton   = pln.propDoseCalc.memorySaverPhoton;
 dij.totalNumOfBixels    = sum([stf(:).totalNumOfBixels]);
 dij.totalNumOfRays      = sum(dij.numOfRaysPerBeam);
-dij.numOfScenarios      = 1;
 dij.numOfFractions      = pln.numOfFractions;
 if pln.propOpt.run4D
     dij.numPhases          = ct.tumourMotion.numPhases;

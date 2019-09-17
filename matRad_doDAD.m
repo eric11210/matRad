@@ -54,7 +54,7 @@ for i = 1:numel(apertureInfo.beam)
         error('Number of phases in library is more than 1, but not all phases exist');
     end
     
-    for j = 1:apertureInfo.beam(i).numOfShapes
+    for j = 1:numel(shape)
         
         % these are the x-positions of the various leaves in phase 1
         % we will be querying the DAD at these positions to get the leaf
@@ -75,23 +75,23 @@ for i = 1:numel(apertureInfo.beam)
             % use griddata to interpolate the new x- and z-positions of the
             % leaves. We want to know the value of the DAD()_phaseP at the phase 1
             % leaf positions. DADx_phase1 and DADz_phase1 provide a grid.
-            leftLeafXPos_phaseP = interp2(DADx_phase1,DADz_phase1,DADx_phaseP,leftLeafPos_phase1,leafPairPos_phase1);
-            leftLeafZPos_phaseP = interp2(DADx_phase1,DADz_phase1,DADz_phaseP,leftLeafPos_phase1,leafPairPos_phase1);
+            leftLeafXPos_phaseP = griddata(DADx_phase1,DADz_phase1,DADx_phaseP,leftLeafPos_phase1,leafPairPos_phase1);
+            leftLeafZPos_phaseP = griddata(DADx_phase1,DADz_phase1,DADz_phaseP,leftLeafPos_phase1,leafPairPos_phase1);
             
-            rightLeafXPos_phaseP = interp2(DADx_phase1,DADz_phase1,DADx_phaseP,rightLeafPos_phase1,leafPairPos_phase1);
-            rightLeafZPos_phaseP = interp2(DADx_phase1,DADz_phase1,DADz_phaseP,rightLeafPos_phase1,leafPairPos_phase1);
+            rightLeafXPos_phaseP = griddata(DADx_phase1,DADz_phase1,DADx_phaseP,rightLeafPos_phase1,leafPairPos_phase1);
+            rightLeafZPos_phaseP = griddata(DADx_phase1,DADz_phase1,DADz_phaseP,rightLeafPos_phase1,leafPairPos_phase1);
             
-            leftLeafXPos_I_phaseP = interp2(DADx_phase1,DADz_phase1,DADx_phaseP,leftLeafPos_I_phase1,leafPairPos_phase1);
-            leftLeafZPos_I_phaseP = interp2(DADx_phase1,DADz_phase1,DADz_phaseP,leftLeafPos_I_phase1,leafPairPos_phase1);
+            leftLeafXPos_I_phaseP = griddata(DADx_phase1,DADz_phase1,DADx_phaseP,leftLeafPos_I_phase1,leafPairPos_phase1);
+            leftLeafZPos_I_phaseP = griddata(DADx_phase1,DADz_phase1,DADz_phaseP,leftLeafPos_I_phase1,leafPairPos_phase1);
             
-            rightLeafXPos_I_phaseP = interp2(DADx_phase1,DADz_phase1,DADx_phaseP,rightLeafPos_I_phase1,leafPairPos_phase1);
-            rightLeafZPos_I_phaseP = interp2(DADx_phase1,DADz_phase1,DADz_phaseP,rightLeafPos_I_phase1,leafPairPos_phase1);
+            rightLeafXPos_I_phaseP = griddata(DADx_phase1,DADz_phase1,DADx_phaseP,rightLeafPos_I_phase1,leafPairPos_phase1);
+            rightLeafZPos_I_phaseP = griddata(DADx_phase1,DADz_phase1,DADz_phaseP,rightLeafPos_I_phase1,leafPairPos_phase1);
             
-            leftLeafXPos_F_phaseP = interp2(DADx_phase1,DADz_phase1,DADx_phaseP,leftLeafPos_F_phase1,leafPairPos_phase1);
-            leftLeafZPos_F_phaseP = interp2(DADx_phase1,DADz_phase1,DADz_phaseP,leftLeafPos_F_phase1,leafPairPos_phase1);
+            leftLeafXPos_F_phaseP = griddata(DADx_phase1,DADz_phase1,DADx_phaseP,leftLeafPos_F_phase1,leafPairPos_phase1);
+            leftLeafZPos_F_phaseP = griddata(DADx_phase1,DADz_phase1,DADz_phaseP,leftLeafPos_F_phase1,leafPairPos_phase1);
             
-            rightLeafXPos_F_phaseP = interp2(DADx_phase1,DADz_phase1,DADx_phaseP,rightLeafPos_F_phase1,leafPairPos_phase1);
-            rightLeafZPos_F_phaseP = interp2(DADx_phase1,DADz_phase1,DADz_phaseP,rightLeafPos_F_phase1,leafPairPos_phase1);
+            rightLeafXPos_F_phaseP = griddata(DADx_phase1,DADz_phase1,DADx_phaseP,rightLeafPos_F_phase1,leafPairPos_phase1);
+            rightLeafZPos_F_phaseP = griddata(DADx_phase1,DADz_phase1,DADz_phaseP,rightLeafPos_F_phase1,leafPairPos_phase1);
             
             % the previous interpolation gave us the leaf positions at
             % z-positions not necessarily aligned with the actual MLC. Do

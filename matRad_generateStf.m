@@ -210,8 +210,6 @@ for i = 1:length(pln.propStf.gantryAngles)
             
             offset = offset+numVox;
         end
-        stf(i).DAD{1} = pln.propStf.bixelWidth*round(stf(i).DAD{1}./pln.propStf.bixelWidth);
-        
     end
     
     % pad ray position array if resolution of target voxel grid not sufficient
@@ -486,7 +484,8 @@ for i = 1:length(pln.propStf.gantryAngles)
         masterRayPosBEV = union(masterRayPosBEV,rayPosBEV,'rows');
         
         if pln.propOpt.run4D
-            masterRayPosBEV_phase1 = union(masterRayPosBEV_phase1,rayPos_phase1,'rows');
+            masterRayPosBEV_phase1  = union(masterRayPosBEV_phase1,rayPos_phase1,'rows');
+            stf(i).rayPos_phase1    = rayPos_phase1;
         end
     end
     
