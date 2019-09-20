@@ -142,7 +142,7 @@ for i = 1:numel(apertureInfo.beam)
             apertureInfo.beam(i).shape{phase}(j).leftLeafPos_F = leftLeafPos_F_phaseP;
             apertureInfo.beam(i).shape{phase}(j).rightLeafPos_F = rightLeafPos_F_phaseP;
             
-            if ~allPhases
+            if ~allPhases && apertureInfo.propVMAT.beam(i).DAOBeam
                 % fix the vectorOffsets
                 % there are two shifts: one to make room for the weights, and
                 % another to make room for the new leaf positions at each

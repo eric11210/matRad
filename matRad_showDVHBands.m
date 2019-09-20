@@ -34,6 +34,7 @@ function matRad_showDVHBands(dvh,pdvh,percentileIndices,cst,pln,lineStyleIndicat
 %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+figure
 if ~exist('lineStyleIndicator','var') || isempty(lineStyleIndicator)
     lineStyleIndicator = 1;
 end
@@ -86,13 +87,16 @@ for i = 1:numOfVois
     end
 end
 
-fontSizeValue = 14;
-myLegend = legend('show','location','NorthEast');
-set(myLegend,'FontSize',10,'Interpreter','none');
+fontSizeValue = 20;
+myLegend = legend('show','location','northoutside');
+set(myLegend,'FontSize',20,'Interpreter','none');
 legend boxoff
 
-ylim([0 1.1*maxDVHvol]);
-xlim([0 1.1*maxDVHdose]);
+%ylim([0 1.1*maxDVHvol]);
+%xlim([0 1.1*maxDVHdose]);
+
+ylim([0 104]);
+xlim([0 80]);
 
 grid on,grid minor
 box(gca,'on');

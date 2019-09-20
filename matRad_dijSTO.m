@@ -26,7 +26,7 @@ indexMap    = (1:numel(motionModel.initProb))';
 maxProb     = true;
 
 % sample the most probable trajectory
-[lSimulated,tSimulated] = matRad_runMarkovChain_Q(motionModel.qij,motionModel.initProb,tTrans,indexMap,maxProb);
+[lSimulated,tSimulated] = matRad_runMarkovChain_Q(motionModel,tTrans,indexMap,maxProb);
 
 % convert subphase to phase
 pSimulated = motionModel.indices.subPhase2PosPhase(lSimulated);

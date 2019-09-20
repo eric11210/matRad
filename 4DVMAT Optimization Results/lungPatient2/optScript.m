@@ -64,7 +64,7 @@ stf = matRad_generateStf(ct,cst,pln);
 
 %% calculate dij
 
-dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
+%dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
 
 %% conventional optimization
 
