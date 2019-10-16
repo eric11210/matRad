@@ -14,7 +14,11 @@ end
 
 % number of histories per bixel
 if isfield(pln.propDoseCalc.vmcOptions,'nCasePerBixel')
-    VmcOptions.run.nCasePerBixel    = pln.propDoseCalc.vmcOptions.nCasePerBixel;
+    if isfield(pln.propDoseCalc.vmcOptions,'constHist') && pln.propDoseCalc.vmcOptions.constHist
+        VmcOptions.run.nCasePerBixel    = round(pln.propDoseCalc.vmcOptions.nCasePerBixel./ct.tumourMotion.numFrames);
+    else
+        VmcOptions.run.nCasePerBixel    = pln.propDoseCalc.vmcOptions.nCasePerBixel;
+    end
 else
     VmcOptions.run.nCasePerBixel    = 5000;
 end

@@ -6,7 +6,7 @@ load lungPatient0_5mm_rep
 threshFac = 0.25;
 
 % this is the reference plan, the most accurate way of calculating dose
-fname = sprintf('10 phases.mat');
+fname = sprintf('8 phases.mat');
 load(fname)
 refDose = recalc.resultGUI.physicalDose;
 refDoseError = recalc.resultGUI.physicalDoseError;
@@ -30,7 +30,7 @@ end
 
 %percentage of the volume with at least a x% error relative to the
 %reference dose
-numPhases_vec = 1:10;
+numPhases_vec = 1:8;
 
 percVErr1 = zeros(size(numPhases_vec));
 percVErr3 = zeros(size(numPhases_vec));

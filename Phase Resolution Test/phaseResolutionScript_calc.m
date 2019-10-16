@@ -2,7 +2,7 @@
 load('Results.mat');
 
 % prep for loop
-numPhases_vec   = 1;
+numPhases_vec   = 10;%7:15;
 oldDir          = pwd;
 ctName_base     = 'lungPatient0_5mm';
 
@@ -37,6 +37,7 @@ for numPhases = numPhases_vec
     pln.propDoseCalc.vmcOptions.version         = 'Carleton';
     pln.propDoseCalc.vmcOptions.nCasePerBixel   = 2000;
     pln.propDoseCalc.vmcOptions.numOfParMCSim   = 128;
+    pln.propDoseCalc.vmcOptions.constHist       = false;
     
     % beam geometry settings
     pln.propStf.bixelWidth = 5;
