@@ -1,4 +1,4 @@
-function matRad_createVmcBatchFile(parallelSimulations,filepath,verboseLevel)
+function matRad_createVmcBatchFile(parallelSimulations,filepath,inOutName_base,verboseLevel)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % matRad batchfile creation
 %
@@ -7,8 +7,12 @@ function matRad_createVmcBatchFile(parallelSimulations,filepath,verboseLevel)
 %
 % input
 %   parallelSimulations: no of parallel simulations
+%
 %   filepath:            path where batchfile is created (this has to be the 
 %                        path of the vmc++ folder)
+%
+%   inOutName_base:      base filename for the input/output files
+%
 %   verboseLevel:        optional. number specifying the amount of output 
 %                        printed to the command prompt
 %
@@ -34,7 +38,7 @@ if ispc % parallelization only possible on windows systems
     %parallelProcesses = cell(1,2*parallelSimulations);
     parallelProcesses = cell(1,parallelSimulations);
     for i = 1:parallelSimulations
-        parallelProcesses{1,i} = sprintf('start "" 9>"%%lock%%%d" %s .\\bin\\vmc_Windows.exe -i MCpencilbeam_temp_%d',i,verboseString,i);
+        parallelProcesses{1,i} = sprintf('start "" 9>"%%lock%%%d" %s .\\bin\\vmc_Windows.exe -i %s_%d',i,verboseString,inOutName_base,i);
         %parallelProcesses{1,2*i} = 'timeout /T 2';
     end
 
@@ -60,7 +64,7 @@ if ispc % parallelization only possible on windows systems
     
 elseif isunix
     
-    batchFile = {'./bin/vmc_Linux.exe MCpencilbeam_temp_1'};
+    batchFile = {sprintf('./bin/vmc_Linux.exe %s_1',inOutName_base)};
 
 end
 

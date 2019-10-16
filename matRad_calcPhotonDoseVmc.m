@@ -143,11 +143,20 @@ rng(0);
 % get default vmc options
 VmcOptions = matRad_vmcOptions(pln,ct);
 
+% generate unique (PID) phantom filename
+phantomName_full = fullfile(phantomPath,sprintf('matRad_CT_%d.ct',feature('getpid')));
+
 % export CT cube as binary file for vmc++
-matRad_exportCtVmc(ct, fullfile(phantomPath, 'matRad_CT.ct'));
+matRad_exportCtVmc(ct,phantomName_full);
 
 % save CT name
-VmcOptions.geometry.Geometry.CtFile  = strrep(fullfile(phantomPath,'matRad_CT.ct'),'\','/'); % path of density matrix (only needed if input method is 'CT-PHANTOM')
+VmcOptions.geometry.Geometry.CtFile  = strrep(phantomName_full,'\','/'); % path of density matrix (only needed if input method is 'CT-PHANTOM')
+
+% generate unique (PID) input/output base filenames
+inOutName_base = sprintf('MCpencilbeam_temp_%d',feature('getpid'));
+
+% generate unique (PID) batch part filename
+batchName_part = sprintf('run_parallel_simulations_%d.bat',feature('getpid'));
 
 maxNumOfParMCSim    = 0;
 
@@ -170,11 +179,15 @@ for frame = 1:dij.numFrames
     readCounter         = 0;
     
     if pln.propOpt.run4D
+        
+        % generate unique (PID) MVF filename
+        vectorsName_full = fullfile(vectorsPath,sprintf('matRad_MVF_%d.vectors',feature('getpid')));
+        
         % export vectors cubes as text file for vmc++
-        matRad_exportVectorsVmc(ct,frame,fullfile(vectorsPath, 'matRad_MVF.vectors'));
+        matRad_exportVectorsVmc(ct,frame,vectorsName_full);
         
         % save vectors name
-        VmcOptions.geometry.Geometry.VectorsFile  = strrep(fullfile(vectorsPath,'matRad_MVF.vectors'),'\','/'); % path of density matrix (only needed if input method is 'CT-PHANTOM')
+        VmcOptions.geometry.Geometry.VectorsFile  = strrep(vectorsName_full,'\','/'); % path of density matrix (only needed if input method is 'CT-PHANTOM')
     end
     
     for i = 1:dij.numOfBeams % loop over all beams
@@ -255,8 +268,12 @@ for frame = 1:dij.numFrames
             
             
             %% create input file with vmc++ parameters
-            outfile = ['MCpencilbeam_temp_',num2str(mod(writeCounter-1,VmcOptions.run.numOfParMCSim)+1)];
-            matRad_createVmcInput(VmcOptions,fullfile(runsPath, [outfile,'.vmc']));
+            
+            % generate unique (PID) input full filename
+            inName_full = fullfile(runsPath,sprintf('%s_%d.vmc',inOutName_base,mod(writeCounter-1,VmcOptions.run.numOfParMCSim)+1));
+            
+            % create input file
+            matRad_createVmcInput(VmcOptions,inName_full);
             
             % parallelization: only run this block for every numOfParallelMCSimulations!!!
             if mod(writeCounter,VmcOptions.run.numOfParMCSim) == 0 || writeCounter == dij.totalNumOfBixels
@@ -267,7 +284,7 @@ for frame = 1:dij.numFrames
                 else
                     currNumOfParMCSim = VmcOptions.run.numOfParMCSim;
                 end
-                matRad_createVmcBatchFile(currNumOfParMCSim,fullfile(VMCPath,'run_parallel_simulations.bat'),verbose);
+                matRad_createVmcBatchFile(currNumOfParMCSim,fullfile(VMCPath,batchName_part),inOutName_base,verbose);
                 
                 % save max number of executed parallel simulations
                 if currNumOfParMCSim > maxNumOfParMCSim
@@ -278,11 +295,11 @@ for frame = 1:dij.numFrames
                 current = pwd;
                 cd(VMCPath);
                 if verbose > 0 % only show output if verbose level > 0
-                    dos('run_parallel_simulations.bat');
+                    dos(batchName_part);
                     fprintf('Completed %d of %d beamlets...\n',writeCounter,dij.totalNumOfBixels);
                 else
-                    [dummyOut1,dummyOut2] = dos('run_parallel_simulations.bat'); % supress output by assigning dummy output arguments
-                    %dos('run_parallel_simulations.bat &','-echo');
+                    [dummyOut1,dummyOut2] = dos(batchName_part); % supress output by assigning dummy output arguments
+                    %dos([batchName_part ' &'],'-echo');
                     
                     %while ~exist('EmptyFile.txt','file')
                     %    pause(1);
@@ -298,14 +315,13 @@ for frame = 1:dij.numFrames
                     waitbar((writeCounter+(frame-1).*dij.totalNumOfBixels)/(dij.numFrames.*dij.totalNumOfBixels));
                     
                     %% import calculated dose
-                    idx = regexp(outfile,'_');
                     switch pln.propDoseCalc.vmcOptions.version
                         case 'Carleton'
-                            filename = sprintf('%s%d.dos',outfile(1:idx(2)),k);
+                            outName = sprintf('%s_%d.dos',inOutName_base,k);
                         case 'dkfz'
-                            filename = sprintf('%s%d_%s.dos',outfile(1:idx(2)),k,VmcOptions.scoringOptions.outputOptions.name);
+                            outName = sprintf('%s_%d_%s.dos',inOutName_base,k,VmcOptions.scoringOptions.outputOptions.name);
                     end
-                    [bixelDose,bixelDoseError] = matRad_readDoseVmc(fullfile(runsPath,filename),VmcOptions);
+                    [bixelDose,bixelDoseError] = matRad_readDoseVmc(fullfile(runsPath,outName),VmcOptions);
                     
                     
                     %%% Don't do any sampling, since the correct error is
@@ -393,20 +409,20 @@ end
 fprintf('Done all phases!\n');
 
 %% delete temporary files
-delete(fullfile(VMCPath, 'run_parallel_simulations.bat'));  % batch file
-delete(fullfile(phantomPath, 'matRad_CT.ct'));              % phantom file
+delete(fullfile(VMCPath,batchName_part));   % batch file
+delete(phantomName_full);                   % phantom file
 if pln.propOpt.run4D
-    delete(fullfile(vectorsPath, 'matRad_MVF.vectors'));        % vectors file
+    delete(vectorsName_full);               % vectors file
 end
 for j = 1:maxNumOfParMCSim
-    delete(fullfile(runsPath, ['MCpencilbeam_temp_',num2str(mod(j-1,VmcOptions.run.numOfParMCSim)+1),'.vmc'])); % vmc inputfile
+    delete(fullfile(runsPath, sprintf('%s_%d.vmc',inOutName_base,mod(j-1,VmcOptions.run.numOfParMCSim)+1))); % vmc inputfile
     switch pln.propDoseCalc.vmcOptions.version
         case 'Carleton'
-            filename = sprintf('%s%d.dos','MCpencilbeam_temp_',j);
+            outName = sprintf('%s_%d.dos',inOutName_base,j);
         case 'dkfz'
-            filename = sprintf('%s%d_%s.dos','MCpencilbeam_temp_',j,VmcOptions.scoringOptions.outputOptions.name);
+            outName = sprintf('%s_%d_%s.dos',inOutName_base,j,VmcOptions.scoringOptions.outputOptions.name);
     end
-    delete(fullfile(runsPath,filename));    % vmc outputfile
+    delete(fullfile(runsPath,outName));    % vmc outputfile
 end
 
 try
