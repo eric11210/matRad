@@ -35,7 +35,7 @@ function apertureInfo = matRad_preconditionFactors(apertureInfo)
 % This is the dij scaling factor which will be applied during DAO.  It is
 % given by the dividing the mean of the actual aperture weights by the
 % bixel width.  This factor will divide all of the aperture weights.
-dijScaleFactor = mean(apertureInfo.apertureVector(1:(apertureInfo.totalNumOfShapes.*apertureInfo.numPhases))./apertureInfo.jacobiScale)/(apertureInfo.bixelWidth);
+dijScaleFactor = mean(apertureInfo.apertureVector(1:(apertureInfo.totalNumOfShapes*apertureInfo.numPhases))./apertureInfo.jacobiScale)/(apertureInfo.bixelWidth);
 
 for i = 1:numel(apertureInfo.beam)
     
@@ -46,18 +46,36 @@ for i = 1:numel(apertureInfo.beam)
             
             for j = 1:apertureInfo.beam(i).numOfShapes
                 
-                % To get the jacobi scaling factor, first factor the
-                % current aperture's weight out of the dijScaling factor.  Also
-                % remove the bixel width.  Now we have the mean weight relative
-                % to the current weight.
-                % Next, multiply by the sqrt of ~approximately the number of
-                % open bixels (slight modification to Esther Wild's formula).
-                % The variables corresponding to the aperture weights will be
-                % multiplied by this number, which will decrease the gradients.
+                % To get the jacobi scaling factor, divide the square root
+                % of (1) the squared sum of the shapeMap by (2) the squared
+                % sum of the gradient wrt leaf positions
+                % (1) needs to be divided by the square of the weight,
+                % since shapeMap has weight factored in (we don't want it
+                % here)
+                % (2) needs to be divided by the square of the
+                % dijScaleFactor to account for the changing weight scale
+                % Also, we must add to (1) the product of the squared
+                % weight and the squared sum of the gradient wrt leaf
+                % positions for interpolated apertures
                 
                 if apertureInfo.runVMAT
-                    apertureInfo.beam(i).shape{phase}(j).jacobiScale = (dijScaleFactor./apertureInfo.beam(i).shape{phase}(j).weight).*sqrt(sum(apertureInfo.beam(i).shape{phase}(j).shapeMap(:).^2)./apertureInfo.beam(i).shape{phase}(j).sumGradSq);
+                    apertureInfo.beam(i).shape{phase}(j).jacobiScale = (dijScaleFactor./apertureInfo.beam(i).shape{phase}(j).weight).* ...
+                        sqrt( (sum(apertureInfo.beam(i).shape{phase}(j).shapeMap(:).^2)+apertureInfo.beam(i).shape{phase}(j).weight.^2.*apertureInfo.beam(i).shape{phase}(j).sumGradSq_weight ) ...
+                        ./apertureInfo.beam(i).shape{phase}(j).sumGradSq_leaf);
+                    %apertureInfo.beam(i).shape{phase}(j).jacobiScale = (dijScaleFactor./apertureInfo.beam(i).shape{phase}(j).weight).*sqrt(sum(apertureInfo.beam(i).shape{phase}(j).shapeMap(:).^2)./apertureInfo.beam(i).shape{phase}(j).sumGradSq_leaf);
                 else
+                    
+                    % THIS MAY BE WRONG
+                    
+                    % To get the jacobi scaling factor, first factor the
+                    % current aperture's weight out of the dijScaling factor.  Also
+                    % remove the bixel width.  Now we have the mean weight relative
+                    % to the current weight.
+                    % Next, multiply by the sqrt of ~approximately the number of
+                    % open bixels (slight modification to Esther Wild's formula).
+                    % The variables corresponding to the aperture weights will be
+                    % multiplied by this number, which will decrease the gradients.
+                    
                     apertureInfo.beam(i).shape{phase}(j).jacobiScale = (dijScaleFactor.*apertureInfo.bixelWidth./apertureInfo.beam(i).shape{phase}(j).weight).*sqrt(sum(apertureInfo.beam(i).shape{phase}(j).shapeMap(:).^2));
                 end
                 apertureInfo.jacobiScale(apertureInfo.beam(i).shape{phase}(j).weightOffset) = apertureInfo.beam(i).shape{phase}(j).jacobiScale;

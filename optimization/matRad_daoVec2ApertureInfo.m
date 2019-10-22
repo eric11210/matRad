@@ -53,11 +53,37 @@ updatedInfo = apertureInfo;
 
 updatedInfo.apertureVector = apertureInfoVect;
 
-if updatedInfo.runVMAT && ~all([updatedInfo.propVMAT.beam.DAOBeam])
-    j = 1;
+
+%% preliminary loop
+
+% we'll always need to do a loop over all beams and phases to clear the
+% shapeMap, and sumGradSq _weight and _leaf
+
+% if we're doing VMAT, also take this time to update MU, MU rates, gantry
+% rotation speeds, etc.
+
+% loop over all beams
+for i = 1:numel(updatedInfo.beam)
+    
+    % loop over all shapes
+    if updatedInfo.runVMAT
+        numOfShapes = 1;
+    else
+        numOfShapes = updatedInfo.beam(i).numOfShapes;
+    end
+    
+    % loop over all phases
     for phase = 1:updatedInfo.numPhases
-        for i = 1:numel(updatedInfo.beam)
-            if updatedInfo.propVMAT.beam(i).DAOBeam
+        
+        for j = 1:numOfShapes
+            
+            % clear shapeMap, and sumGradSq _weight and _leaf
+            updatedInfo.beam(i).shape{phase}(j).shapeMap            = zeros(size(updatedInfo.beam(i).bixelIndMap));
+            updatedInfo.beam(i).shape{phase}(j).sumGradSq_weight    = 0;
+            updatedInfo.beam(i).shape{phase}(j).sumGradSq_leaf      = 0;
+            
+            if updatedInfo.runVMAT && updatedInfo.propVMAT.beam(i).DAOBeam
+                
                 % update the shape weight
                 % rescale the weight from the vector using the previous
                 % iteration scaling factor
@@ -144,10 +170,6 @@ for i = 1:numel(updatedInfo.beam)
     for phase = 1:updatedInfo.numPhases
         
         for j = 1:numOfShapes
-            
-            % clear shapeMap, sumGradSq
-            updatedInfo.beam(i).shape{phase}(j).shapeMap    = zeros(size(updatedInfo.beam(i).bixelIndMap));
-            updatedInfo.beam(i).shape{phase}(j).sumGradSq   = 0;
             
             if ~updatedInfo.runVMAT || updatedInfo.propVMAT.beam(i).DAOBeam
                 % either this is not VMAT, or if it is VMAT, this is a DAO beam

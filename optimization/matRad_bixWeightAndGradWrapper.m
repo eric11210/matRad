@@ -87,16 +87,16 @@ if ~apertureInfo.propVMAT.beam(i).DAOBeam
     
     if apertureInfo.propVMAT.continuousAperture
         fracFromLastOpt = apertureInfo.propVMAT.beam(i).fracFromLastDAO;
-        fracFromLastOptI = apertureInfo.propVMAT.beam(i).fracFromLastDAO_I*ones(numRow,1);
-        fracFromLastOptF = apertureInfo.propVMAT.beam(i).fracFromLastDAO_F*ones(numRow,1);
-        fracFromNextOptI = apertureInfo.propVMAT.beam(i).fracFromNextDAO_I*ones(numRow,1);
-        fracFromNextOptF = apertureInfo.propVMAT.beam(i).fracFromNextDAO_F*ones(numRow,1);
+        fracFromLastOptI = apertureInfo.propVMAT.beam(i).fracFromLastDAO_I;
+        fracFromLastOptF = apertureInfo.propVMAT.beam(i).fracFromLastDAO_F;
+        fracFromNextOptI = apertureInfo.propVMAT.beam(i).fracFromNextDAO_I;
+        fracFromNextOptF = apertureInfo.propVMAT.beam(i).fracFromNextDAO_F;
     else
         fracFromLastOpt = apertureInfo.propVMAT.beam(i).fracFromLastDAO;
-        fracFromLastOptI = apertureInfo.propVMAT.beam(i).fracFromLastDAO*ones(numRow,1);
-        fracFromLastOptF = apertureInfo.propVMAT.beam(i).fracFromLastDAO*ones(numRow,1);
-        fracFromNextOptI = (1-apertureInfo.propVMAT.beam(i).fracFromLastDAO)*ones(numRow,1);
-        fracFromNextOptF = (1-apertureInfo.propVMAT.beam(i).fracFromLastDAO)*ones(numRow,1);
+        fracFromLastOptI = apertureInfo.propVMAT.beam(i).fracFromLastDAO;
+        fracFromLastOptF = apertureInfo.propVMAT.beam(i).fracFromLastDAO;
+        fracFromNextOptI = (1-apertureInfo.propVMAT.beam(i).fracFromLastDAO);
+        fracFromNextOptF = (1-apertureInfo.propVMAT.beam(i).fracFromLastDAO);
     end
 end
 
@@ -393,8 +393,25 @@ for j = 1:numOfShapes
             results.arcI.bixelJApVec_vec{cellInd}((1:variable.bixelJApVec_sz)+results.arcI.bixelJApVec_offset{cellInd}) = tempResults.bixelJApVec_vec;
             results.arcI.bixelJApVec_offset{cellInd}                                                                    = results.arcI.bixelJApVec_offset{cellInd}+variable.bixelJApVec_sz;
             
+            % save shapeMap
             apertureInfo.beam(i).shape{phase_I}(j).shapeMap     = apertureInfo.beam(i).shape{phase_I}(j).shapeMap+tempResults.shapeMap;
-            apertureInfo.beam(i).shape{phase_I}(j).sumGradSq    = apertureInfo.beam(i).shape{phase_I}(j).sumGradSq+tempResults.sumGradSq;
+            
+            if apertureInfo.propVMAT.beam(i).DAOBeam
+                % if this is an optimized beam, add the sumGradSq _weight 
+                % and _leaf to its own beams
+                
+                apertureInfo.beam(i).shape{phase_I}(j).sumGradSq_leaf   = apertureInfo.beam(i).shape{phase_I}(j).sumGradSq_leaf+tempResults.sumGradSq_leaf;
+            else
+                % otherwise, we need to add the sumGradSq _weight and _leaf
+                % to the previous and next optimized beams
+                
+                apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_I}(j).sumGradSq_weight    = apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_I}(j).sumGradSq_weight+tempResults.sumGradSq_weight_lastDAO;
+                apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_I}(j).sumGradSq_leaf      = apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_I}(j).sumGradSq_leaf+tempResults.sumGradSq_leaf_lastDAO;
+                
+                apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_I}(j).sumGradSq_weight    = apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_I}(j).sumGradSq_weight+tempResults.sumGradSq_weight_nextDAO;
+                apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_I}(j).sumGradSq_leaf      = apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_I}(j).sumGradSq_leaf+tempResults.sumGradSq_leaf_nextDAO;
+            end
+            
             %% now do phase_F
             
             variable.arcF = true;
@@ -456,9 +473,24 @@ for j = 1:numOfShapes
             results.arcF.bixelJApVec_vec{cellInd}((1:variable.bixelJApVec_sz)+results.arcF.bixelJApVec_offset{cellInd}) = tempResults.bixelJApVec_vec;
             results.arcF.bixelJApVec_offset{cellInd}                                                                    = results.arcF.bixelJApVec_offset{cellInd}+variable.bixelJApVec_sz;
             
+            % save shapeMap
             apertureInfo.beam(i).shape{phase_F}(j).shapeMap     = apertureInfo.beam(i).shape{phase_F}(j).shapeMap+tempResults.shapeMap;
-            apertureInfo.beam(i).shape{phase_F}(j).sumGradSq    = apertureInfo.beam(i).shape{phase_F}(j).sumGradSq+tempResults.sumGradSq;
             
+            if apertureInfo.propVMAT.beam(i).DAOBeam
+                % if this is an optimized beam, add the sumGradSq _weight 
+                % and _leaf to its own beams
+                
+                apertureInfo.beam(i).shape{phase_F}(j).sumGradSq_leaf   = apertureInfo.beam(i).shape{phase_F}(j).sumGradSq_leaf+tempResults.sumGradSq_leaf;
+            else
+                % otherwise, we need to add the sumGradSq _weight and _leaf
+                % to the previous and next optimized beams
+                
+                apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_F}(j).sumGradSq_weight    = apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_F}(j).sumGradSq_weight+tempResults.sumGradSq_weight_lastDAO;
+                apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_F}(j).sumGradSq_leaf      = apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_F}(j).sumGradSq_leaf+tempResults.sumGradSq_leaf_lastDAO;
+                
+                apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_F}(j).sumGradSq_weight    = apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_F}(j).sumGradSq_weight+tempResults.sumGradSq_weight_nextDAO;
+                apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_F}(j).sumGradSq_leaf      = apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_F}(j).sumGradSq_leaf+tempResults.sumGradSq_leaf_nextDAO;
+            end
         end
     end
 end
