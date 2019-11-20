@@ -41,7 +41,7 @@ catch
     error(['Could not find the following machine file: ' fileName ]);
 end
 
-numOfBeams = pln.propStf.numOfBeams;
+numOfBeams = numel(stf);
 
 leafDir = 1;
 

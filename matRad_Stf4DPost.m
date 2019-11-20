@@ -40,6 +40,8 @@ for i = 1:numel(stf)
     
     for phase = 1:numel(stf(i).DAD)
         
+        numPhases = numel(stf(i).DAD);
+        
         % redefine the DADs to be in the same order as the masterRayPosBEV
         DAD_phaseP          = stf(i).DAD{phase};
         stf(i).DAD{phase}   = zeros(size(masterRayPosBEV));
@@ -145,4 +147,25 @@ for i = 1:numel(stf)
     end
     
     matRad_progress(i,numel(stf));
+end
+
+% now do angular interpolation for non-dose calculation gantry angles
+for i = 1:numel(stf)
+    
+    if ~stf(i).propVMAT.doseBeam
+        
+        stf(i).DADx = cell(numPhases,1);
+        stf(i).DADz = cell(numPhases,1);
+        
+        for phase = 1:numPhases
+            
+            stf(i).DADx{phase} = mean([stf(i).propVMAT.fracToLastDose_arcI stf(i).propVMAT.fracToLastDose_arcF]).*stf(stf(i).propVMAT.lastDoseIndex).DADx{phase} + mean([stf(i).propVMAT.fracToNextDose_arcI stf(i).propVMAT.fracToNextDose_arcF]).*stf(stf(i).propVMAT.nextDoseIndex).DADx{phase};
+            stf(i).DADz{phase} = mean([stf(i).propVMAT.fracToLastDose_arcI stf(i).propVMAT.fracToLastDose_arcF]).*stf(stf(i).propVMAT.lastDoseIndex).DADz{phase} + mean([stf(i).propVMAT.fracToNextDose_arcI stf(i).propVMAT.fracToNextDose_arcF]).*stf(stf(i).propVMAT.nextDoseIndex).DADz{phase};
+        end 
+        
+        stf(i).ray          = stf(stf(i).propVMAT.lastDoseIndex).ray;
+        stf(i).numOfRays    = 0;
+    end
+end
+
 end

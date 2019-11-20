@@ -73,21 +73,10 @@ else
     
     if apertureInfo.propVMAT.continuousAperture
         % Using the dynamic fluence calculation, we have the leaf positions in
-        % the vector be the leaf positions at the borders of the Dij arcs (for optimized angles only).
+        % the vector be the leaf positions at the borders of the DAO arcs
+        % (for optimized angles only).
         % Therefore we must also use the times between the borders of the Dij
         % arc (for optimized angles only).
-        timeFac = [apertureInfo.propVMAT.beam.timeFac]';
-        deleteInd = timeFac == 0;
-        timeFac(deleteInd) = [];
-        
-        i = [apertureInfo.propVMAT.beam.timeFacInd]';
-        i(deleteInd) = [];
-        
-        j = repelem(1:apertureInfo.totalNumOfShapes,1,3);
-        j(deleteInd) = [];
-        
-        timeFacMatrix = sparse(i,j,timeFac,max(i),apertureInfo.totalNumOfShapes);
-        timeBNOptAngles = timeFacMatrix*timeDAOBorderAngles;
         
         % prep
         leftLeafSpeed   = zeros(apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs,1);
@@ -101,6 +90,7 @@ else
             n = apertureInfo.beam(i).numOfActiveLeafPairs;
             
             if ~isempty(apertureInfo.propVMAT.beam(i).leafConstMask)
+                % only true for DAO beams
                 for phase_I = 1:apertureInfo.numPhases
                     % loop over initial phases
                     
@@ -111,16 +101,9 @@ else
                         % loop over possible final phases
                         
                         % get vector indices
-                        if apertureInfo.propVMAT.beam(i).DAOBeam
-                            % if it's a DAO beam, use own vector offset
-                            vectorIx_LI = apertureInfo.beam(i).shape{phase_I}(1).vectorOffset(1) + ((1:n)-1);
-                            vectorIx_LF = apertureInfo.beam(i).shape{phase_F}(1).vectorOffset(2) + ((1:n)-1);
-                        else
-                            % otherwise, use vector offset of previous and next
-                            % beams
-                            vectorIx_LI = apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_I}(1).vectorOffset(2) + ((1:n)-1);
-                            vectorIx_LF = apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_F}(1).vectorOffset(1) + ((1:n)-1);
-                        end
+                        % it's a DAO beam, so use own vector offset
+                        vectorIx_LI = apertureInfo.beam(i).shape{phase_I}(1).vectorOffset(1) + ((1:n)-1);
+                        vectorIx_LF = apertureInfo.beam(i).shape{phase_F}(1).vectorOffset(2) + ((1:n)-1);
                         vectorIx_RI = vectorIx_LI+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
                         vectorIx_RF = vectorIx_LF+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
                         
@@ -129,7 +112,7 @@ else
                         rightLeafPos_I  = apertureInfoVec(vectorIx_RI);
                         leftLeafPos_F   = apertureInfoVec(vectorIx_LF);
                         rightLeafPos_F  = apertureInfoVec(vectorIx_RF);
-                        t               = timeBNOptAngles(shapeInd);
+                        t               = timeDAOBorderAngles(shapeInd);
                         
                         % determine indices
                         indInConVec = offset+(1:n);

@@ -66,9 +66,18 @@ if pln.propOpt.VMAToptions.continuousAperture
     gantryAngleSpacing = angularRange./numGantryAngles;
     DAOGantryAngleSpacing = (angularRange-gantryAngleSpacing)/(numDAOGantryAngles-1);
     
+    % fluGantryAngleSpacing = gantryAngleSpacing./fluGantryAngleSpacingFactor
+    % ensure that fluGantryAngleSpacing < maxFluGantryAngleSpacing (as
+    % close as possible)
+    fluGantryAngleSpacingFactor = ceil(gantryAngleSpacing./pln.propOpt.VMAToptions.maxFluGantryAngleSpacing);
+    fluGantryAngleSpacing = gantryAngleSpacing./fluGantryAngleSpacingFactor;
+    
     % first and last gantry angles are in centre of arc
     firstGantryAngle = pln.propOpt.VMAToptions.startingAngle+gantryAngleSpacing/2;
     lastGantryAngle = pln.propOpt.VMAToptions.finishingAngle-gantryAngleSpacing/2;
+    
+    firstFluGantryAngle = pln.propOpt.VMAToptions.startingAngle+fluGantryAngleSpacing/2;
+    lastFluGantryAngle = pln.propOpt.VMAToptions.finishingAngle-fluGantryAngleSpacing/2;
     
 else
     
@@ -86,6 +95,8 @@ else
     lastGantryAngle = pln.propOpt.VMAToptions.finishingAngle;
 end
 
+% calculate fluence angle spacing
+
 % ensure that FMOGantryAngleSpacing is an odd integer multiple of DAOGantryAngleSpacing
 numApertures = floor(pln.propOpt.VMAToptions.maxFMOGantryAngleSpacing/DAOGantryAngleSpacing);
 if mod(numApertures,2) == 0
@@ -96,7 +107,23 @@ FMOGantryAngleSpacing = numApertures*DAOGantryAngleSpacing;
 firstFMOGantryAngle = firstGantryAngle+DAOGantryAngleSpacing*floor(numApertures/2);
 lastFMOGantryAngle = lastGantryAngle-DAOGantryAngleSpacing*floor(numApertures/2);
 
+
+% insert final angle spacings
+pln.propOpt.VMAToptions.fluGantryAngleSpacing   = fluGantryAngleSpacing;
+pln.propOpt.VMAToptions.gantryAngleSpacing      = gantryAngleSpacing;
+pln.propOpt.VMAToptions.DAOGantryAngleSpacing   = DAOGantryAngleSpacing;
+pln.propOpt.VMAToptions.FMOGantryAngleSpacing   = FMOGantryAngleSpacing;
+
 % define angles
+fluGantryAngles_firstPart = firstFluGantryAngle:fluGantryAngleSpacing:firstGantryAngle;
+if numel(fluGantryAngles_firstPart) == 1 && fluGantryAngles_firstPart(1) == firstGantryAngle
+    fluGantryAngles_firstPart = [];
+end
+fluGantryAngles_lastPart = fliplr(lastFluGantryAngle:-fluGantryAngleSpacing:lastGantryAngle);
+if numel(fluGantryAngles_lastPart) == 1 && fluGantryAngles_lastPart(1) == lastGantryAngle
+    fluGantryAngles_lastPart = [];
+end
+pln.propStf.fluGantryAngles = [fluGantryAngles_firstPart firstGantryAngle:fluGantryAngleSpacing:lastGantryAngle fluGantryAngles_lastPart];
 pln.propStf.gantryAngles    = firstGantryAngle:gantryAngleSpacing:lastGantryAngle;
 pln.propStf.DAOGantryAngles = firstGantryAngle:DAOGantryAngleSpacing:lastGantryAngle;
 pln.propStf.FMOGantryAngles = firstFMOGantryAngle:FMOGantryAngleSpacing:lastFMOGantryAngle;

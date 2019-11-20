@@ -42,8 +42,11 @@ tIx_Vec     = 1:apertureInfo.totalNumOfShapes;
 for i = 1:numel(apertureInfo.beam)
     
     % pre-calculate raw doses
-    % first find relevant bixels
-    currBixelIx = apertureInfo.beam(i).bixelIndMap(~isnan(apertureInfo.beam(i).bixelIndMap));
+    % get bixel and fixel indices for last/next dose beams
+    lastBixelIx = apertureInfo.beam(i).lastBixelIndMap(~isnan(apertureInfo.beam(i).lastBixelIndMap));
+    nextBixelIx = apertureInfo.beam(i).nextBixelIndMap(~isnan(apertureInfo.beam(i).nextBixelIndMap));
+    lastFixelIx = apertureInfo.beam(i).lastFixelIndMap(~isnan(apertureInfo.beam(i).lastFixelIndMap));
+    nextFixelIx = apertureInfo.beam(i).nextFixelIndMap(~isnan(apertureInfo.beam(i).nextFixelIndMap));
     
     % find relevant variables for beam
     currVarIx = apertureInfo.beam(i).local2GlobalVar;
@@ -68,42 +71,65 @@ for i = 1:numel(apertureInfo.beam)
     pNormGradMat    = -apertureInfo.probIGrad_IJ{i}./(apertureInfo.probI_IJ{i}.^2);
     
     % time indices
-    timeInd = tIx_Vec+apertureInfo.beam(i).numUniqueVar-numel(apertureInfo.beam);
+    timeInd = tIx_Vec+apertureInfo.beam(i).numUniqueVar-apertureInfo.totalNumOfShapes;
     
     % loop over initial and final phases
     for phase_I = 1:numPhases
         
-        % extract dijBeamPhase for phase_I
-        dijBeamPhase_I      = dij.scaleFactor .* dij.physicalDose{phase_I}(dij.targetVox,currBixelIx);
+        % extract dij for last dose beam and phase_I
+        dij_lastDose_phaseI = dij.scaleFactor .* dij.physicalDose{phase_I}(dij.targetVox,lastBixelIx);
+        
+        % extract dij for next dose beam and phase_I
+        if all(lastBixelIx == nextBixelIx)
+            dij_nextDose_phaseI = dij_lastDose_phaseI;
+        else
+            dij_nextDose_phaseI = dij.scaleFactor .* dij.physicalDose{phase_I}(dij.targetVox,nextBixelIx);
+        end
         
         for phase_F = 1:numPhases
             
             % determine cell index
             cellInd = (phase_I-1).*numPhases+phase_F;
             
-            % extract dijBeamPhase for phase_F
+            % extract dij for last dose beam and phase_F
             if phase_I == phase_F
-                dijBeamPhase_F      = dijBeamPhase_I;
+                dij_lastDose_phaseF      = dij_lastDose_phaseI;
             else
-                dijBeamPhase_F      = dij.scaleFactor .* dij.physicalDose{phase_F}(dij.targetVox,currBixelIx);
+                dij_lastDose_phaseF      = dij.scaleFactor .* dij.physicalDose{phase_F}(dij.targetVox,lastBixelIx);
             end
             
-            % now extract bixel weights
-            w_I = apertureInfo.arcI.bixelWeights{cellInd}(currBixelIx);
-            w_F = apertureInfo.arcF.bixelWeights{cellInd}(currBixelIx);
+            % extract dij for next dose beam and phase_F
+            if all(lastBixelIx == nextBixelIx)
+                dij_nextDose_phaseF = dij_lastDose_phaseF;
+            else
+                dij_nextDose_phaseF = dij.scaleFactor .* dij.physicalDose{phase_F}(dij.targetVox,nextBixelIx);
+            end
+            
+            % now extract fixel weights for last/next dose beam and
+            % arc_I/arc_F
+            w_lastDose_arcI = apertureInfo.arcI.lastDose.fixelWeights{cellInd}(lastFixelIx);
+            w_lastDose_arcF = apertureInfo.arcF.lastDose.fixelWeights{cellInd}(lastFixelIx);
+            w_nextDose_arcI = apertureInfo.arcI.nextDose.fixelWeights{cellInd}(nextFixelIx);
+            w_nextDose_arcF = apertureInfo.arcF.nextDose.fixelWeights{cellInd}(nextFixelIx);
             % calculate dose
-            dRawTemp = dijBeamPhase_I * w_I+dijBeamPhase_F * w_F;
+            dRawTemp = dij_lastDose_phaseI*w_lastDose_arcI + dij_lastDose_phaseF*w_lastDose_arcF + dij_nextDose_phaseI*w_nextDose_arcI + dij_nextDose_phaseF*w_nextDose_arcF;
             
             % calculate gradient of dose
             % d = d + dij.scaleFactor .*
             % dij.physicalDose{phase_I1}(:,currBixelIx1) * apertureInfo.bixelWeights{phase_I1}(currBixelIx1);
-            j_I = apertureInfo.arcI.bixelJApVec{(i-1).*numPhases.^2+cellInd}';
-            j_F = apertureInfo.arcF.bixelJApVec{(i-1).*numPhases.^2+cellInd}';
+            j_lastDose_arcI = apertureInfo.arcI.lastDose.bixelJApVec{(i-1).*numPhases.^2+cellInd}';
+            j_lastDose_arcF = apertureInfo.arcF.lastDose.bixelJApVec{(i-1).*numPhases.^2+cellInd}';
+            j_nextDose_arcI = apertureInfo.arcI.nextDose.bixelJApVec{(i-1).*numPhases.^2+cellInd}';
+            j_nextDose_arcF = apertureInfo.arcF.nextDose.bixelJApVec{(i-1).*numPhases.^2+cellInd}';
             
-            j_I = j_I(:,d2KeepVar);
-            j_F = j_F(:,d2KeepVar);
+            % keep only certain variables
+            j_lastDose_arcI = j_lastDose_arcI(:,d2KeepVar);
+            j_lastDose_arcF = j_lastDose_arcF(:,d2KeepVar);
+            j_nextDose_arcI = j_nextDose_arcI(:,d2KeepVar);
+            j_nextDose_arcF = j_nextDose_arcF(:,d2KeepVar);
+            
             % calculate gradient
-            dRawGradCellTemp    = dijBeamPhase_I * j_I+dijBeamPhase_F * j_F;
+            dRawGradCellTemp = dij_lastDose_phaseI*j_lastDose_arcI + dij_lastDose_phaseF*j_lastDose_arcF + dij_nextDose_phaseI*j_nextDose_arcI + dij_nextDose_phaseF*j_nextDose_arcF;
             
             % accumulate sum of dose and dose gradient
             d       = d+dRawTemp;

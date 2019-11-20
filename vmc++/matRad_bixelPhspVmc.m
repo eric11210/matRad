@@ -1,4 +1,4 @@
-function stf = matRad_bixelPhspVmc(stf,masterRayPosBEV,vmcOptions)
+function stf = matRad_bixelPhspVmc(stf,masterRayPosBEV,vmcOptions,SAD,bixelWidth)
 
 switch vmcOptions.version
     case 'Carleton'
@@ -11,10 +11,10 @@ fname_full  = fullfile(phspPath,sprintf('%s.egsphsp1',vmcOptions.phspBaseName));
 fid_full    = fopen(fname_full,'r');
 
 % SAD tp SCD conversion factor
-SAD2SCD = vmcOptions.SCD./stf(1).SAD;
+SAD2SCD = vmcOptions.SCD./SAD;
 
 % in cm
-bixelWidth  = stf(1).bixelWidth.*SAD2SCD/10;
+bixelWidth  = bixelWidth.*SAD2SCD/10;
 X           = masterRayPosBEV(:,1).*SAD2SCD/10;
 Y           = -masterRayPosBEV(:,3).*SAD2SCD/10; % minus sign necessary since to get from BEAM coord. to DICOM, we do a rotation, NOT reflection
 % fixes 0 going to -0 in the filename

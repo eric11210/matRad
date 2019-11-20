@@ -44,7 +44,7 @@ dij.numOfVoxels         = prod(ct.cubeDim);
 dij.resolution          = ct.resolution;
 dij.dimensions          = ct.cubeDim;
 dij.numOfScenarios      = 1;
-dij.numOfRaysPerBeam    = [stf(:).numOfRays];
+dij.numOfRaysPerBeam    = zeros(dij.numOfBeams,1);
 dij.weightToMU          = 100;
 dij.scaleFactor         = 1;
 dij.memorySaverPhoton   = pln.propDoseCalc.memorySaverPhoton;
@@ -61,7 +61,7 @@ end
 
 % check if full dose influence data is required
 if calcDoseDirect
-    numOfColumnsDij         = length(stf);
+    numOfColumnsDij         = dij.numOfBeams;
     numOfBixelsContainer    = 1;
 else
     numOfColumnsDij         = dij.totalNumOfBixels;
@@ -69,9 +69,9 @@ else
 end
 
 % set up arrays for book keeping
-dij.bixelNum = NaN*ones(numOfColumnsDij,1);
-dij.rayNum   = NaN*ones(numOfColumnsDij,1);
-dij.beamNum  = NaN*ones(numOfColumnsDij,1);
+dij.bixelNum    = NaN*ones(numOfColumnsDij,1);
+dij.rayNum      = NaN*ones(numOfColumnsDij,1);
+dij.beamNum     = NaN*ones(numOfColumnsDij,1);
 
 bixelNum = NaN*ones(dij.totalNumOfBixels,1);
 rayNum   = NaN*ones(dij.totalNumOfBixels,1);
@@ -99,9 +99,9 @@ dij.structVox = V;
 % find voxels in target
 % find all target voxels from cst cell array
 VTarget = [];
-for i=1:size(cst,1)
-    if isequal(cst{i,3},'TARGET') && ~isempty(cst{i,6})
-        VTarget = [VTarget;vertcat(cst{i,4}{:})];
+for i_stf=1:size(cst,1)
+    if isequal(cst{i_stf,3},'TARGET') && ~isempty(cst{i_stf,6})
+        VTarget = [VTarget;vertcat(cst{i_stf,4}{:})];
     end
 end
 VTarget = unique(VTarget);
@@ -190,9 +190,19 @@ for frame = 1:dij.numFrames
         VmcOptions.geometry.Geometry.VectorsFile  = strrep(vectorsName_full,'\','/'); % path of density matrix (only needed if input method is 'CT-PHANTOM')
     end
     
-    for i = 1:dij.numOfBeams % loop over all beams
+    % track i_loop (loop/stf index) and i_dij (dij beam index) separately
+    i_dij = 0;
+    
+    for i_stf = 1:numel(stf) % loop over stf elements
         
-        fprintf('Beam %d of %d ...\n',i,dij.numOfBeams);
+        % skip to next stf index if not a dose calculation beam
+        if ~stf(i_stf).propVMAT.doseBeam
+            continue
+        end
+        
+        i_dij = i_dij+1;
+        
+        fprintf('Beam %d of %d ...\n',i_dij,dij.numOfBeams);
         
         if strcmp(pln.propDoseCalc.vmcOptions.source,'phsp')
             % set angle-specific vmc++ parameters
@@ -202,14 +212,14 @@ for frame = 1:dij.numFrames
             % 0, then pushed to isocenter
             
             % correct for the source to collimator distance and change units mm -> cm
-            translation = stf(i).isoCenter/10+[0 0 pln.propDoseCalc.vmcOptions.SCD + stf(i).sourcePoint_bev(2)]/10;
+            translation = stf(i_stf).isoCenter/10+[0 0 pln.propDoseCalc.vmcOptions.SCD + stf(i_stf).sourcePoint_bev(2)]/10;
             
             % enter in isocentre
-            isocenter = stf(i).isoCenter/10;
+            isocenter = stf(i_stf).isoCenter/10;
             
             % determine vmc++ rotation angles from gantry and couch
             % angles
-            angles = matRad_matRad2vmcSourceAngles(stf(i).gantryAngle,stf(i).couchAngle);
+            angles = matRad_matRad2vmcSourceAngles(stf(i_stf).gantryAngle,stf(i_stf).couchAngle);
             
             % set vmc++ parameters
             VmcOptions.source.translation   = translation;
@@ -217,7 +227,7 @@ for frame = 1:dij.numFrames
             VmcOptions.source.angles        = angles;
         end
         
-        for j = 1:stf(i).numOfRays % loop over all rays / for photons we only have one bixel per ray!
+        for j = 1:stf(i_stf).numOfRays % loop over all rays / for photons we only have one bixel per ray!
             
             writeCounter = writeCounter + 1;
             
@@ -226,16 +236,17 @@ for frame = 1:dij.numFrames
             
             % remember beam and bixel number
             if calcDoseDirect
-                dij.beamNum(i)    = i;
-                dij.rayNum(i)     = i;
-                dij.bixelNum(i)   = i;
+                dij.beamNum(i_dij)  = i_dij;
+                dij.rayNum(i_dij)   = i_dij;
+                dij.bixelNum(i_dij) = i_dij;
             else
-                dij.beamNum(writeCounter)  = i;
+                dij.beamNum(writeCounter)  = i_dij;
                 dij.rayNum(writeCounter)   = j;
                 dij.bixelNum(writeCounter) = j;
             end
+            dij.numOfRaysPerBeam(i_dij) = stf(i_stf).numOfRays;
             
-            beamNum(writeCounter)  = i;
+            beamNum(writeCounter)  = i_dij;
             rayNum(writeCounter)   = j;
             bixelNum(writeCounter) = j;
             
@@ -243,10 +254,10 @@ for frame = 1:dij.numFrames
             switch pln.propDoseCalc.vmcOptions.source
                 case 'beamlet'
                     % a) change coordinate system (Isocenter cs-> physical cs) and units mm -> cm
-                    rayCorner1 = (stf(i).ray(j).rayCorners_SCD(1,:) + stf(i).isoCenter)/10;
-                    rayCorner2 = (stf(i).ray(j).rayCorners_SCD(2,:) + stf(i).isoCenter)/10;
-                    rayCorner3 = (stf(i).ray(j).rayCorners_SCD(3,:) + stf(i).isoCenter)/10; %vmc needs only three corners (counter-clockwise)
-                    beamSource = (stf(i).sourcePoint + stf(i).isoCenter)/10;
+                    rayCorner1 = (stf(i_stf).ray(j).rayCorners_SCD(1,:) + stf(i_stf).isoCenter)/10;
+                    rayCorner2 = (stf(i_stf).ray(j).rayCorners_SCD(2,:) + stf(i_stf).isoCenter)/10;
+                    rayCorner3 = (stf(i_stf).ray(j).rayCorners_SCD(3,:) + stf(i_stf).isoCenter)/10; %vmc needs only three corners (counter-clockwise)
+                    beamSource = (stf(i_stf).sourcePoint + stf(i_stf).isoCenter)/10;
                     
                     % b) swap x and y (CT-standard = [y,x,z])
                     rayCorner1 = rayCorner1([2,1,3]);
@@ -255,7 +266,7 @@ for frame = 1:dij.numFrames
                     beamSource = beamSource([2,1,3]);
                     
                     % c) set vmc++ parameters
-                    VmcOptions.source.monoEnergy                    = stf(i).ray(j).energy;                 % photon energy
+                    VmcOptions.source.monoEnergy                    = stf(i_stf).ray(j).energy;                 % photon energy
                     %VmcOptions.source.monoEnergy                   = []                  ;                  % use photon spectrum
                     VmcOptions.source.beamletEdges                  = [rayCorner1,rayCorner2,rayCorner3];    % counter-clockwise beamlet edges
                     VmcOptions.source.virtualPointSourcePosition    = beamSource;                            % virtual beam source position
@@ -263,7 +274,7 @@ for frame = 1:dij.numFrames
                 case 'phsp'
                     % use ray-specific file name for the phsp source (bixelized
                     % phsp)
-                    VmcOptions.source.file_name     = strrep(stf(i).ray(j).phspFileName,'\','/');
+                    VmcOptions.source.file_name     = strrep(stf(i_stf).ray(j).phspFileName,'\','/');
             end
             
             
@@ -378,9 +389,9 @@ for frame = 1:dij.numFrames
                         if calcDoseDirect
                             if isfield(stf(beamNum(readCounter)).ray(rayNum(readCounter)),'weight')
                                 % score physical dose
-                                dij.physicalDose{phase}(:,i)        = dij.physicalDose{phase}(:,i) + stf(beamNum(readCounter)).ray(rayNum(readCounter)).weight{phase} * doseTmpContainer{1,1};
+                                dij.physicalDose{phase}(:,i_dij)        = dij.physicalDose{phase}(:,i_dij) + stf(beamNum(readCounter)).ray(rayNum(readCounter)).weight{phase} * doseTmpContainer{1,1};
                                 if pln.propDoseCalc.vmcOptions.keepError
-                                    dij.physicalDoseError{phase}(:,i)   = sqrt(dij.physicalDoseError{phase}(:,i).^2 + (stf(beamNum(readCounter)).ray(rayNum(readCounter)).weight{phase} * doseTmpContainerError{1,1}).^2);
+                                    dij.physicalDoseError{phase}(:,i_dij)   = sqrt(dij.physicalDoseError{phase}(:,i_dij).^2 + (stf(beamNum(readCounter)).ray(rayNum(readCounter)).weight{phase} * doseTmpContainerError{1,1}).^2);
                                 end
                             else
                                 error(['No weight available for beam ' num2str(beamNum(readCounter)) ', ray ' num2str(rayNum(readCounter))]);

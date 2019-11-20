@@ -36,27 +36,16 @@ timeDAOBorderAngles = apertureInfoVec((1+(apertureInfo.totalNumOfShapes+aperture
 % find values of leaf speeds of optimized gantry angles
 if apertureInfo.propVMAT.continuousAperture
     % Using the dynamic fluence calculation, we have the leaf positions in
-    % the vector be the leaf positions at the borders of the Dij arcs (for optimized angles only).
+    % the vector be the leaf positions at the borders of the DAO arcs
+    % (for optimized angles only).
     % Therefore we must also use the times between the borders of the Dij
     % arc (for optimized angles only).
-    timeFac = [apertureInfo.propVMAT.beam.timeFac]';
-    deleteInd = timeFac == 0;
-    timeFac(deleteInd) = [];
-    
-    i = [apertureInfo.propVMAT.beam.timeFacInd]';
-    i(deleteInd) = [];
-    
-    j = repelem(1:apertureInfo.totalNumOfShapes,1,3);
-    j(deleteInd) = [];
-    
-    timeFacMatrix = sparse(i,j,timeFac,max(i),apertureInfo.totalNumOfShapes);
-    timeBNOptAngles = timeFacMatrix*timeDAOBorderAngles;
     
     % prep
     leftLeafDiff    = zeros(apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs,1);
     rightLeafDiff   = zeros(apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs,1);
     tVec            = zeros(apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs,1);
-    maxLeafSpeed    = zeros(1,max(i));
+    maxLeafSpeed    = zeros(1,numel(timeDAOBorderAngles));
     
     offset      = 0;
     shapeInd    = 1;
@@ -94,7 +83,7 @@ if apertureInfo.propVMAT.continuousAperture
                     rightLeafPos_I  = apertureInfoVec(vectorIx_RI);
                     leftLeafPos_F   = apertureInfoVec(vectorIx_LF);
                     rightLeafPos_F  = apertureInfoVec(vectorIx_RF);
-                    t               = timeBNOptAngles(shapeInd);
+                    t               = timeDAOBorderAngles(shapeInd);
                     
                     % determine indices
                     indInDiffVec = offset+(1:n);
@@ -165,9 +154,8 @@ for i = 1:size(apertureInfo.beam,2)
         if apertureInfo.propVMAT.continuousAperture
             % for dynamic, we take the max leaf speed to be the actual leaf
             % speed
-            ind = apertureInfo.propVMAT.beam(i).timeFacInd(apertureInfo.propVMAT.beam(i).timeFac ~= 0);
             
-            apertureInfo.beam(i).maxLeafSpeed = max(maxLeafSpeed(ind));
+            apertureInfo.beam(i).maxLeafSpeed = maxLeafSpeed(l);
             if apertureInfo.beam(i).maxLeafSpeed >= maxMaxLeafSpeed
                 maxMaxLeafSpeed = apertureInfo.beam(i).maxLeafSpeed;
             end

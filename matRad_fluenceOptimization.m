@@ -127,10 +127,21 @@ wOnesArray     = ones(dij.totalNumOfBixels,1);
 if pln.propOpt.runVMAT
     % loop through angles
     offset = 0;
-    for i = 1:dij.numOfBeams
+    
+    % track i_loop (loop/stf index) and i_dij (dij beam index) separately
+    i_dij = 0;
+    
+    for i_stf = 1:numel(stf) % loop over stf elements
         
-        rayIndices = offset+(1:dij.numOfRaysPerBeam(i));
-        if ~stf(i).propVMAT.FMOBeam
+        % skip to next stf index if not a dose calculation beam
+        if ~stf(i_stf).propVMAT.doseBeam
+            continue
+        end
+        
+        i_dij = i_dij+1;
+        
+        rayIndices = offset+(1:dij.numOfRaysPerBeam(i_dij));
+        if ~stf(i_stf).propVMAT.FMOBeam
             % if angle is not an initialization angle, do not optimize fluence
             % in bixels
             
@@ -143,7 +154,7 @@ if pln.propOpt.runVMAT
                 % phase1RayMask)
                 
                 %set wOnes to 0 (initial value)
-                wOnesArray(rayIndices) = stf(i).phase1RayMask;
+                wOnesArray(rayIndices) = stf(i_stf).phase1RayMask;
             end
         end
         offset = offset+dij.numOfRaysPerBeam(i);

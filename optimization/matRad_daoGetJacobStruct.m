@@ -165,7 +165,7 @@ for phase = 1:apertureInfo.numPhases
             end
         else
             
-            for i = 1:numel(apertureInfo.beam);
+            for i = 1:numel(apertureInfo.beam)
                 
                 % get used bixels in beam
                 ixWeight = ~isnan(apertureInfo.beam(i).bixelIndMap);
@@ -215,7 +215,7 @@ else
         shapeInd        = 1;
         
         % sparse matrix
-        numElem     = n.*(apertureInfo.propVMAT.numLeafSpeedConstraintDAO*6+(apertureInfo.propVMAT.numLeafSpeedConstraint-apertureInfo.propVMAT.numLeafSpeedConstraintDAO)*8);
+        numElem     = n.*apertureInfo.propVMAT.numLeafSpeedConstraintDAO*6;
         i_sparse    = zeros(numElem,1);
         j_sparse    = zeros(numElem,1);
         s_sparse    = ones(numElem,1);
@@ -224,6 +224,7 @@ else
             % loop over beams
             
             if ~isempty(apertureInfo.propVMAT.beam(i).leafConstMask)
+                % only true for DAO beams
                 for phase_I = 1:apertureInfo.numPhases
                     % loop over initial phases
                     
@@ -234,16 +235,9 @@ else
                         % loop over possible final phases
                         
                         % get vector indices
-                        if apertureInfo.propVMAT.beam(i).DAOBeam
-                            % if it's a DAO beam, use own vector offset
-                            vectorIx_LI = apertureInfo.beam(i).shape{phase_I}(1).vectorOffset(1) + ((1:n)-1);
-                            vectorIx_LF = apertureInfo.beam(i).shape{phase_F}(1).vectorOffset(2) + ((1:n)-1);
-                        else
-                            % otherwise, use vector offset of previous and next
-                            % beams
-                            vectorIx_LI = apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_I}(1).vectorOffset(2) + ((1:n)-1);
-                            vectorIx_LF = apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_F}(1).vectorOffset(1) + ((1:n)-1);
-                        end
+                        % it's a DAO beam, so use own vector offset
+                        vectorIx_LI = apertureInfo.beam(i).shape{phase_I}(1).vectorOffset(1) + ((1:n)-1);
+                        vectorIx_LF = apertureInfo.beam(i).shape{phase_F}(1).vectorOffset(2) + ((1:n)-1);
                         vectorIx_RI = vectorIx_LI+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
                         vectorIx_RF = vectorIx_LF+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
                         
@@ -268,43 +262,15 @@ else
                         indInSparseVec              = indInSparseVec+n;
                         
                         % wrt time (left, then right)
-                        % how we do this depends on if it's a DAO beam or
-                        % not
-                        if apertureInfo.propVMAT.beam(i).DAOBeam
-                            % if it is, then speeds only depend on its own
-                            % time
-                            i_sparse(indInSparseVec)    = indInConVec;
-                            j_sparse(indInSparseVec)    = apertureInfo.propVMAT.beam(i).timeInd;
-                            indInSparseVec              = indInSparseVec+n;
-                            
-                            i_sparse(indInSparseVec)    = indInConVec+apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs;
-                            j_sparse(indInSparseVec)    = apertureInfo.propVMAT.beam(i).timeInd;
-                            indInSparseVec              = indInSparseVec+n;
-                            
-                        else
-                            % otherwise, speed depends on time of DAO
-                            % before and DAO after
-                            
-                            % before
-                            i_sparse(indInSparseVec)    = indInConVec;
-                            j_sparse(indInSparseVec)    = apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).timeInd;
-                            indInSparseVec              = indInSparseVec+n;
-                            
-                            i_sparse(indInSparseVec)    = indInConVec+apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs;
-                            j_sparse(indInSparseVec)    = apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).timeInd;
-                            indInSparseVec              = indInSparseVec+n;
-                            
-                            % after
-                            i_sparse(indInSparseVec)    = indInConVec;
-                            j_sparse(indInSparseVec)    = apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).timeInd;
-                            indInSparseVec              = indInSparseVec+n;
-                            
-                            i_sparse(indInSparseVec)    = indInConVec+apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs;
-                            j_sparse(indInSparseVec)    = apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).timeInd;
-                            indInSparseVec              = indInSparseVec+n;
-                            
-                        end
+                        % it's a DAO beam, so speed only depends on its own
+                        % time
+                        i_sparse(indInSparseVec)    = indInConVec;
+                        j_sparse(indInSparseVec)    = apertureInfo.propVMAT.beam(i).timeInd;
+                        indInSparseVec              = indInSparseVec+n;
                         
+                        i_sparse(indInSparseVec)    = indInConVec+apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs;
+                        j_sparse(indInSparseVec)    = apertureInfo.propVMAT.beam(i).timeInd;
+                        indInSparseVec              = indInSparseVec+n;
                         
                         % update offset
                         indInConVec = indInConVec+n;
