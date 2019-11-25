@@ -116,6 +116,7 @@ pln.propOpt.VMAToptions.continuousAperture = true;
 pln.propOpt.VMAToptions.startingAngle = -180;
 pln.propOpt.VMAToptions.finishingAngle = 180;
 pln.propOpt.VMAToptions.maxGantryAngleSpacing = 4;      % Max gantry angle spacing for dose calculation
+pln.propOpt.VMAToptions.maxFluGantryAngleSpacing = 4;      % Max gantry angle spacing for dose calculation
 pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing = 8;      % Max gantry angle spacing for DAO
 pln.propOpt.VMAToptions.maxFMOGantryAngleSpacing = 32;      % Max gantry angle spacing for FMO
 

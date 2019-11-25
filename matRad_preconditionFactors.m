@@ -80,7 +80,9 @@ for i = 1:numel(apertureInfo.beam)
                 end
                 apertureInfo.jacobiScale(apertureInfo.beam(i).shape{phase}(j).weightOffset) = apertureInfo.beam(i).shape{phase}(j).jacobiScale;
                 
+                % recalculate weights
                 apertureInfo.apertureVector(apertureInfo.beam(i).shape{phase}(j).weightOffset) = apertureInfo.beam(i).shape{phase}(j).jacobiScale*apertureInfo.beam(i).shape{phase}(j).weight;
+                apertureInfo.beam(i).shape{phase}(j).weight = apertureInfo.apertureVector(apertureInfo.beam(i).shape{phase}(j).weightOffset)./apertureInfo.beam(i).shape{phase}(j).jacobiScale;
             end
         end
     end

@@ -121,7 +121,7 @@ if pln.propOpt.preconditioner
     apertureInfo.apertureVector(1:apertureInfo.totalNumOfShapes*apertureInfo.numPhases) = apertureInfo.apertureVector(1:apertureInfo.totalNumOfShapes*apertureInfo.numPhases)/dij.scaleFactor;
 end
 
-% update aperture info vector
+% update aperture info
 apertureInfo = matRad_daoVec2ApertureInfo(apertureInfo,apertureInfo.apertureVector);
 apertureInfo.newIteration = true;
 % define apertureInfo as a global vector to be updated once each iteration
@@ -165,6 +165,9 @@ if pln.propOpt.preconditioner
     optApertureInfoVec(1:apertureInfo.totalNumOfShapes*apertureInfo.numPhases) = optApertureInfoVec(1:apertureInfo.totalNumOfShapes*apertureInfo.numPhases).*dij.scaleFactor;
 end
 
+% recalculate Jacobian factors
+resultGUI.apertureInfo = matRad_preconditionFactors(resultGUI.apertureInfo);
+
 % update the apertureInfoStruct and calculate bixel weights
 resultGUI.apertureInfo = matRad_daoVec2ApertureInfo(apertureInfo,optApertureInfoVec);
 
@@ -173,8 +176,6 @@ resultGUI.w    = resultGUI.apertureInfo.bixelWeights;
 resultGUI.wDao = resultGUI.apertureInfo.bixelWeights;
 
 dij.scaleFactor = 1;
-
-resultGUI.apertureInfo = matRad_preconditionFactors(resultGUI.apertureInfo);
 
 % calc dose and reshape from 1D vector to 3D array
 d = matRad_backProjection(resultGUI.w,dij,options);

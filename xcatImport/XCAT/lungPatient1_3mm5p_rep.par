@@ -361,9 +361,9 @@ border_zone_radial = 5		# radial width (in terms of number of control points) of
 #--------------------------------------------------------------------------
 
 #---------------------Spherical lesion parameters--------------------------SEE NOTE 10
-x_location = 55		# x coordinate (pixels) to place lesion, ERIC 0 is the first pixel 	inc R-L			equals 33 @ 5 mm
-y_location = 60			# y coordinate (pixels) to place lesion 							inc	ANT-POST	equals 36 @ 5 mm
-z_location = 62			# z coordinate (pixels) to place lesion 							inc INF-SUP		equals 37 @ 5 mm
+x_location = 52		# x coordinate (pixels) to place lesion, ERIC 0 is the first pixel 	inc R-L			equals 33 @ 5 mm
+y_location = 82			# y coordinate (pixels) to place lesion 							inc	ANT-POST	equals 36 @ 5 mm
+z_location = 50			# z coordinate (pixels) to place lesion 							inc INF-SUP		equals 37 @ 5 mm
 lesn_diameter = 20.0		# Diameter of lesion (mm)
 tumor_motion_flag = 0		# Sets tumor motion (0 = default motion based on lungs, 1 = motion defined by user curve below)
 tumor_motion_filename = tumor_curve.dat		# Name of user defined motion curve for tumor

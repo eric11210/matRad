@@ -42,7 +42,6 @@ centralLeafPair = ceil(numOfMLCLeafPairs/2);
 
 % initializing variables
 bixelIndOffset = 0; % used for creation of bixel index maps
-fixelIndOffset = 0; % used for creation of fixel index maps
 totalNumOfBixels = sum([stf(:).totalNumOfBixels]);
 totalNumOfShapes = sum([sequencing.beam.numOfShapes]);
 weightOffset = 1;
@@ -248,22 +247,23 @@ for i = 1:size(stf,2)
 end
 
 % save global data
-apertureInfo.runVMAT            = pln.propOpt.runVMAT;
-apertureInfo.preconditioner     = pln.propOpt.preconditioner;
-apertureInfo.run4D              = pln.propOpt.run4D;
-apertureInfo.varOpt             = pln.propOpt.varOpt;
-apertureInfo.numPhases          = sequencing.numPhases;
-apertureInfo.bixelWidth         = bixelWidth;
-apertureInfo.numOfMLCLeafPairs  = numOfMLCLeafPairs;
-apertureInfo.totalNumOfBixels   = totalNumOfBixels; %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-apertureInfo.totalNumOfShapes   = sum([apertureInfo.beam.numOfShapes]);
+apertureInfo.runVMAT                = pln.propOpt.runVMAT;
+apertureInfo.preconditioner         = pln.propOpt.preconditioner;
+apertureInfo.run4D                  = pln.propOpt.run4D;
+apertureInfo.varOpt                 = pln.propOpt.varOpt;
+apertureInfo.numPhases              = sequencing.numPhases;
+apertureInfo.bixelWidth             = bixelWidth;
+apertureInfo.numOfMLCLeafPairs      = numOfMLCLeafPairs;
+apertureInfo.totalNumOfBixels       = totalNumOfBixels;
+apertureInfo.totalNumOfOptBixels    = totalNumOfOptBixels;
+apertureInfo.totalNumOfShapes       = sum([apertureInfo.beam.numOfShapes]);
 
 if isfield(sequencing,'weightToMU')
     apertureInfo.weightToMU = sequencing.weightToMU;
 end
 
 % save more metadata
-apertureInfo = matRad_apertureInfoMeta(apertureInfo,pln,stf,totalNumOfOptBixels);
+apertureInfo = matRad_apertureInfoMeta(apertureInfo,pln,stf);
 
 % create vectors for optimization
 [apertureInfo.apertureVector, apertureInfo.mappingMx, apertureInfo.limMx] = matRad_daoApertureInfo2Vec(apertureInfo);

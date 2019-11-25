@@ -53,11 +53,27 @@ updatedInfo = apertureInfo;
 
 updatedInfo.apertureVector = apertureInfoVect;
 
-if updatedInfo.runVMAT && ~all([updatedInfo.propVMAT.beam.DAOBeam])
-    j = 1;
+% loop over all beams
+for i = 1:numel(updatedInfo.beam)
+    
+    % loop over all shapes
+    if updatedInfo.runVMAT
+        numOfShapes = 1;
+    else
+        numOfShapes = updatedInfo.beam(i).numOfShapes;
+    end
+    
+    % loop over all phases
     for phase = 1:updatedInfo.numPhases
-        for i = 1:numel(updatedInfo.beam)
-            if updatedInfo.propVMAT.beam(i).DAOBeam
+        
+        for j = 1:numOfShapes
+            
+            % clear shapeMap, and sumGradSq _weight and _leaf
+            updatedInfo.beam(i).shape{phase}(j).shapeMap            = zeros(size(updatedInfo.beam(i).lastBixelIndMap));
+            updatedInfo.beam(i).shape{phase}(j).sumGradSq_weight    = 0;
+            updatedInfo.beam(i).shape{phase}(j).sumGradSq_leaf      = 0;
+            
+            if updatedInfo.runVMAT && updatedInfo.propVMAT.beam(i).DAOBeam
                 % update the shape weight
                 % rescale the weight from the vector using the previous
                 % iteration scaling factor
@@ -66,7 +82,7 @@ if updatedInfo.runVMAT && ~all([updatedInfo.propVMAT.beam.DAOBeam])
                 updatedInfo.beam(i).shape{phase}(j).MU = updatedInfo.beam(i).shape{phase}(j).weight*updatedInfo.weightToMU;
                 if phase == 1
                     updatedInfo.beam(i).time = apertureInfoVect((updatedInfo.totalNumOfShapes+updatedInfo.totalNumOfLeafPairs*2)*updatedInfo.numPhases+updatedInfo.propVMAT.beam(i).DAOIndex)*updatedInfo.propVMAT.beam(i).timeFacCurr;
-                    updatedInfo.beam(i).gantryRot = updatedInfo.propVMAT.beam(i).doseAngleBordersDiff/updatedInfo.beam(i).time;
+                    updatedInfo.beam(i).gantryRot = updatedInfo.propVMAT.beam(i).fluAngleBordersDiff/updatedInfo.beam(i).time;
                 end
                 updatedInfo.beam(i).shape{phase}(j).MURate = updatedInfo.beam(i).shape{phase}(j).MU./updatedInfo.beam(i).time;
             end
@@ -77,15 +93,23 @@ end
 %% structure prep
 
 % weights
-bixWeightBase.w = cell(updatedInfo.numPhases.^2,1);
-bixWeightBase.w(:) = {zeros(updatedInfo.totalNumOfBixels,1)};
+lastFixWeightBase       = cell(updatedInfo.numPhases.^2,1);
+lastFixWeightBase(:)    = {zeros(updatedInfo.totalNumOfLastFixels,1)};
+nextFixWeightBase       = cell(updatedInfo.numPhases.^2,1);
+nextFixWeightBase(:)    = {zeros(updatedInfo.totalNumOfNextFixels,1)};
+% make last/next arcI and arcF structs
+updatedInfo.arcI.lastDose.fixelWeights = lastFixWeightBase;
+updatedInfo.arcI.nextDose.fixelWeights = nextFixWeightBase;
+updatedInfo.arcF.lastDose.fixelWeights = lastFixWeightBase;
+updatedInfo.arcF.nextDose.fixelWeights = nextFixWeightBase;
 
-% make arcI and arcF structs
-bixWeight.arcI = bixWeightBase;
-bixWeight.arcF = bixWeightBase;
+% make real bixel weight struct
+updatedInfo.bixelWeights        = cell(updatedInfo.numPhases,1);
+updatedInfo.bixelWeights(:)     = {zeros(updatedInfo.totalNumOfBixels,1)};
 
 % weights
-bixWeightBase_angle.w = cell(updatedInfo.numPhases.^2,1);
+bixWeightBase_lastDose_angle.w = cell(updatedInfo.numPhases.^2,1);
+bixWeightBase_nextDose_angle.w = cell(updatedInfo.numPhases.^2,1);
 
 % probabilities
 updatedInfo.probI_IJ        = cell(numel(updatedInfo.beam),1);
@@ -119,10 +143,6 @@ for i = 1:numel(updatedInfo.beam)
         
         for j = 1:numOfShapes
             
-            % clear shapeMap, sumGradSq
-            updatedInfo.beam(i).shape{phase}(j).shapeMap    = zeros(size(updatedInfo.beam(i).bixelIndMap));
-            updatedInfo.beam(i).shape{phase}(j).sumGradSq   = 0;
-            
             if ~updatedInfo.runVMAT || updatedInfo.propVMAT.beam(i).DAOBeam
                 % either this is not VMAT, or if it is VMAT, this is a DAO beam
                 
@@ -133,7 +153,7 @@ for i = 1:numel(updatedInfo.beam)
                     updatedInfo.beam(i).shape{phase}(j).MU = updatedInfo.beam(i).shape{phase}(j).weight*updatedInfo.weightToMU;
                     if phase == 1
                         updatedInfo.beam(i).time = apertureInfoVect((updatedInfo.totalNumOfShapes+updatedInfo.totalNumOfLeafPairs*2)*updatedInfo.numPhases+updatedInfo.propVMAT.beam(i).DAOIndex)*updatedInfo.propVMAT.beam(i).timeFacCurr;
-                        updatedInfo.beam(i).gantryRot = updatedInfo.propVMAT.beam(i).doseAngleBordersDiff/updatedInfo.beam(i).time;
+                        updatedInfo.beam(i).gantryRot = updatedInfo.propVMAT.beam(i).fluAngleBordersDiff/updatedInfo.beam(i).time;
                     end
                     updatedInfo.beam(i).shape{phase}(j).MURate = updatedInfo.beam(i).shape{phase}(j).MU./updatedInfo.beam(i).time;
                 end
@@ -152,24 +172,6 @@ for i = 1:numel(updatedInfo.beam)
                     updatedInfo.beam(i).shape{phase}(j).rightLeafPos = rightLeafPos;
                     updatedInfo.beam(i).shape{phase}(j).rightLeafPos_I = rightLeafPos;
                     updatedInfo.beam(i).shape{phase}(j).rightLeafPos_F = rightLeafPos;
-                else
-                    % extract left and right leaf positions from shape vector
-                    vectorIx_LI = updatedInfo.beam(i).shape{phase}(j).vectorOffset(1) + ((1:n)-1);
-                    vectorIx_RI = vectorIx_LI+updatedInfo.totalNumOfLeafPairs*updatedInfo.numPhases;
-                    leftLeafPos_I = apertureInfoVect(vectorIx_LI);
-                    rightLeafPos_I = apertureInfoVect(vectorIx_RI);
-                    
-                    vectorIx_LF = updatedInfo.beam(i).shape{phase}(j).vectorOffset(2) + ((1:n)-1);
-                    vectorIx_RF = vectorIx_LF+updatedInfo.totalNumOfLeafPairs*updatedInfo.numPhases;
-                    leftLeafPos_F = apertureInfoVect(vectorIx_LF);
-                    rightLeafPos_F = apertureInfoVect(vectorIx_RF);
-                    
-                    % update information in shape structure
-                    updatedInfo.beam(i).shape{phase}(j).leftLeafPos_I  = leftLeafPos_I;
-                    updatedInfo.beam(i).shape{phase}(j).rightLeafPos_I = rightLeafPos_I;
-                    
-                    updatedInfo.beam(i).shape{phase}(j).leftLeafPos_F  = leftLeafPos_F;
-                    updatedInfo.beam(i).shape{phase}(j).rightLeafPos_F = rightLeafPos_F;
                 end
                 
             else
@@ -177,10 +179,10 @@ for i = 1:numel(updatedInfo.beam)
                 
                 %MURate is interpolated between MURates of optimized apertures
                 if phase == 1
-                    updatedInfo.beam(i).gantryRot = 1./(updatedInfo.propVMAT.beam(i).timeFracFromLastDAO./updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).gantryRot+updatedInfo.propVMAT.beam(i).timeFracFromNextDAO./updatedInfo.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).gantryRot);
-                    updatedInfo.beam(i).time = updatedInfo.propVMAT.beam(i).doseAngleBordersDiff./updatedInfo.beam(i).gantryRot;
+                    updatedInfo.beam(i).gantryRot = 1./(updatedInfo.propVMAT.beam(i).fracFromLastDAO_gantryRot./updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).gantryRot+updatedInfo.propVMAT.beam(i).fracFromNextDAO_gantryRot./updatedInfo.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).gantryRot);
+                    updatedInfo.beam(i).time = updatedInfo.propVMAT.beam(i).fluAngleBordersDiff./updatedInfo.beam(i).gantryRot;
                 end
-                updatedInfo.beam(i).shape{phase}(j).MURate = updatedInfo.propVMAT.beam(i).fracFromLastDAO*updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).shape{phase}(j).MURate+(1-updatedInfo.propVMAT.beam(i).fracFromLastDAO)*updatedInfo.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).shape{phase}(j).MURate;
+                updatedInfo.beam(i).shape{phase}(j).MURate = updatedInfo.propVMAT.beam(i).fracFromLastDAO_MU*updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).shape{phase}(j).MURate+updatedInfo.propVMAT.beam(i).fracFromNextDAO_MU*updatedInfo.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).shape{phase}(j).MURate;
                 
                 % calculate MU, weight
                 updatedInfo.beam(i).shape{phase}(j).MU = updatedInfo.beam(i).shape{phase}(j).MURate.*updatedInfo.beam(i).time;
@@ -189,9 +191,9 @@ for i = 1:numel(updatedInfo.beam)
                 if ~updatedInfo.propVMAT.continuousAperture
                     
                     % obtain leaf positions at last DAO beam
-                    vectorIx_LF_last = updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).shape{phase}(j).vectorOffset + ((1:n)-1);
-                    vectorIx_RF_last = vectorIx_LF_last+updatedInfo.totalNumOfLeafPairs*updatedInfo.numPhases;
-                    leftLeafPos_last = apertureInfoVect(vectorIx_LF_last);
+                    vectorIx_lastDAOI = updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).shape{phase}(j).vectorOffset + ((1:n)-1);
+                    vectorIx_RF_last = vectorIx_lastDAOI+updatedInfo.totalNumOfLeafPairs*updatedInfo.numPhases;
+                    leftLeafPos_last = apertureInfoVect(vectorIx_lastDAOI);
                     rightLeafPos_last = apertureInfoVect(vectorIx_RF_last);
                     
                     % obtain leaf positions at next DAO beam
@@ -211,32 +213,44 @@ for i = 1:numel(updatedInfo.beam)
                     updatedInfo.beam(i).shape{phase}(j).rightLeafPos = rightLeafPos;
                     updatedInfo.beam(i).shape{phase}(j).rightLeafPos_I = rightLeafPos;
                     updatedInfo.beam(i).shape{phase}(j).rightLeafPos_F = rightLeafPos;
-                else
-                    
-                    fracFromLastOptI = updatedInfo.propVMAT.beam(i).fracFromLastDAO_I*ones(n,1);
-                    fracFromLastOptF = updatedInfo.propVMAT.beam(i).fracFromLastDAO_F*ones(n,1);
-                    fracFromNextOptI = updatedInfo.propVMAT.beam(i).fracFromNextDAO_I*ones(n,1);
-                    fracFromNextOptF = updatedInfo.propVMAT.beam(i).fracFromNextDAO_F*ones(n,1);
-                    
-                    % obtain leaf positions at last DAO beam
-                    vectorIx_LF_last = updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).shape{phase}(j).vectorOffset(2) + ((1:n)-1);
-                    vectorIx_RF_last = vectorIx_LF_last+updatedInfo.totalNumOfLeafPairs*updatedInfo.numPhases;
-                    leftLeafPos_F_last = apertureInfoVect(vectorIx_LF_last);
-                    rightLeafPos_F_last = apertureInfoVect(vectorIx_RF_last);
-                    
-                    % obtain leaf positions at next DAO beam
-                    vectorIx_LI_next = updatedInfo.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).shape{phase}(j).vectorOffset(1) + ((1:n)-1);
-                    vectorIx_RI_next = vectorIx_LI_next+updatedInfo.totalNumOfLeafPairs*updatedInfo.numPhases;
-                    leftLeafPos_I_next = apertureInfoVect(vectorIx_LI_next);
-                    rightLeafPos_I_next = apertureInfoVect(vectorIx_RI_next);
-                    
-                    % interpolate leaf positions
-                    updatedInfo.beam(i).shape{phase}(j).leftLeafPos_I = fracFromLastOptI.*leftLeafPos_F_last+fracFromNextOptI.*leftLeafPos_I_next;
-                    updatedInfo.beam(i).shape{phase}(j).rightLeafPos_I = fracFromLastOptI.*rightLeafPos_F_last+fracFromNextOptI.*rightLeafPos_I_next;
-                    
-                    updatedInfo.beam(i).shape{phase}(j).leftLeafPos_F = fracFromLastOptF.*leftLeafPos_F_last+fracFromNextOptF.*leftLeafPos_I_next;
-                    updatedInfo.beam(i).shape{phase}(j).rightLeafPos_F = fracFromLastOptF.*rightLeafPos_F_last+fracFromNextOptF.*rightLeafPos_I_next;
                 end
+            end
+            
+            if updatedInfo.runVMAT && updatedInfo.propVMAT.continuousAperture
+                % leaf positions in the optimization vector are always
+                % defined at the DAO angle boundaries
+                % however, we must interpolate them at the fluence
+                % calculation angle boundaries to calc fluence/dose
+                
+                % extract interpolation factors relating the optimized leaf
+                % positions and the positions at the fluence boundaries
+                fracFromLastDAOI_leafI = updatedInfo.propVMAT.beam(i).fracFromLastDAOI_leafI;
+                fracFromLastDAOF_leafI = updatedInfo.propVMAT.beam(i).fracFromLastDAOF_leafI;
+                fracFromNextDAOI_leafF = updatedInfo.propVMAT.beam(i).fracFromNextDAOI_leafF;
+                fracFromNextDAOF_leafF = updatedInfo.propVMAT.beam(i).fracFromNextDAOF_leafF;
+                
+                % obtain initial and final leaf positions at last DAO beam
+                vectorIx_lastDAOI       = updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).shape{phase}(j).vectorOffset(1) + ((1:n)-1);
+                vectorIx_lastDAOF       = updatedInfo.beam(updatedInfo.propVMAT.beam(i).lastDAOIndex).shape{phase}(j).vectorOffset(2) + ((1:n)-1);
+                leftLeafPos_lastDAOI    = apertureInfoVect(vectorIx_lastDAOI);
+                rightLeafPos_lastDAOI   = apertureInfoVect(vectorIx_lastDAOI+updatedInfo.totalNumOfLeafPairs*updatedInfo.numPhases);
+                leftLeafPos_lastDAOF    = apertureInfoVect(vectorIx_lastDAOF);
+                rightLeafPos_lastDAOF   = apertureInfoVect(vectorIx_lastDAOF+updatedInfo.totalNumOfLeafPairs*updatedInfo.numPhases);
+                
+                % obtain initial and final leaf positions at next DAO beam
+                vectorIx_nextDAOI       = updatedInfo.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).shape{phase}(j).vectorOffset(1) + ((1:n)-1);
+                vectorIx_nextDAOF       = updatedInfo.beam(updatedInfo.propVMAT.beam(i).nextDAOIndex).shape{phase}(j).vectorOffset(2) + ((1:n)-1);
+                leftLeafPos_nextDAOI    = apertureInfoVect(vectorIx_nextDAOI);
+                rightLeafPos_nextDAOI   = apertureInfoVect(vectorIx_nextDAOI+updatedInfo.totalNumOfLeafPairs*updatedInfo.numPhases);
+                leftLeafPos_nextDAOF    = apertureInfoVect(vectorIx_nextDAOF);
+                rightLeafPos_nextDAOF   = apertureInfoVect(vectorIx_nextDAOF+updatedInfo.totalNumOfLeafPairs*updatedInfo.numPhases);
+                
+                % interpolate leaf positions
+                updatedInfo.beam(i).shape{phase}(j).leftLeafPos_I   = fracFromLastDAOI_leafI.*leftLeafPos_lastDAOI+fracFromLastDAOF_leafI.*leftLeafPos_lastDAOF;
+                updatedInfo.beam(i).shape{phase}(j).rightLeafPos_I  = fracFromLastDAOI_leafI.*rightLeafPos_lastDAOI+fracFromLastDAOF_leafI.*rightLeafPos_lastDAOF;
+                
+                updatedInfo.beam(i).shape{phase}(j).leftLeafPos_F   = fracFromNextDAOI_leafF.*leftLeafPos_nextDAOI+fracFromNextDAOF_leafF.*leftLeafPos_nextDAOF;
+                updatedInfo.beam(i).shape{phase}(j).rightLeafPos_F  = fracFromNextDAOI_leafF.*rightLeafPos_nextDAOI+fracFromNextDAOF_leafF.*rightLeafPos_nextDAOF;
             end
         end
     end
@@ -247,15 +261,24 @@ for i = 1:numel(updatedInfo.beam)
     % matRad_bixWeightAndGrad
     
     % weights
-    bixWeightBase_angle.w(:) = {zeros(updatedInfo.totalNumOfBixels,1)};
+    bixWeightBase_lastDose_angle.w(:) = {zeros(apertureInfo.beam(i).effNumBixels_lastDose,1)};
+    bixWeightBase_nextDose_angle.w(:) = {zeros(apertureInfo.beam(i).effNumBixels_nextDose,1)};
     
     % make arcI and arcF structs
-    bixWeight_angle.arcI = bixWeightBase_angle;
-    bixWeight_angle.arcF = bixWeightBase_angle;
+    bixWeight_angle.arcI.lastDose = bixWeightBase_lastDose_angle;
+    bixWeight_angle.arcI.nextDose = bixWeightBase_nextDose_angle;
+    bixWeight_angle.arcF.lastDose = bixWeightBase_lastDose_angle;
+    bixWeight_angle.arcF.nextDose = bixWeightBase_nextDose_angle;
     
     % restrict the bixelJApVec jacobians to only the variables that can
     % possibly have an effect on the weights of that gantry angle
     [updatedInfo,bixWeight_angle] = matRad_bixWeightWrapper(updatedInfo,i,bixWeight_angle);
+    
+    % get bixel and fixel indices for last/next dose beams
+    lastBixelIndMap = apertureInfo.beam(i).lastBixelIndMap(~isnan(apertureInfo.beam(i).lastBixelIndMap));
+    nextBixelIndMap = apertureInfo.beam(i).nextBixelIndMap(~isnan(apertureInfo.beam(i).nextBixelIndMap));
+    lastFixelIndMap = apertureInfo.beam(i).lastFixelIndMap(~isnan(apertureInfo.beam(i).lastFixelIndMap));
+    nextFixelIndMap = apertureInfo.beam(i).nextFixelIndMap(~isnan(apertureInfo.beam(i).nextFixelIndMap));
     
     % loop over initial and final phases to put weights and gradients in
     % their proper place
@@ -270,30 +293,18 @@ for i = 1:numel(updatedInfo.beam)
             
             cellInd = (phase_I-1).*updatedInfo.numPhases+phase_F;
             
-            bixWeight.arcI.w{cellInd} = bixWeight.arcI.w{cellInd}+bixWeight_angle.arcI.w{cellInd};
-            bixWeight.arcF.w{cellInd} = bixWeight.arcF.w{cellInd}+bixWeight_angle.arcF.w{cellInd};
+            % split fixel weights into arcI/arcF and last/next dose beam
+            updatedInfo.arcI.lastDose.fixelWeights{cellInd}(lastFixelIndMap) = bixWeight_angle.arcI.lastDose.w{cellInd};
+            updatedInfo.arcI.nextDose.fixelWeights{cellInd}(nextFixelIndMap) = bixWeight_angle.arcI.nextDose.w{cellInd};
+            updatedInfo.arcF.lastDose.fixelWeights{cellInd}(lastFixelIndMap) = bixWeight_angle.arcF.lastDose.w{cellInd};
+            updatedInfo.arcF.nextDose.fixelWeights{cellInd}(nextFixelIndMap) = bixWeight_angle.arcF.nextDose.w{cellInd};
+            
+            % sum real bixel weights (both initial and final phase)
+            updatedInfo.bixelWeights{phase_I}(lastBixelIndMap) = updatedInfo.bixelWeights{phase_I}(lastBixelIndMap)+bixWeight_angle.arcI.lastDose.w{cellInd};
+            updatedInfo.bixelWeights{phase_I}(nextBixelIndMap) = updatedInfo.bixelWeights{phase_I}(nextBixelIndMap)+bixWeight_angle.arcI.nextDose.w{cellInd};
+            updatedInfo.bixelWeights{phase_F}(lastBixelIndMap) = updatedInfo.bixelWeights{phase_F}(lastBixelIndMap)+bixWeight_angle.arcF.lastDose.w{cellInd};
+            updatedInfo.bixelWeights{phase_F}(nextBixelIndMap) = updatedInfo.bixelWeights{phase_F}(nextBixelIndMap)+bixWeight_angle.arcF.nextDose.w{cellInd};
         end
-    end
-end
-
-%% save bixelWeight, apertureVector, and Jacobian between the two
-updatedInfo.arcI.bixelWeights   = bixWeight.arcI.w;
-updatedInfo.arcF.bixelWeights   = bixWeight.arcF.w;
-updatedInfo.bixelWeights        = cell(updatedInfo.numPhases,1);
-updatedInfo.bixelWeights(:)     = {zeros(updatedInfo.totalNumOfBixels,1)};
-
-updatedInfo.apertureVector = apertureInfoVect;
-
-for phase_I = 1:updatedInfo.numPhases
-    
-    for phase_F = 1:updatedInfo.numPhases
-        
-        cellInd = (phase_I-1).*updatedInfo.numPhases+phase_F;
-        
-        % sum both arcs
-        updatedInfo.bixelWeights{phase_I} = updatedInfo.bixelWeights{phase_I}+updatedInfo.arcI.bixelWeights{cellInd};
-        updatedInfo.bixelWeights{phase_F} = updatedInfo.bixelWeights{phase_F}+updatedInfo.arcF.bixelWeights{cellInd};
-        %updatedInfo.bixelWeights{cellInd}    = updatedInfo.arcI.bixelWeights{cellInd}+updatedInfo.arcF.bixelWeights{cellInd};
     end
 end
 

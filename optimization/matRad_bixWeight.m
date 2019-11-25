@@ -9,7 +9,8 @@ edges_l             = static.edges_l;
 edges_r             = static.edges_r;
 centres             = static.centres;
 widths              = static.widths;
-bixelIndMap         = static.bixelIndMap;
+lastBixelIndMap     = static.lastBixelIndMap;
+nextBixelIndMap     = static.nextBixelIndMap;
 numRow              = static.numRow;
 
 leftLeafPosI    = variable.leftLeafPosI;
@@ -29,8 +30,7 @@ xPosIndRightLeafF   = variable.xPosIndRightLeafF;
 
 probability         = variable.probability;
 weight              = variable.weight;
-weightFactor_I      = variable.weightFactor_I;
-weightFactor_F      = variable.weightFactor_F;
+weightFactor        = variable.weightFactor;
 
 %% bixel weight calculation
 
@@ -80,12 +80,15 @@ for k = 1:numRow
 end
 
 %% swap I and F if calculating final phase stuff
-if variable.arcF
+if ~variable.arcF
     
-    temp = weightFactor_I;
-    weightFactor_I = weightFactor_F;
-    weightFactor_F = temp;
+    fracIToLastDose     = static.fracToLastDose_arcI;
+    fracIToNextDose     = static.fracToNextDose_arcI;
     
+else
+    
+    fracIToLastDose     = static.fracToLastDose_arcF;
+    fracIToNextDose     = static.fracToNextDose_arcF;
 end
 
 %% save the bixel weights
@@ -98,13 +101,18 @@ shapeMap_nW(isnan(shapeMap_nW)) = 0;
 % find open bixels
 %shapeMapIx = shapeMap > 0;
 % shapeMapIx = ~isnan(bixelIndMap);
-shapeMapIx = bixelIndMap ~= 0 & ~isnan(bixelIndMap);
+lastShapeMapIx  = lastBixelIndMap ~= 0 & ~isnan(lastBixelIndMap);
+nextShapeMapIx  = nextBixelIndMap ~= 0 & ~isnan(nextBixelIndMap);
 
-w = shapeMap_nW(shapeMapIx).*weight.*weightFactor_I.*probability;
+shapeMap    = shapeMap_nW.*weight.*weightFactor.*probability;
+wLast       = fracIToLastDose.*shapeMap(lastShapeMapIx);
+wNext       = fracIToNextDose.*shapeMap(nextShapeMapIx);
 
-%% update results and running
+%% update results
 
-results.w                   = w;
+results.lastDose.w  = wLast;
+results.nextDose.w  = wNext;
+results.shapeMap    = shapeMap;
 
 
 end

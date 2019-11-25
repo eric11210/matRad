@@ -1,4 +1,4 @@
-function recalc = matRad_doseRecalc(cst,pln,recalc,ct,apertureInfo,calcDoseDirect,dij)
+function recalc = matRad_doseRecalc(cst,pln,recalc,ct,apertureInfo,calcDoseDirect,dij,doseOrFlu)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % matRad function to recalculate dose on a Dij angular resolution, or using
 % the dynamic method, whichever the user wants%
@@ -39,6 +39,15 @@ if nargin < 6
     calcDoseDirect = true;
 end
 
+if isfield(apertureInfo,'scaleFacRx')
+    %weights were scaled to acheive 95% PTV coverage
+    %scale back to "optimal" weights
+    apertureInfo.apertureVector(1:apertureInfo.totalNumOfShapes*apertureInfo.numPhases) = apertureInfo.apertureVector(1:apertureInfo.totalNumOfShapes*apertureInfo.numPhases)/apertureInfo.scaleFacRx;
+    
+    % update aperture info vector
+    apertureInfo = matRad_daoVec2ApertureInfo(apertureInfo,apertureInfo.apertureVector);
+end
+
 recalc.apertureInfo = apertureInfo;
 
 %recalculate dose with finer gantry angles
@@ -54,7 +63,14 @@ if ~recalc.interpNew
 end
 
 cd stf
-fname = sprintf('%.1f deg.mat',recalc.pln.propOpt.VMAToptions.maxGantryAngleSpacing);
+
+switch doseOrFlu
+    case 'dose'
+        fname = sprintf('%.3f deg.mat',recalc.pln.propOpt.VMAToptions.maxGantryAngleSpacing);
+    case 'flu'
+        fname = sprintf('%.3f deg.mat',recalc.pln.propOpt.VMAToptions.maxFluGantryAngleSpacing);
+end
+
 if exist(fname,'file')
     load(fname,'stf');
 else
@@ -113,7 +129,11 @@ if ~recalc.interpNew || ~recalc.dijNew
     recalc.stf = tempStf;
 end
 
-recalc = matRad_recalcApertureInfo(recalc,recalc.apertureInfo);
+if pln.propOpt.VMAToptions.continuousAperture
+    recalc = matRad_recalcApertureInfoFluAngles(recalc,recalc.apertureInfo);
+else
+    recalc = matRad_recalcApertureInfoFromStatic(recalc,recalc.apertureInfo);
+end
 
 if ~recalc.interpNew || ~recalc.dijNew
     tempPln = recalc.pln;
@@ -143,19 +163,33 @@ if ~recalc.interpNew || ~recalc.dijNew
     end
 end
 
-% rename to something else? matRad_daoVec2ApertureInfo_recalc?
-recalc.apertureInfo.propVMAT.continuousAperture = recalc.continuousAperture;
-recalc.apertureInfo =  matRad_daoVec2ApertureInfo_VMATrecalcDynamic(recalc.apertureInfo,recalc.apertureInfo.apertureVector);
-
 if calcDoseDirect
     clear global
     recalc.resultGUI = matRad_calcDoseDirect(ct,recalc.stf,recalc.pln,cst,recalc.apertureInfo.bixelWeights);
 else
     recalc.resultGUI.w = recalc.apertureInfo.bixelWeights;
     
-    options.numOfScenarios = 1;
-    options.bioOpt = 'none';
-    dij.scaleFactor = apertureInfo.weightToMU./dij.weightToMU;
+    % set dose calculation options
+    options.bioOpt          = recalc.pln.propOpt.bioOptimization;
+    if recalc.pln.propOpt.run4D
+        options.numOfScenarios = dij.numPhases;
+    else
+        options.numOfScenarios  = dij.numOfScenarios;
+    end
+    dij.scaleFactor = recalc.apertureInfo.weightToMU./dij.weightToMU;
     d = matRad_backProjection(recalc.resultGUI.w,dij,options);
-    recalc.resultGUI.physicalDose = reshape(d{1},dij.dimensions);
+    recalc.resultGUI.physicalDose = reshape(d,dij.dimensions);
+    
+    % adjust overlap priorities
+    cst_Over = matRad_setOverlapPriorities(cst);
+    
+    % adjust objectives _and_ constraints internally for fractionation
+    for i = 1:size(cst_Over,1)
+        for j = 1:size(cst_Over{i,6},1)
+            cst_Over{i,6}(j).dose = cst_Over{i,6}(j).dose/recalc.pln.numOfFractions;
+        end
+    end
+    
+    % bixel based objective function calculation
+    recalc.f = matRad_objFuncWrapper(recalc.resultGUI.w,dij,cst_Over,options);
 end
