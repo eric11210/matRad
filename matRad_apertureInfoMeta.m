@@ -152,10 +152,10 @@ if pln.propOpt.runVMAT
         if apertureInfo.propVMAT.beam(i).DAOBeam
             apertureInfo.beam(i).bixelJApVecLastDose_sz = apertureInfo.beam(i).effNumBixels_lastDose.*(optNumVarMult+apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).DAOIndex);
             apertureInfo.beam(i).bixelJApVecNextDose_sz = apertureInfo.beam(i).effNumBixels_nextDose.*(optNumVarMult+apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).DAOIndex);
-            apertureInfo.beam(i).numUniqueVar   = apertureInfo.beam(i).numOfShapes.*apertureInfo.numPhases.*(1+8.*apertureInfo.beam(i).numOfActiveLeafPairs)+apertureInfo.totalNumOfShapes;%apertureInfo.beam(i).numOfShapes.*(1+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(apertureInfo.numPhases+1))+apertureInfo.totalNumOfShapes;
+            apertureInfo.beam(i).numFullVar             = apertureInfo.beam(i).numOfShapes.*apertureInfo.numPhases.*(1+8.*apertureInfo.beam(i).numOfActiveLeafPairs)+apertureInfo.totalNumOfShapes;%apertureInfo.beam(i).numOfShapes.*(1+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(apertureInfo.numPhases+1))+apertureInfo.totalNumOfShapes;
             
             % conversion from local opt variable to global opt variable
-            apertureInfo.beam(i).local2GlobalVar = zeros(apertureInfo.beam(i).numUniqueVar,1);
+            apertureInfo.beam(i).local2GlobalVar = zeros(apertureInfo.beam(i).numFullVar,1);
             
             for phase = 1:apertureInfo.numPhases
                 % weight variables
@@ -167,10 +167,10 @@ if pln.propOpt.runVMAT
         else
             apertureInfo.beam(i).bixelJApVecLastDose_sz = apertureInfo.beam(i).effNumBixels_lastDose.*(intNumVarMult+apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).DAOIndex);
             apertureInfo.beam(i).bixelJApVecNextDose_sz = apertureInfo.beam(i).effNumBixels_nextDose.*(intNumVarMult+apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).DAOIndex);
-            apertureInfo.beam(i).numUniqueVar   = apertureInfo.numPhases.*(2+8.*apertureInfo.beam(i).numOfActiveLeafPairs)+apertureInfo.totalNumOfShapes;%(2+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(apertureInfo.numPhases+1))+apertureInfo.totalNumOfShapes;
+            apertureInfo.beam(i).numFullVar             = apertureInfo.numPhases.*(2+8.*apertureInfo.beam(i).numOfActiveLeafPairs)+apertureInfo.totalNumOfShapes;%(2+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(apertureInfo.numPhases+1))+apertureInfo.totalNumOfShapes;
             
             % conversion from local opt variable to global opt variable
-            apertureInfo.beam(i).local2GlobalVar = zeros(apertureInfo.beam(i).numUniqueVar,1);
+            apertureInfo.beam(i).local2GlobalVar = zeros(apertureInfo.beam(i).numFullVar,1);
             
             for phase = 1:apertureInfo.numPhases
                 % weight variables
@@ -211,9 +211,12 @@ if pln.propOpt.runVMAT
         end
         
         % time variables
-        apertureInfo.beam(i).local2GlobalVar(apertureInfo.beam(i).numUniqueVar-apertureInfo.totalNumOfShapes+(1:apertureInfo.totalNumOfShapes)) = ...
+        apertureInfo.beam(i).local2GlobalVar(apertureInfo.beam(i).numFullVar-apertureInfo.totalNumOfShapes+(1:apertureInfo.totalNumOfShapes)) = ...
             (apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+(1:apertureInfo.totalNumOfShapes);
         
+        % only keep unique local2GlobalVar variables
+        [apertureInfo.beam(i).local2GlobalVar,~,apertureInfo.beam(i).full2UniqueLocalVar]   = unique(apertureInfo.beam(i).local2GlobalVar);
+        apertureInfo.beam(i).numUniqueVar                                                   = numel(apertureInfo.beam(i).local2GlobalVar);
         
         if apertureInfo.varOpt
             % decide which variables to keep when calculating gradients for

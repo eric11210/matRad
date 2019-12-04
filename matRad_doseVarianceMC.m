@@ -31,14 +31,14 @@ apertureInfo_hist.motionModel.indices.nSubPhases = apertureInfo_hist.numPhases;
 for hist = 1:nHistories
     
     % MC simulation of tumour trajectory
-    [lSimulated_hist,tSimulated_hist]= matRad_runMarkovChain_Q(apertureInfo.motionModel.qij,apertureInfo.motionModel.initProb,tTrans);
+    [lSimulated_hist,tSimulated_hist]= matRad_runMarkovChain_Q(apertureInfo.motionModel,tTrans);
     
     % insert trajectory in apertureInfo struct
     apertureInfo_hist.motionModel.lSimulated = apertureInfo.motionModel.indices.subPhase2Phase(lSimulated_hist);
     apertureInfo_hist.motionModel.tSimulated = tSimulated_hist;
     
     % get weights for this particular history
-    apertureInfo_hist = matRad_daoVec2ApertureInfo(apertureInfo_hist,apertureInfo_hist.apertureVector);
+    apertureInfo_hist = matRad_daoVec2ApertureInfo_bixWeightOnly(apertureInfo_hist,apertureInfo_hist.apertureVector);
     
     % get dose for this particular trajectory
     d_hist = matRad_backProjection(apertureInfo_hist.bixelWeights,dij,options);

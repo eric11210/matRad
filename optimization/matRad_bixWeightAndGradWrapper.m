@@ -68,9 +68,10 @@ effNumBix_lastDose_arcF = apertureInfo.beam(i).effNumBixels_lastDose_arcF;
 effNumBix_nextDose_arcI = apertureInfo.beam(i).effNumBixels_nextDose_arcI;
 effNumBix_nextDose_arcF = apertureInfo.beam(i).effNumBixels_nextDose_arcF;
 totalNumOfShapes        = apertureInfo.totalNumOfShapes;
+full2UniqueLocalVar     = apertureInfo.beam(i).full2UniqueLocalVar;
 
 % indices for various variables
-tIx_Vec     = (1:totalNumOfShapes)+apertureInfo.beam(i).numUniqueVar-totalNumOfShapes;%(totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+(1:totalNumOfShapes);
+tIx_Vec     = (1:totalNumOfShapes)+apertureInfo.beam(i).numFullVar-totalNumOfShapes;%(totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+(1:totalNumOfShapes);
 
 if ~apertureInfo.propVMAT.beam(i).DAOBeam
     time_last   = apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).time;
@@ -89,8 +90,8 @@ if ~apertureInfo.propVMAT.beam(i).DAOBeam
     
     DAOindex_last   = 1;%apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).DAOIndex;
     DAOindex_next   = 2;%apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).DAOIndex;
-    tIx_last        = apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).DAOIndex+apertureInfo.beam(i).numUniqueVar-totalNumOfShapes;%(totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).DAOIndex;
-    tIx_next        = apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).DAOIndex+apertureInfo.beam(i).numUniqueVar-totalNumOfShapes;%(totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).DAOIndex;
+    tIx_last        = apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).DAOIndex+apertureInfo.beam(i).numFullVar-totalNumOfShapes;%(totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).DAOIndex;
+    tIx_next        = apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).DAOIndex+apertureInfo.beam(i).numFullVar-totalNumOfShapes;%(totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).DAOIndex;
     
     if ~apertureInfo.propVMAT.continuousAperture
         fracFromLastDAOI_leafI = apertureInfo.propVMAT.beam(i).fracFromLastDAO;
@@ -212,18 +213,18 @@ for phase_I = 1:apertureInfo.numPhases
     % loop over all (final) phases
     for phase_F = 1:apertureInfo.numPhases
         
+        % skip to next phase if probability to transition from phase_I
+        % to phase_F and its derivative are both 0
+        if pMat(phase_I,phase_F)  == 0 && pGradMat1(phase_I,phase_F) == 0 && pGradMat2(phase_I,phase_F) == 0
+            continue
+        end
+        
+        % determine cell index
+        cellInd = (phase_I-1).*apertureInfo.numPhases+phase_F;
+        
+        
         % loop over all shapes
         for j = 1:numOfShapes
-            
-            % skip to next phase if probability to transition from phase_I
-            % to phase_F and its derivative are both 0
-            if pMat(phase_I,phase_F)  == 0 && pGradMat1(phase_I,phase_F) == 0 && pGradMat2(phase_I,phase_F) == 0
-                continue
-            end
-            
-            % determine cell index
-            cellInd = (phase_I-1).*apertureInfo.numPhases+phase_F;
-            
             %% determine variable quantities
             
             weight_I        = apertureInfo.beam(i).shape{phase_I}(j).weight;
@@ -448,13 +449,13 @@ for phase_I = 1:apertureInfo.numPhases
             % put tempResults into results
             % first do last dose beam
             results.arcI.lastDose.w{cellInd}                                                                                                                = tempResults.lastDose.w;
-            results.arcI.lastDose.bixelJApVec_i{cellInd}((1:tempResults.lastDose.bixelJApVec_offset)+results.arcI.lastDose.bixelJApVec_offset{cellInd})     = tempResults.lastDose.bixelJApVec_i;
+            results.arcI.lastDose.bixelJApVec_i{cellInd}((1:tempResults.lastDose.bixelJApVec_offset)+results.arcI.lastDose.bixelJApVec_offset{cellInd})     = full2UniqueLocalVar(tempResults.lastDose.bixelJApVec_i);
             results.arcI.lastDose.bixelJApVec_j{cellInd}((1:tempResults.lastDose.bixelJApVec_offset)+results.arcI.lastDose.bixelJApVec_offset{cellInd})     = tempResults.lastDose.bixelJApVec_j;
             results.arcI.lastDose.bixelJApVec_vec{cellInd}((1:tempResults.lastDose.bixelJApVec_offset)+results.arcI.lastDose.bixelJApVec_offset{cellInd})   = tempResults.lastDose.bixelJApVec_vec;
             results.arcI.lastDose.bixelJApVec_offset{cellInd}                                                                                               = results.arcI.lastDose.bixelJApVec_offset{cellInd}+tempResults.lastDose.bixelJApVec_offset;
             % now do next dose beam
             results.arcI.nextDose.w{cellInd}                                                                                                                = tempResults.nextDose.w;
-            results.arcI.nextDose.bixelJApVec_i{cellInd}((1:tempResults.nextDose.bixelJApVec_offset)+results.arcI.nextDose.bixelJApVec_offset{cellInd})     = tempResults.nextDose.bixelJApVec_i;
+            results.arcI.nextDose.bixelJApVec_i{cellInd}((1:tempResults.nextDose.bixelJApVec_offset)+results.arcI.nextDose.bixelJApVec_offset{cellInd})     = full2UniqueLocalVar(tempResults.nextDose.bixelJApVec_i);
             results.arcI.nextDose.bixelJApVec_j{cellInd}((1:tempResults.nextDose.bixelJApVec_offset)+results.arcI.nextDose.bixelJApVec_offset{cellInd})     = tempResults.nextDose.bixelJApVec_j;
             results.arcI.nextDose.bixelJApVec_vec{cellInd}((1:tempResults.nextDose.bixelJApVec_offset)+results.arcI.nextDose.bixelJApVec_offset{cellInd})   = tempResults.nextDose.bixelJApVec_vec;
             results.arcI.nextDose.bixelJApVec_offset{cellInd}                                                                                               = results.arcI.nextDose.bixelJApVec_offset{cellInd}+tempResults.nextDose.bixelJApVec_offset;
@@ -529,13 +530,13 @@ for phase_I = 1:apertureInfo.numPhases
             % put tempResults into results
             % first do last dose beam
             results.arcF.lastDose.w{cellInd}                                                                                                                = tempResults.lastDose.w;
-            results.arcF.lastDose.bixelJApVec_i{cellInd}((1:tempResults.lastDose.bixelJApVec_offset)+results.arcI.lastDose.bixelJApVec_offset{cellInd})     = tempResults.lastDose.bixelJApVec_i;
+            results.arcF.lastDose.bixelJApVec_i{cellInd}((1:tempResults.lastDose.bixelJApVec_offset)+results.arcI.lastDose.bixelJApVec_offset{cellInd})     = full2UniqueLocalVar(tempResults.lastDose.bixelJApVec_i);
             results.arcF.lastDose.bixelJApVec_j{cellInd}((1:tempResults.lastDose.bixelJApVec_offset)+results.arcI.lastDose.bixelJApVec_offset{cellInd})     = tempResults.lastDose.bixelJApVec_j;
             results.arcF.lastDose.bixelJApVec_vec{cellInd}((1:tempResults.lastDose.bixelJApVec_offset)+results.arcI.lastDose.bixelJApVec_offset{cellInd})   = tempResults.lastDose.bixelJApVec_vec;
             results.arcF.lastDose.bixelJApVec_offset{cellInd}                                                                                               = results.arcF.lastDose.bixelJApVec_offset{cellInd}+tempResults.lastDose.bixelJApVec_offset;
             % now do next dose beam
             results.arcF.nextDose.w{cellInd}                                                                                                                = tempResults.nextDose.w;
-            results.arcF.nextDose.bixelJApVec_i{cellInd}((1:tempResults.nextDose.bixelJApVec_offset)+results.arcI.nextDose.bixelJApVec_offset{cellInd})     = tempResults.nextDose.bixelJApVec_i;
+            results.arcF.nextDose.bixelJApVec_i{cellInd}((1:tempResults.nextDose.bixelJApVec_offset)+results.arcI.nextDose.bixelJApVec_offset{cellInd})     = full2UniqueLocalVar(tempResults.nextDose.bixelJApVec_i);
             results.arcF.nextDose.bixelJApVec_j{cellInd}((1:tempResults.nextDose.bixelJApVec_offset)+results.arcI.nextDose.bixelJApVec_offset{cellInd})     = tempResults.nextDose.bixelJApVec_j;
             results.arcF.nextDose.bixelJApVec_vec{cellInd}((1:tempResults.nextDose.bixelJApVec_offset)+results.arcI.nextDose.bixelJApVec_offset{cellInd})   = tempResults.nextDose.bixelJApVec_vec;
             results.arcF.nextDose.bixelJApVec_offset{cellInd}                                                                                               = results.arcF.nextDose.bixelJApVec_offset{cellInd}+tempResults.nextDose.bixelJApVec_offset;

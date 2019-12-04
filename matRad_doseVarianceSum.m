@@ -48,11 +48,11 @@ for i = 1:numel(apertureInfo.beam)
     lastFixelIx = apertureInfo.beam(i).lastFixelIndMap(~isnan(apertureInfo.beam(i).lastFixelIndMap));
     nextFixelIx = apertureInfo.beam(i).nextFixelIndMap(~isnan(apertureInfo.beam(i).nextFixelIndMap));
     
-    % find relevant variables for beam
-    currVarIx = apertureInfo.beam(i).local2GlobalVar;
-    
     % find kept variables
     d2KeepVar = apertureInfo.beam(i).d2KeepVar;
+    
+    % find relevant variables for beam
+    currVarIx = apertureInfo.beam(i).local2GlobalVar(d2KeepVar);
     
     % allocate gradient of dose and square of dose for beam
     dGrad_i     = zeros(numel(dij.targetVox),apertureInfo.beam(i).numKeepVar);
@@ -243,8 +243,8 @@ for i = 1:numel(apertureInfo.beam)
     dRawGradCell_sumF{i} = reshape(dRawGradCellTemp_sumF,[],numel(d2KeepVar));
     
     % dump gradients for i
-    dGrad(:,currVarIx(d2KeepVar))   = dGrad(:,currVarIx(d2KeepVar))+dGrad_i;
-    d2SumGrad(currVarIx(d2KeepVar)) = d2SumGrad(currVarIx(d2KeepVar))+d2SumGrad_i;
+    dGrad(:,currVarIx)   = dGrad(:,currVarIx)+dGrad_i;
+    d2SumGrad(currVarIx) = d2SumGrad(currVarIx)+d2SumGrad_i;
 end
 
 % first loop over all beams

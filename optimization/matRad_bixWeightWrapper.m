@@ -205,17 +205,18 @@ for phase_I = 1:apertureInfo.numPhases
     % loop over all (final) phases
     for phase_F = 1:apertureInfo.numPhases
         
+        % skip to next phase if probability to transition from phase_I
+        % to phase_F and its derivative are both 0
+        if pMat(phase_I,phase_F)  == 0 && pGradMat1(phase_I,phase_F) == 0 && pGradMat2(phase_I,phase_F) == 0
+            continue
+        end
+        
+        % determine cell index
+        cellInd = (phase_I-1).*apertureInfo.numPhases+phase_F;
+        
+        
         % loop over all shapes
         for j = 1:numOfShapes
-            
-            % skip to next phase if probability to transition from phase_I
-            % to phase_F and its derivative are both 0
-            if pMat(phase_I,phase_F)  == 0 && pGradMat1(phase_I,phase_F) == 0 && pGradMat2(phase_I,phase_F) == 0
-                continue
-            end
-            
-            % determine cell index
-            cellInd = (phase_I-1).*apertureInfo.numPhases+phase_F;
             
             %% determine variable quantities
             

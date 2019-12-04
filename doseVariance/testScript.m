@@ -1,8 +1,14 @@
 %% calculate mean and variance (analytical and MC)
 
+% setup options
+options.numOfScenarios  = resultGUI.apertureInfo.numPhases;
+options.bioOpt          = 'none';
+
 % analytical
-dMean   = matRad_backProjection(resultGUI.apertureInfo.bixelWeights,dij,options);
-dVar    = matRad_doseVariance(resultGUI.apertureInfo,dij);
+dMean       = matRad_backProjection(resultGUI.apertureInfo.bixelWeights,dij,options);
+dVar        = matRad_doseVariance(resultGUI.apertureInfo,dij);
+dVar_summed = sum(dVar(dij.targetVox));
+[dVarSum,~] = matRad_doseVarianceSum(resultGUI.apertureInfo,dij);
 
 % Monte Carlo
 nHistories          = 10000;

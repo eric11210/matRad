@@ -45,7 +45,7 @@ if isfield(apertureInfo,'scaleFacRx')
     apertureInfo.apertureVector(1:apertureInfo.totalNumOfShapes*apertureInfo.numPhases) = apertureInfo.apertureVector(1:apertureInfo.totalNumOfShapes*apertureInfo.numPhases)/apertureInfo.scaleFacRx;
     
     % update aperture info vector
-    apertureInfo = matRad_daoVec2ApertureInfo(apertureInfo,apertureInfo.apertureVector);
+    apertureInfo = matRad_daoVec2ApertureInfo_bixWeightOnly(apertureInfo,apertureInfo.apertureVector);
 end
 
 recalc.apertureInfo = apertureInfo;
