@@ -15,13 +15,13 @@ dRawGradCell_sumI   = cell(numel(apertureInfo.beam),1);
 dRawGradCell_sumF   = cell(numel(apertureInfo.beam),1);
 
 % allocate mean of dose
-d = zeros(numel(dij.targetVox),1);
+d = zeros(numel(dij.keepTargetVox),1);
 
 % allocate mean of squared dose
 d2Sum = 0;
 
 % allocate gradient of mean of dose
-dGrad = zeros(numel(dij.targetVox),size(apertureInfo.apertureVector,1));
+dGrad = zeros(numel(dij.keepTargetVox),size(apertureInfo.apertureVector,1));
 
 % allocate gradient of mean of squared dose
 d2SumGrad = zeros(1,size(apertureInfo.apertureVector,1));
@@ -55,16 +55,16 @@ for i = 1:numel(apertureInfo.beam)
     currVarIx = apertureInfo.beam(i).local2GlobalVar(d2KeepVar);
     
     % allocate gradient of dose and square of dose for beam
-    dGrad_i     = zeros(numel(dij.targetVox),apertureInfo.beam(i).numKeepVar);
+    dGrad_i     = zeros(numel(dij.keepTargetVox),apertureInfo.beam(i).numKeepVar);
     d2SumGrad_i = zeros(1,apertureInfo.beam(i).numKeepVar);
     
     % allocate raw doses
-    dRawCell_sumI{i} = zeros(numel(dij.targetVox),numSubPhases);
-    dRawCell_sumF{i} = zeros(numel(dij.targetVox),numSubPhases);
+    dRawCell_sumI{i} = zeros(numel(dij.keepTargetVox),numSubPhases);
+    dRawCell_sumF{i} = zeros(numel(dij.keepTargetVox),numSubPhases);
     
     % allocate gradient of raw doses
-    dRawGradCellTemp_sumI = zeros(numel(dij.targetVox),numel(d2KeepVar),numPhases);
-    dRawGradCellTemp_sumF = zeros(numel(dij.targetVox),numel(d2KeepVar),numPhases);
+    dRawGradCellTemp_sumI = zeros(numel(dij.keepTargetVox),numel(d2KeepVar),numPhases);
+    dRawGradCellTemp_sumF = zeros(numel(dij.keepTargetVox),numel(d2KeepVar),numPhases);
     
     % calculate probability normalization and gradient matrices
     pNormMat        = 1./apertureInfo.probI_IJ{i};
@@ -77,13 +77,13 @@ for i = 1:numel(apertureInfo.beam)
     for phase_I = 1:numPhases
         
         % extract dij for last dose beam and phase_I
-        dij_lastDose_phaseI = dij.scaleFactor .* dij.physicalDose{phase_I}(dij.targetVox,lastBixelIx);
+        dij_lastDose_phaseI = dij.scaleFactor .* dij.physicalDose{phase_I}(dij.keepTargetVox,lastBixelIx);
         
         % extract dij for next dose beam and phase_I
         if all(lastBixelIx == nextBixelIx)
             dij_nextDose_phaseI = dij_lastDose_phaseI;
         else
-            dij_nextDose_phaseI = dij.scaleFactor .* dij.physicalDose{phase_I}(dij.targetVox,nextBixelIx);
+            dij_nextDose_phaseI = dij.scaleFactor .* dij.physicalDose{phase_I}(dij.keepTargetVox,nextBixelIx);
         end
         
         for phase_F = 1:numPhases
@@ -95,14 +95,14 @@ for i = 1:numel(apertureInfo.beam)
             if phase_I == phase_F
                 dij_lastDose_phaseF      = dij_lastDose_phaseI;
             else
-                dij_lastDose_phaseF      = dij.scaleFactor .* dij.physicalDose{phase_F}(dij.targetVox,lastBixelIx);
+                dij_lastDose_phaseF      = dij.scaleFactor .* dij.physicalDose{phase_F}(dij.keepTargetVox,lastBixelIx);
             end
             
             % extract dij for next dose beam and phase_F
             if all(lastBixelIx == nextBixelIx)
                 dij_nextDose_phaseF = dij_lastDose_phaseF;
             else
-                dij_nextDose_phaseF = dij.scaleFactor .* dij.physicalDose{phase_F}(dij.targetVox,nextBixelIx);
+                dij_nextDose_phaseF = dij.scaleFactor .* dij.physicalDose{phase_F}(dij.keepTargetVox,nextBixelIx);
             end
             
             % now extract fixel weights for last/next dose beam and
@@ -330,10 +330,10 @@ end
 % dump gradient for time
 d2SumGrad(:,tIxBig_Vec) = d2SumGrad(:,tIxBig_Vec) + d2SumTimeGrad;
 
-% calculate sum of variances
-dVarSum = d2Sum-d'*d;
+% calculate sum of variances, taking into account sampling of target voxels
+dVarSum = dij.sampleFactor.*(d2Sum-d'*d);
 
 % calculate gradient of sum of variance
-dVarSumGrad = d2SumGrad-2.*d'*dGrad;
+dVarSumGrad = dij.sampleFactor.*(d2SumGrad-2.*d'*dGrad);
 
 end

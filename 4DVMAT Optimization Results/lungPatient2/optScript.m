@@ -83,7 +83,7 @@ resultGUI = matRad_siochiLeafSequencing(resultGUI,stf,dij,pln,0);
 % do DAO
 resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,resultGUI,pln,stf);
 
-% save resultskk
+% save results
 cd(currentDir);
 savefig('CO_DAO')
 save('CO','resultGUI');

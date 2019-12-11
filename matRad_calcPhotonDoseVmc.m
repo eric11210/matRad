@@ -107,6 +107,11 @@ end
 VTarget = unique(VTarget);
 dij.targetVox = VTarget;
 
+% sample voxels in target
+keepTargetMask      = rand(size(dij.targetVox)) <= pln.propDoseCalc.sampleTargetProb;
+dij.keepTargetVox   = dij.targetVox(keepTargetMask);
+dij.sampleFactor    = 1./pln.propDoseCalc.sampleTargetProb;
+
 % find current directory
 currDir = pwd;
 

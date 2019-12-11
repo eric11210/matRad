@@ -6,7 +6,7 @@ load lungPatient2_3mm5p_rep
 threshFac = 0.5;
 
 % set of fluence gantry angle spacings
-maxFluGantryAngleSpacingS = [4 2 1 0.5 0.25 0.125];
+maxFluGantryAngleSpacingS = [4 2 1 0.5];
 
 % this is the reference plan, the most accurate way of calculating dose
 fname = sprintf('Max fluence gantry angle spacing = %.3f.mat',maxFluGantryAngleSpacingS(end));
