@@ -12,12 +12,20 @@ switch motionModel.type
         
         % calculate transition probability matrix and derivative
         %Pij_transT      = expm(qij.*transT);
-        Pij_transT      = real(qij_V*diag(exp(diag(qij_D.*transT)))/qij_V);
+        if transT == 0
+            Pij_transT = eye(motionModel.indices.nSubPhases);
+        else
+            Pij_transT = abs(qij_V*diag(exp(diag(qij_D.*transT)))/qij_V);
+        end
         Pij_transT_dot  = qij*Pij_transT;
         
         % calculate probability to arrive at i at T and derivative
         %Pi_T        = initProb*expm(qij.*T);
-        Pi_T        = initProb*real(qij_V*diag(exp(diag(qij_D.*T)))/qij_V);
+        if T == 0
+            Pi_T = initProb;
+        else
+            Pi_T = initProb*abs(qij_V*diag(exp(diag(qij_D.*T)))/qij_V);
+        end
         Pi_T_dot    = Pi_T*qij;
         
     case 'single'
@@ -41,6 +49,21 @@ switch motionModel.type
         % the derivatives can just be equal to 0
         Pij_transT_dot  = zeros(motionModel.numPhases,motionModel.numPhases);
         Pi_T_dot        = zeros(1,motionModel.numPhases);
+        
+    case 'precalculated'
+        
+        % round the transT and T
+        transT  = round(transT,6);
+        T       = round(T,6);
+        
+        % find the appropriate Pij matrix and Pi vector from the
+        % precalculated set
+        Pij_transT  = motionModel.Pij_transT(:,:,motionModel.transT == transT);
+        Pi_T        = motionModel.Pi_arrivalT(:,motionModel.arrivalT == T)';
+        
+        % the derivatives can just be equal to 0
+        Pij_transT_dot  = zeros(motionModel.indices.nSubPhases,motionModel.indices.nSubPhases);
+        Pi_T_dot        = zeros(1,motionModel.indices.nSubPhases);
         
 end
 

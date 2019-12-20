@@ -31,7 +31,7 @@ function apertureInfo = matRad_maxLeafSpeed(apertureInfo)
 apertureInfoVec = apertureInfo.apertureVector;
 
 % values of time differences of optimized gantry angles
-timeDAOBorderAngles = apertureInfoVec((1+(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases):end);
+timeDAOBorderAngles = [apertureInfo.beam([apertureInfo.propVMAT.beam.DAOBeam]).time]./[apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).timeFacCurr];
 
 % find values of leaf speeds of optimized gantry angles
 if apertureInfo.propVMAT.continuousAperture

@@ -67,9 +67,11 @@ else
     
     % values of times spent in an arc surrounding the optimized angles (full
     % arc/dose influence arc)
-    timeDAOBorderAngles = apertureInfoVec((apertureInfo.numPhases*(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)+1):end);
-    timeDoseBorderAngles = timeDAOBorderAngles.*[apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).timeFacCurr]';
-    timeDoseBorderAngles_rep = repmat(timeDoseBorderAngles,apertureInfo.numPhases,1);
+    timeDoseBorderAngles    = [apertureInfo.beam([apertureInfo.propVMAT.beam.DAOBeam]).time]';
+    timeFacCurr             = [apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).timeFacCurr]';
+    timeDAOBorderAngles     = timeDoseBorderAngles./timeFacCurr;
+    
+    timeDoseBorderAngles_rep    = repmat(timeDoseBorderAngles,apertureInfo.numPhases,1);
     
     if apertureInfo.propVMAT.continuousAperture
         % Using the dynamic fluence calculation, we have the leaf positions in

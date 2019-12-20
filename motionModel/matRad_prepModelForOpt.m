@@ -1,10 +1,10 @@
-function motionModel = matRad_prepModelForOpt(prop4D)
+function motionModel = matRad_prepModelForOpt(pln,stf)
 
 % check if motion model already exists
-if isfield(prop4D,'motionModel')
+if isfield(pln.propOpt.prop4D,'motionModel')
     
-    % use model if it exists
-    motionModel        = prop4D.motionModel;
+    % use model if it exists (and we're not doing a fixed gantry speed)
+    motionModel        = pln.propOpt.prop4D.motionModel;
     motionModel.type   = 'Markov';
     
     % strip model of the "out of bounds" phases
@@ -30,6 +30,88 @@ if isfield(prop4D,'motionModel')
     % normalize
     motionModel.initProb = motionModel.initProb./sum(motionModel.initProb);
     
+    
+    % if we're doing a fixed gantry speed, we can pre-calculate all of the
+    % probabilities to save time
+    if pln.propOpt.VMAToptions.fixedGantrySpeed
+        
+        % calculate the fixed gantry speed
+        % this should be equal to the speed calculated in matRad_arcSequencing
+        gantryRot = (pln.propOpt.VMAToptions.finishingAngle-pln.propOpt.VMAToptions.startingAngle)./pln.propOpt.VMAToptions.deliveryTime;
+        
+        % loop through the stf structure to find all possible transition and
+        % arrival times
+        arrivalT        = zeros(numel(stf),1);
+        transT_i1       = zeros(numel(stf),1);
+        transT_i1DAO    = zeros(numel(pln.propStf.DAOGantryAngles),1);
+        transT_i1i2     = zeros(numel(stf).*(numel(stf)-1)./2,1);
+        i1DAO           = 1;
+        i1i2            = 1;
+        
+        % loop through beams i1
+        for i1 = 1:numel(stf)
+            
+            % calculate arrival time for i1
+            arrivalT(i1) = (stf(i1).propVMAT.fluAngleBorders(1)-pln.propOpt.VMAToptions.startingAngle)./gantryRot;
+            
+            % calculate transitiion time for i1
+            transT_i1(i1) = stf(i1).propVMAT.fluAngleBordersDiff./gantryRot;
+            
+            if stf(i1).propVMAT.DAOBeam
+                transT_i1DAO(i1DAO) = stf(i1).propVMAT.DAOAngleBordersDiff./gantryRot;
+                
+                i1DAO = i1DAO+1;
+            end
+            
+            % loop through beams i2
+            for i2 = (i1+1):numel(stf)
+                
+                % calculate transition time from i1 to i2
+                transT_i1i2(i1i2) = (stf(i2).propVMAT.fluAngleBorders(1)-stf(i1).propVMAT.fluAngleBorders(2))./gantryRot;
+                
+                i1i2 = i1i2+1;
+            end
+        end
+        
+        % get unique (rounded) values for both types of transition times
+        % also round arrival times
+        transT_unique   = unique(round([transT_i1; transT_i1DAO; transT_i1i2],6));
+        arrivalT        = round(arrivalT,6);
+        
+        % put new motionModel stuff in:
+        % 1. arrival times and corresponding probability vectors
+        % 2. transition times and corresponding probability matrices
+        motionModel.arrivalT    = arrivalT;
+        motionModel.Pi_arrivalT = zeros(motionModel.indices.nSubPhases,numel(arrivalT));
+        motionModel.transT      = transT_unique;
+        motionModel.Pij_transT  = zeros(motionModel.indices.nSubPhases,motionModel.indices.nSubPhases,numel(transT_unique));
+        
+        % loop through all arrival time values to form the probability
+        % vectors
+        for i = 1:numel(arrivalT)
+            
+            % calculate probability vector for current arrival time
+            [~,~,Pi_arrivalT,~] = matRad_transAndTProb(0,arrivalT(i),motionModel);
+            
+            % insert into motionModel structure
+            motionModel.Pi_arrivalT(:,i) = Pi_arrivalT';
+        end
+        
+        % loop through all transition times to form the probability
+        % matrices
+        for i = 1:numel(transT_unique)
+            
+            % calculate probability vector for current arrival time
+            [Pij_transT,~,~,~] = matRad_transAndTProb(transT_unique(i),0,motionModel);
+            
+            % insert into motionModel structure
+            motionModel.Pij_transT(:,:,i) = Pij_transT;
+        end
+       
+        % change the motionModel type to precalculated
+        motionModel.type = 'precalculated';
+        
+    end
 else
     
     % if it doesn't, throw an error

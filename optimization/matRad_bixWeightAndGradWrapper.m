@@ -131,6 +131,7 @@ static.numCol                   = numCol;
 static.lastNumBix               = lastNumBix;
 static.nextNumBix               = nextNumBix;
 static.DAOBeam                  = apertureInfo.propVMAT.beam(i).DAOBeam;
+static.fixedGantrySpeed         = apertureInfo.propVMAT.fixedGantrySpeed;
 static.totalNumOfBixels         = apertureInfo.totalNumOfBixels;
 static.lastBixIndVec            = 1:lastNumBix;
 static.nextBixIndVec            = 1:nextNumBix;
@@ -169,7 +170,11 @@ else
     static.timeFacCurr_last = timeFacCurr_last;
     static.timeFacCurr_next = timeFacCurr_next;
     
-    numVarMult              = 12;
+    if apertureInfo.propVMAT.fixedGantrySpeed
+        numVarMult = 10;
+    else
+        numVarMult = 12;
+    end
 end
 
 % determine probabilities
@@ -206,8 +211,7 @@ apertureInfo.probIGrad_Ij{i}    = pGradMat_part;
 apertureInfo.probF_kL{i}        = accumarray([repmat((1:apertureInfo.motionModel.indices.nSubPhases)',[apertureInfo.motionModel.indices.nSubPhases 1]) apertureInfo.motionModel.indices.subPhase2PosPhase_gridJ(:)],Pij_transT(:));
 apertureInfo.probFGrad_kL{i}    = PijGradMat_transT_part;
 
-
-% lopp over all (initial) phases
+% loop over all (initial) phases
 for phase_I = 1:apertureInfo.numPhases
     
     % loop over all (final) phases
@@ -380,23 +384,32 @@ for phase_I = 1:apertureInfo.numPhases
             %% determine probabilities and derivatives
             
             %probability         = Pi_T(phase_I).*Pij_transT(phase_I,phase_F);
-            probability         = pMat(phase_I,phase_F);
-            %probability_dTVec   = sum(apertureInfo.propVMAT.jacobT(:,1:(i-1)),2).*Pi_T_dot(phase_I).*Pij_transT(phase_I,phase_F) + apertureInfo.propVMAT.jacobT(:,i).*Pi_T(phase_I).*Pij_transT_dot(phase_I,phase_F);
-            probability_dTVec   = squeeze(pGradMat(phase_I,phase_F,:));
+            variable.probability = pMat(phase_I,phase_F);
             
-            % delete any derivatives with value less than eps
-            delInd = abs(probability_dTVec) < eps;
-            probability_dTVec(delInd)   = [];
-            
-            variable.tIx_Vec            = cast(tIx_Vec,'like',results.arcI.lastDose.bixelJApVec_i{1});
-            variable.tIx_Vec(delInd)    = [];
-            variable.totalNumOfShapes   = numel(probability_dTVec);
-            variable.lastNumShapbixIndVec     = 1:(variable.totalNumOfShapes*lastNumBix);
-            variable.nextNumShapbixIndVec     = 1:(variable.totalNumOfShapes*nextNumBix);
-            
-            variable.probability        = probability;
-            variable.probability_dTVec  = probability_dTVec;
-            
+            if apertureInfo.propVMAT.fixedGantrySpeed
+                % for fixed gantry speed, set totalNumOfShapes (the number
+                % of time variables) to 0
+                variable.totalNumOfShapes       = 0;
+                variable.lastNumShapbixIndVec   = 0;
+                variable.nextNumShapbixIndVec   = 0;
+            else
+                % we only need derivatives for variable gantry speed
+                
+                %probability_dTVec   = sum(apertureInfo.propVMAT.jacobT(:,1:(i-1)),2).*Pi_T_dot(phase_I).*Pij_transT(phase_I,phase_F) + apertureInfo.propVMAT.jacobT(:,i).*Pi_T(phase_I).*Pij_transT_dot(phase_I,phase_F);
+                probability_dTVec   = squeeze(pGradMat(phase_I,phase_F,:));
+                
+                % delete any derivatives with value less than eps
+                delInd = abs(probability_dTVec) < eps;
+                probability_dTVec(delInd)   = [];
+                
+                variable.tIx_Vec                = cast(tIx_Vec,'like',results.arcI.lastDose.bixelJApVec_i{1});
+                variable.tIx_Vec(delInd)        = [];
+                variable.totalNumOfShapes       = numel(probability_dTVec);
+                variable.lastNumShapbixIndVec   = 1:(variable.totalNumOfShapes*lastNumBix);
+                variable.nextNumShapbixIndVec   = 1:(variable.totalNumOfShapes*nextNumBix);
+                
+                variable.probability_dTVec  = probability_dTVec;
+            end
             %% first do phase_I
             
             variable.arcF = false;

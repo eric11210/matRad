@@ -44,7 +44,7 @@ function [apertureInfoVec, mappingMx, limMx] = matRad_daoApertureInfo2Vec(apertu
 
 vecLength = (apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases; % each phase gets a weight and leaf pair
 
-if apertureInfo.runVMAT
+if apertureInfo.runVMAT && ~apertureInfo.propVMAT.fixedGantrySpeed
     vecLength = vecLength+apertureInfo.totalNumOfShapes; %Extra set of (apertureInfo.totalNumOfShapes) number of elements, allowing arc sector times to be optimized
 end
 
@@ -131,7 +131,7 @@ for phase = 1:apertureInfo.numPhases
     end
 end
 %% 3. time of arc sector/beam
-if apertureInfo.runVMAT
+if apertureInfo.runVMAT && ~apertureInfo.propVMAT.fixedGantrySpeed
     offset = offset + apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
     
     %this gives a vector of the arc lengths belonging to each optimized CP
@@ -158,7 +158,7 @@ if nargout > 1
         for i = 1:numel(apertureInfo.beam)
             for j = 1:apertureInfo.beam(i).numOfShapes
                 mappingMx(counter,1) = i;
-                if apertureInfo.runVMAT && phase == 1
+                if apertureInfo.runVMAT && phase == 1 && ~apertureInfo.propVMAT.fixedGantrySpeed
                     fileName = apertureInfo.propVMAT.machineConstraintFile;
                     try
                         load(fileName,'machine');

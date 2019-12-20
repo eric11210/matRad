@@ -34,12 +34,14 @@ xPosIndRightLeafI   = variable.xPosIndRightLeafI;
 xPosIndRightLeafF   = variable.xPosIndRightLeafF;
 
 probability         = variable.probability;
-probability_dTVec   = variable.probability_dTVec;
+if ~static.fixedGantrySpeed
+    probability_dTVec   = variable.probability_dTVec;
+    tIx_Vec             = variable.tIx_Vec;
+end
 weight              = variable.weight;
 weightFactor        = variable.weightFactor;
 
 totalNumOfShapes    = variable.totalNumOfShapes;
-tIx_Vec             = variable.tIx_Vec;
 lastNumShapbixIndVec    = variable.lastNumShapbixIndVec; % = 1:(totalNumOfShapes*numBix)
 nextNumShapbixIndVec    = variable.nextNumShapbixIndVec; % = 1:(totalNumOfShapes*numBix)
 
@@ -359,23 +361,27 @@ for i = 1:2
         bixelJApVecCurrDose_j(bixelJApVecCurrDose_offset+currBixIndVec) = currBixelIx;
         bixelJApVecCurrDose_offset = bixelJApVecCurrDose_offset+currNumBix;
         
-        % wrt last time
-        bixelJApVecCurrDose_vec(bixelJApVecCurrDose_offset+currBixIndVec) = fracIToCurrDose*weightFactor.*probability.*(fluAngleBordersDiff.*timeFacCurr_last) ...
-            .*(-fracFromLastDAO_MU.*fracFromNextDAO_gantryRot.*(weight_last./fluAngleBordersDiff_next).*(time_next./time_last.^2) ...
-            +(fracFromNextDAO_MU).*fracFromLastDAO_gantryRot.*(weight_next./fluAngleBordersDiff_last).*(1./time_next)) ...
-            * shapeMap_nW_vec;
-        bixelJApVecCurrDose_i(bixelJApVecCurrDose_offset+currBixIndVec) = tIx_last;
-        bixelJApVecCurrDose_j(bixelJApVecCurrDose_offset+currBixIndVec) = currBixelIx;
-        bixelJApVecCurrDose_offset = bixelJApVecCurrDose_offset+currNumBix;
-        
-        % wrt next time
-        bixelJApVecCurrDose_vec(bixelJApVecCurrDose_offset+currBixIndVec) = fracIToCurrDose*weightFactor.*probability.*(fluAngleBordersDiff.*timeFacCurr_next) ...
-            .*(fracFromLastDAO_MU.*fracFromNextDAO_gantryRot.*(weight_last./fluAngleBordersDiff_next).*(1./time_last) ...
-            -(fracFromNextDAO_MU).*fracFromLastDAO_gantryRot.*(weight_next./fluAngleBordersDiff_last).*(time_last./time_next.^2)) ...
-            * shapeMap_nW_vec;
-        bixelJApVecCurrDose_i(bixelJApVecCurrDose_offset+currBixIndVec) = tIx_next;
-        bixelJApVecCurrDose_j(bixelJApVecCurrDose_offset+currBixIndVec) = currBixelIx;
-        bixelJApVecCurrDose_offset = bixelJApVecCurrDose_offset+currNumBix;
+        if ~static.fixedGantrySpeed
+            % only do time variables for variable gantry speed
+            
+            % wrt last time
+            bixelJApVecCurrDose_vec(bixelJApVecCurrDose_offset+currBixIndVec) = fracIToCurrDose*weightFactor.*probability.*(fluAngleBordersDiff.*timeFacCurr_last) ...
+                .*(-fracFromLastDAO_MU.*fracFromNextDAO_gantryRot.*(weight_last./fluAngleBordersDiff_next).*(time_next./time_last.^2) ...
+                +(fracFromNextDAO_MU).*fracFromLastDAO_gantryRot.*(weight_next./fluAngleBordersDiff_last).*(1./time_next)) ...
+                * shapeMap_nW_vec;
+            bixelJApVecCurrDose_i(bixelJApVecCurrDose_offset+currBixIndVec) = tIx_last;
+            bixelJApVecCurrDose_j(bixelJApVecCurrDose_offset+currBixIndVec) = currBixelIx;
+            bixelJApVecCurrDose_offset = bixelJApVecCurrDose_offset+currNumBix;
+            
+            % wrt next time
+            bixelJApVecCurrDose_vec(bixelJApVecCurrDose_offset+currBixIndVec) = fracIToCurrDose*weightFactor.*probability.*(fluAngleBordersDiff.*timeFacCurr_next) ...
+                .*(fracFromLastDAO_MU.*fracFromNextDAO_gantryRot.*(weight_last./fluAngleBordersDiff_next).*(1./time_last) ...
+                -(fracFromNextDAO_MU).*fracFromLastDAO_gantryRot.*(weight_next./fluAngleBordersDiff_last).*(time_last./time_next.^2)) ...
+                * shapeMap_nW_vec;
+            bixelJApVecCurrDose_i(bixelJApVecCurrDose_offset+currBixIndVec) = tIx_next;
+            bixelJApVecCurrDose_j(bixelJApVecCurrDose_offset+currBixIndVec) = currBixelIx;
+            bixelJApVecCurrDose_offset = bixelJApVecCurrDose_offset+currNumBix;
+        end
     end
     
     % leftLeafPos_I   = fracFromLastDAOI_leafI.*leftLeafPos_lastDAOI+fracFromLastDAOF_leafI.*leftLeafPos_lastDAOF;
@@ -436,11 +442,15 @@ for i = 1:2
     bixelJApVecCurrDose_j(bixelJApVecCurrDose_offset+currBixIndVec) = currBixelIx;
     bixelJApVecCurrDose_offset = bixelJApVecCurrDose_offset+currNumBix;
     
-    % wrt times (probability)
-    bixelJApVecCurrDose_vec(bixelJApVecCurrDose_offset+currNumShapbixIndVec) = reshape(fracIToCurrDose*weight.*weightFactor.*shapeMap_nW_vec*probability_dTVec',currNumBix*totalNumOfShapes,1);
-    bixelJApVecCurrDose_i(bixelJApVecCurrDose_offset+currNumShapbixIndVec) = repelem(tIx_Vec',currNumBix,1);%reshape(ones(numSaveBixel,1,'like',tIx_Vec)*tIx_Vec,numSaveBixel*totalNumOfShapes,1);
-    bixelJApVecCurrDose_j(bixelJApVecCurrDose_offset+currNumShapbixIndVec) = repmat(currBixelIx,totalNumOfShapes,1);%reshape(currBixelIx*ones(1,totalNumOfShapes,'currBixelIx'),numSaveBixel*totalNumOfShapes,1);
-    bixelJApVecCurrDose_offset = bixelJApVecCurrDose_offset+currNumBix.*totalNumOfShapes;
+    if ~static.fixedGantrySpeed
+        % only do time variables for variable gantry speed
+        
+        % wrt times (probability)
+        bixelJApVecCurrDose_vec(bixelJApVecCurrDose_offset+currNumShapbixIndVec) = reshape(fracIToCurrDose*weight.*weightFactor.*shapeMap_nW_vec*probability_dTVec',currNumBix*totalNumOfShapes,1);
+        bixelJApVecCurrDose_i(bixelJApVecCurrDose_offset+currNumShapbixIndVec) = repelem(tIx_Vec',currNumBix,1);%reshape(ones(numSaveBixel,1,'like',tIx_Vec)*tIx_Vec,numSaveBixel*totalNumOfShapes,1);
+        bixelJApVecCurrDose_j(bixelJApVecCurrDose_offset+currNumShapbixIndVec) = repmat(currBixelIx,totalNumOfShapes,1);%reshape(currBixelIx*ones(1,totalNumOfShapes,'currBixelIx'),numSaveBixel*totalNumOfShapes,1);
+        bixelJApVecCurrDose_offset = bixelJApVecCurrDose_offset+currNumBix.*totalNumOfShapes;
+    end
     
     % get the current bixelJApVecCurrDose stuff, put into last/next as
     % appropriate

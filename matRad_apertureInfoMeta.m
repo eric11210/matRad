@@ -14,7 +14,11 @@ end
 optNumVarMult = 9;
 % For optimized beams: 9 = (1 from weights) + (4 from left leaf positions)
 % + (4 from right leaf positions)
-intNumVarMult = 12;
+if pln.propOpt.VMAToptions.fixedGantrySpeed
+    intNumVarMult = 10;
+else
+    intNumVarMult = 12;
+end
 % For interpolated beams: 12 = (2 from weights last/next) + (4 from left
 % leaf positions) + (4 from right leaf positions) + (2 from times 
 % last/next)
@@ -93,7 +97,7 @@ if pln.propOpt.runVMAT
         end
         
         % prepare motion model
-        apertureInfo.motionModel = matRad_prepModelForOpt(pln.propOpt.prop4D);
+        apertureInfo.motionModel = matRad_prepModelForOpt(pln,stf);
         
     else
         
@@ -119,12 +123,22 @@ if pln.propOpt.runVMAT
         error(['Could not find the following machine file: ' fileName ]);
     end
     
+    % set the minimum gantry rotation speed
+    if apertureInfo.propVMAT.fixedGantrySpeed
+        % this should correspond to the speed calculated in
+        % matRad_arcSequencing
+        minGantryRot = (pln.propOpt.VMAToptions.finishingAngle-pln.propOpt.VMAToptions.startingAngle)./pln.propOpt.VMAToptions.deliveryTime;
+    else
+        % just use the machine speed
+        minGantryRot = machine.constraints.gantryRotationSpeed(1);
+    end
+    
     % prep for gradient offset
     gradOffset      = 0;
     for i = 1:numel(apertureInfo.beam)
         
         % determine possible phase transitions between fluence angles
-        maxTime_flu = apertureInfo.propVMAT.beam(i).fluAngleBordersDiff./machine.constraints.gantryRotationSpeed(1);
+        maxTime_flu = apertureInfo.propVMAT.beam(i).fluAngleBordersDiff./minGantryRot;
         [Pij_transT_flu,~,~,~] = matRad_transAndTProb(maxTime_flu,0,apertureInfo.motionModel);
         PIJ_transT_flu = accumarray([apertureInfo.motionModel.indices.subPhase2PosPhase_gridI(:) apertureInfo.motionModel.indices.subPhase2PosPhase_gridJ(:)],Pij_transT_flu(:))./apertureInfo.motionModel.indices.nSubPhasePerPosPhase;
         transMask_flu = PIJ_transT_flu > 0.01;
@@ -137,7 +151,7 @@ if pln.propOpt.runVMAT
                 
                 % determine possible phase transitions between DAO angles
                 % (for leaf speed constraints)
-                maxTime_DAO = apertureInfo.propVMAT.beam(i).DAOAngleBordersDiff./machine.constraints.gantryRotationSpeed(1);
+                maxTime_DAO = apertureInfo.propVMAT.beam(i).DAOAngleBordersDiff./minGantryRot;
                 [Pij_transT_DAO,~,~,~] = matRad_transAndTProb(maxTime_DAO,0,apertureInfo.motionModel);
                 PIJ_transT_DAO = accumarray([apertureInfo.motionModel.indices.subPhase2PosPhase_gridI(:) apertureInfo.motionModel.indices.subPhase2PosPhase_gridJ(:)],Pij_transT_DAO(:))./apertureInfo.motionModel.indices.nSubPhasePerPosPhase;
                 transMask_DAO = PIJ_transT_DAO > 0.01;
@@ -152,8 +166,11 @@ if pln.propOpt.runVMAT
         if apertureInfo.propVMAT.beam(i).DAOBeam
             apertureInfo.beam(i).bixelJApVecLastDose_sz = apertureInfo.beam(i).effNumBixels_lastDose.*(optNumVarMult+apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).DAOIndex);
             apertureInfo.beam(i).bixelJApVecNextDose_sz = apertureInfo.beam(i).effNumBixels_nextDose.*(optNumVarMult+apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).DAOIndex);
-            apertureInfo.beam(i).numFullVar             = apertureInfo.beam(i).numOfShapes.*apertureInfo.numPhases.*(1+8.*apertureInfo.beam(i).numOfActiveLeafPairs)+apertureInfo.totalNumOfShapes;%apertureInfo.beam(i).numOfShapes.*(1+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(apertureInfo.numPhases+1))+apertureInfo.totalNumOfShapes;
-            
+            if pln.propOpt.VMAToptions.fixedGantrySpeed
+                apertureInfo.beam(i).numFullVar             = apertureInfo.beam(i).numOfShapes.*apertureInfo.numPhases.*(1+8.*apertureInfo.beam(i).numOfActiveLeafPairs);%apertureInfo.beam(i).numOfShapes.*(1+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(apertureInfo.numPhases+1))+apertureInfo.totalNumOfShapes;
+            else
+                apertureInfo.beam(i).numFullVar             = apertureInfo.beam(i).numOfShapes.*apertureInfo.numPhases.*(1+8.*apertureInfo.beam(i).numOfActiveLeafPairs)+apertureInfo.totalNumOfShapes;%apertureInfo.beam(i).numOfShapes.*(1+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(apertureInfo.numPhases+1))+apertureInfo.totalNumOfShapes;
+            end
             % conversion from local opt variable to global opt variable
             apertureInfo.beam(i).local2GlobalVar = zeros(apertureInfo.beam(i).numFullVar,1);
             
@@ -167,7 +184,11 @@ if pln.propOpt.runVMAT
         else
             apertureInfo.beam(i).bixelJApVecLastDose_sz = apertureInfo.beam(i).effNumBixels_lastDose.*(intNumVarMult+apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).DAOIndex);
             apertureInfo.beam(i).bixelJApVecNextDose_sz = apertureInfo.beam(i).effNumBixels_nextDose.*(intNumVarMult+apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).DAOIndex);
-            apertureInfo.beam(i).numFullVar             = apertureInfo.numPhases.*(2+8.*apertureInfo.beam(i).numOfActiveLeafPairs)+apertureInfo.totalNumOfShapes;%(2+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(apertureInfo.numPhases+1))+apertureInfo.totalNumOfShapes;
+            if pln.propOpt.VMAToptions.fixedGantrySpeed
+                apertureInfo.beam(i).numFullVar             = apertureInfo.numPhases.*(2+8.*apertureInfo.beam(i).numOfActiveLeafPairs);%(2+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(apertureInfo.numPhases+1))+apertureInfo.totalNumOfShapes;
+            else
+                apertureInfo.beam(i).numFullVar             = apertureInfo.numPhases.*(2+8.*apertureInfo.beam(i).numOfActiveLeafPairs)+apertureInfo.totalNumOfShapes;%(2+2.*apertureInfo.beam(i).numOfActiveLeafPairs.*(apertureInfo.numPhases+1))+apertureInfo.totalNumOfShapes;
+            end
             
             % conversion from local opt variable to global opt variable
             apertureInfo.beam(i).local2GlobalVar = zeros(apertureInfo.beam(i).numFullVar,1);
@@ -210,9 +231,11 @@ if pln.propOpt.runVMAT
                 = apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase}(1).vectorOffset(2) + apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases + ((1:apertureInfo.beam(i).numOfActiveLeafPairs)-1);
         end
         
-        % time variables
-        apertureInfo.beam(i).local2GlobalVar(apertureInfo.beam(i).numFullVar-apertureInfo.totalNumOfShapes+(1:apertureInfo.totalNumOfShapes)) = ...
-            (apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+(1:apertureInfo.totalNumOfShapes);
+        if ~pln.propOpt.VMAToptions.fixedGantrySpeed
+            % time variables
+            apertureInfo.beam(i).local2GlobalVar(apertureInfo.beam(i).numFullVar-apertureInfo.totalNumOfShapes+(1:apertureInfo.totalNumOfShapes)) = ...
+                (apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*apertureInfo.numPhases+(1:apertureInfo.totalNumOfShapes);
+        end
         
         % only keep unique local2GlobalVar variables
         [apertureInfo.beam(i).local2GlobalVar,~,apertureInfo.beam(i).full2UniqueLocalVar]   = unique(apertureInfo.beam(i).local2GlobalVar);

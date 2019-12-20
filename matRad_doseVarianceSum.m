@@ -26,12 +26,15 @@ dGrad = zeros(numel(dij.keepTargetVox),size(apertureInfo.apertureVector,1));
 % allocate gradient of mean of squared dose
 d2SumGrad = zeros(1,size(apertureInfo.apertureVector,1));
 
-% allocate time gradients of mean of squared dose
-d2SumTimeGrad = zeros(1,apertureInfo.totalNumOfShapes);
-
-% determine time derivative variable indices
-tIxBig_Vec  = (apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*numPhases+(1:apertureInfo.totalNumOfShapes);
-tIx_Vec     = 1:apertureInfo.totalNumOfShapes;
+if ~apertureInfo.propVMAT.fixedGantrySpeed
+    
+    % allocate time gradients of mean of squared dose
+    d2SumTimeGrad = zeros(1,apertureInfo.totalNumOfShapes);
+    
+    % determine time derivative variable indices
+    tIxBig_Vec  = (apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)*numPhases+(1:apertureInfo.totalNumOfShapes);
+    tIx_Vec     = 1:apertureInfo.totalNumOfShapes;
+end
 
 %% precalculate doses and gradients
 % loop over all beams
@@ -68,10 +71,12 @@ for i = 1:numel(apertureInfo.beam)
     
     % calculate probability normalization and gradient matrices
     pNormMat        = 1./apertureInfo.probI_IJ{i};
-    pNormGradMat    = -apertureInfo.probIGrad_IJ{i}./(apertureInfo.probI_IJ{i}.^2);
-    
-    % time indices
-    timeInd = tIx_Vec+apertureInfo.beam(i).numUniqueVar-apertureInfo.totalNumOfShapes;
+    if ~apertureInfo.propVMAT.fixedGantrySpeed
+        pNormGradMat    = -apertureInfo.probIGrad_IJ{i}./(apertureInfo.probI_IJ{i}.^2);
+        
+        % time indices
+        timeInd = tIx_Vec+apertureInfo.beam(i).numUniqueVar-apertureInfo.totalNumOfShapes;
+    end
     
     % loop over initial and final phases
     for phase_I = 1:numPhases
@@ -165,8 +170,10 @@ for i = 1:numel(apertureInfo.beam)
             factor_I        = 1./apertureInfo.motionModel.indices.nSubPhasePerPosPhase(phase_F);
             %factorGrad_I    = 0;
             factor_F        = apertureInfo.probF_KL{i}(phase_I,phase_F)./(apertureInfo.probI_IJ{i}(phase_I,phase_F).*apertureInfo.motionModel.indices.nSubPhasePerPosPhase(phase_I));
-            factorGrad_F    = squeeze((1./apertureInfo.motionModel.indices.nSubPhasePerPosPhase(phase_I)).*(apertureInfo.probFGrad_KL{i}(phase_I,phase_F,:)./apertureInfo.probI_IJ{i}(phase_I,phase_F) - ...
-                apertureInfo.probF_KL{i}(phase_I,phase_F).*apertureInfo.probIGrad_IJ{i}(phase_I,phase_F,:)./(apertureInfo.probI_IJ{i}(phase_I,phase_F).^2)));
+            if ~apertureInfo.propVMAT.fixedGantrySpeed
+                factorGrad_F    = squeeze((1./apertureInfo.motionModel.indices.nSubPhasePerPosPhase(phase_I)).*(apertureInfo.probFGrad_KL{i}(phase_I,phase_F,:)./apertureInfo.probI_IJ{i}(phase_I,phase_F) - ...
+                    apertureInfo.probF_KL{i}(phase_I,phase_F).*apertureInfo.probIGrad_IJ{i}(phase_I,phase_F,:)./(apertureInfo.probI_IJ{i}(phase_I,phase_F).^2)));
+            end
             
             % store sums of doses (over initial and final phases)
             %dRawCell_sumI{(i-1).*numPhases+phase_F} = dRawCell_sumI{(i-1).*numPhases+phase_F}+dRawTemp'.*factor_I;
@@ -176,37 +183,44 @@ for i = 1:numel(apertureInfo.beam)
             dRawGradCellTemp_sumI(:,:,phase_F) = dRawGradCellTemp_sumI(:,:,phase_F)+dRawGradCellTemp.*factor_I;
             dRawGradCellTemp_sumF(:,:,phase_I) = dRawGradCellTemp_sumF(:,:,phase_I)+dRawGradCellTemp.*factor_F;
             
-            % determine if we're doing time gradients
-            deleteInd               = abs(factorGrad_F) < eps | isnan(factorGrad_F);
-            factorGrad_F(deleteInd) = [];
-            temptimeInd             = timeInd;
-            temptimeInd(deleteInd)  = [];
-            doTimeGrad              = ~all(deleteInd);
-            
-            if doTimeGrad
+            if ~apertureInfo.propVMAT.fixedGantrySpeed
+                % determine if we're doing time gradients
+                deleteInd               = abs(factorGrad_F) < eps | isnan(factorGrad_F);
+                factorGrad_F(deleteInd) = [];
+                temptimeInd             = timeInd;
+                temptimeInd(deleteInd)  = [];
+                doTimeGrad              = ~all(deleteInd);
                 
-                [~,keepInd] = ismember(temptimeInd,d2KeepVar);
-                
-                dRawGradCellTemp_sumF(:,keepInd,phase_I) = dRawGradCellTemp_sumF(:,keepInd,phase_I)+dRawTemp.*factorGrad_F';
+                if doTimeGrad
+                    
+                    [~,keepInd] = ismember(temptimeInd,d2KeepVar);
+                    
+                    dRawGradCellTemp_sumF(:,keepInd,phase_I) = dRawGradCellTemp_sumF(:,keepInd,phase_I)+dRawTemp.*factorGrad_F';
+                end
             end
-            
             
             %% do d2 for i1 == i2 now
             
-            % determine probability normalization and gradient for d2
+            % determine probability normalization for d2
             pNorm       = pNormMat(phase_I,phase_F);
-            pNormGrad   = squeeze(pNormGradMat(phase_I,phase_F,:));
             
             % determine if we're doing d2 for this combo
             dod2 = abs(pNorm) > eps && pNorm < inf;
             
-            % determine if we're doing time gradients of d2 for
-            % this combo
-            deleteInd                   = abs(pNormGrad) < eps | isnan(pNormGrad);
-            pNormGrad(deleteInd)        = [];
-            temptIx_Vec                 = tIx_Vec;
-            temptIx_Vec(deleteInd)      = [];
-            dod2TimeGrad                = ~all(deleteInd);
+            if apertureInfo.propVMAT.fixedGantrySpeed
+                dod2TimeGrad = false;
+            else
+                % determine probability gradient for d2
+                pNormGrad   = squeeze(pNormGradMat(phase_I,phase_F,:));
+                
+                % determine if we're doing time gradients of d2 for
+                % this combo
+                deleteInd                   = abs(pNormGrad) < eps | isnan(pNormGrad);
+                pNormGrad(deleteInd)        = [];
+                temptIx_Vec                 = tIx_Vec;
+                temptIx_Vec(deleteInd)      = [];
+                dod2TimeGrad                = ~all(deleteInd);
+            end
             
             % check if we are doing either d2 or dod2TimeGrad stuff
             if dod2 || dod2TimeGrad
@@ -313,22 +327,31 @@ for i1 = 1:numel(apertureInfo.beam)
         pNormMat_collapsed_x_dRaw_i1        = pNormMat_collapsed_x_dRaw_i1(:)';
         pNormMat_collapsed_x_dRaw_i2        = pNormMat_collapsedRows*dRaw_i2_T;
         pNormMat_collapsed_x_dRaw_i2        = pNormMat_collapsed_x_dRaw_i2(:)';
-        pNormGradMat_x_dRaw_i2_T            = (pNormGradMat*dRaw_i2_T)';
         
         % now calculate gradients
         d2SumGrad_i1        = 2*pNormMat_collapsed_x_dRaw_i2*dRawGrad_i1;
         d2SumGrad_i2        = 2*pNormMat_collapsed_x_dRaw_i1*dRawGrad_i2;
-        d2SumTimeGrad_i1i2  = 2*dRaw_i1(:).'*pNormGradMat_x_dRaw_i2_T(:);
         
         % dump gradient for beams 1 and 2
         d2SumGrad(currVarIx1(d2KeepVar1))   = d2SumGrad(currVarIx1(d2KeepVar1)) + d2SumGrad_i1;
         d2SumGrad(currVarIx2(d2KeepVar2))   = d2SumGrad(currVarIx2(d2KeepVar2)) + d2SumGrad_i2;
-        d2SumTimeGrad                       = d2SumTimeGrad + d2SumTimeGrad_i1i2*pNormGradFactor;
+        
+        % repeat for time gradients (if necessary)
+        if ~apertureInfo.propVMAT.fixedGantrySpeed
+            % some matrix mutliplication
+            pNormGradMat_x_dRaw_i2_T    = (pNormGradMat*dRaw_i2_T)';
+            % now calculate gradients
+            d2SumTimeGrad_i1i2          = 2*dRaw_i1(:).'*pNormGradMat_x_dRaw_i2_T(:);
+            % dump time gradient for beams 1 and 2
+            d2SumTimeGrad               = d2SumTimeGrad + d2SumTimeGrad_i1i2*pNormGradFactor;
+        end
     end
 end
 
-% dump gradient for time
-d2SumGrad(:,tIxBig_Vec) = d2SumGrad(:,tIxBig_Vec) + d2SumTimeGrad;
+if ~apertureInfo.propVMAT.fixedGantrySpeed
+    % dump gradient for time
+    d2SumGrad(:,tIxBig_Vec) = d2SumGrad(:,tIxBig_Vec) + d2SumTimeGrad;
+end
 
 % calculate sum of variances, taking into account sampling of target voxels
 dVarSum = dij.sampleFactor.*(d2Sum-d'*d);
