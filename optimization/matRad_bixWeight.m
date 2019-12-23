@@ -96,7 +96,7 @@ end
 %fluence covered by left leaf
 shapeMap_nW = uncoveredByLeftLeaf-coveredByRightLeaf;
 %shapeMap_nW = round2(shapeMap_nW,15);
-shapeMap_nW(isnan(shapeMap_nW) || shapeMap_nW < 0) = 0;
+shapeMap_nW(isnan(shapeMap_nW) | shapeMap_nW < 0) = 0;
 
 % find open bixels
 %shapeMapIx = shapeMap > 0;
