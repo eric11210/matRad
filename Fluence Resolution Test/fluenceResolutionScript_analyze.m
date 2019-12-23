@@ -6,10 +6,10 @@ load lungPatient2_3mm5p_rep
 threshFac = 0.5;
 
 % set of fluence gantry angle spacings
-maxFluGantryAngleSpacingS = [4 2 1 0.5];
+maxFluGantryAngleSpacingS = [4 2 1 0.5 0.125 0.0625];
 
 % this is the reference plan, the most accurate way of calculating dose
-fname = sprintf('Max fluence gantry angle spacing = %.3f.mat',maxFluGantryAngleSpacingS(end));
+fname = sprintf('SBRT max flu gantry angle spacing = %.4f.mat',maxFluGantryAngleSpacingS(end));
 load(fname)
 refDose = recalc.resultGUI.physicalDose;
 %refDoseError = recalc.resultGUI.physicalDoseError;
@@ -55,10 +55,10 @@ deleteInd = refDose < threshFac*max(refDose(:));
 %deleteInd = ~V_TargAndNorm;
 
 i = 1;
-for maxFluGantryAngleSpacing = maxFluGantryAngleSpacingS
+for maxFluGantryAngleSpacing = maxFluGantryAngleSpacingS(1:(end-1))
     
     %first time, do interpolation and dynamic fluence calculation
-    fname = sprintf('Max fluence gantry angle spacing = %.3f.mat',maxFluGantryAngleSpacing);
+    fname = sprintf('SBRT max flu gantry angle spacing = %.4f.mat',maxFluGantryAngleSpacing);
     load(fname);
     dose = recalc.resultGUI.physicalDose;
     
@@ -93,11 +93,13 @@ for maxFluGantryAngleSpacing = maxFluGantryAngleSpacingS
 end
 
 
-save('Conventional Fluence Res Results','fluence','weight','percVErr*','PVH*')
+save('SBRT Conventional Fluence Res Results','fluence','weight','percVErr*','PVH*')
+
+%%
 
 h = figure;
 
-for i = 1:numel(maxFluGantryAngleSpacingS)
+for i = 1:(numel(maxFluGantryAngleSpacingS)-1)
     figure(h)
     semilogy(PVHPoints(i,:),PVH(i,:))
     hold on
@@ -109,7 +111,7 @@ figure(h)
 xlabel('Relative dose difference (\%)')
 ylabel('Volume (\%)')
 ylim([0.1 100])
-fname = 'Conventional Fluence Res Results';
+fname = 'SBRT Fluence Res Results';
 %title(fname)
 legend({'$\Delta\theta_{\mathrm{flu}} = \SI{4}{\degree}$','$\Delta\theta_{\mathrm{flu}} = \SI{2}{\degree}$','$\Delta\theta_{\mathrm{flu}} = \SI{1}{\degree}$','$\Delta\theta_{\mathrm{flu}} = \SI{0.5}{\degree}$','$\Delta\theta_{\mathrm{flu}} = \SI{0.25}{\degree}$','$\Delta\theta_{\mathrm{flu}} = \SI{0.125}{\degree}$'},'Location','Best')
 grid on

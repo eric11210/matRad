@@ -2,19 +2,12 @@
 
 load lungPatient2_3mm5p_rep
 
-
-cst{10,6}           = cst{5,6};
-cst{10,6}.penalty   = 300;
-
-
 currentDir = pwd;
 
 % meta information for treatment plan
 
 pln.radiationMode   = 'photons';   % either photons / protons / carbon
 pln.machine         = 'Generic';
-
-%pln.numOfFractions  = 30;
 
 % beam geometry settings
 pln.propStf.bixelWidth = 5;
@@ -34,27 +27,31 @@ pln.propDoseCalc.vmcOptions.dumpDose        = 1;
 pln.propDoseCalc.vmcOptions.version         = 'Carleton';
 pln.propDoseCalc.vmcOptions.nCasePerBixel   = 500;
 pln.propDoseCalc.vmcOptions.numOfParMCSim   = 16;
+pln.propDoseCalc.sampleTargetProb           = 0.05;
 
 % optimization settings
 pln.propOpt.bioOptimization = 'none';
-pln.propOpt.runVMAT = true;
-pln.propOpt.runDAO = true;
-pln.propOpt.runSequencing = true;
-pln.propOpt.preconditioner = true;
-pln.propOpt.numLevels = 7;
+pln.propOpt.runVMAT         = true;
+pln.propOpt.runDAO          = true;
+pln.propOpt.runSequencing   = true;
+pln.propOpt.preconditioner  = true;
+pln.propOpt.numLevels       = 7;
 
-pln.propOpt.VMAToptions.machineConstraintFile = [pln.radiationMode '_' pln.machine];
-pln.propOpt.VMAToptions.continuousAperture = true;
+pln.propOpt.VMAToptions.machineConstraintFile   = [pln.radiationMode '_' pln.machine];
+pln.propOpt.VMAToptions.continuousAperture      = true;
+pln.propOpt.VMAToptions.fixedGantrySpeed        = false;
+pln.propOpt.VMAToptions.deliveryTime            = 70;
 
-pln.propOpt.VMAToptions.startingAngle = -180;
-pln.propOpt.VMAToptions.finishingAngle = 180;
-pln.propOpt.VMAToptions.maxGantryAngleSpacing = 4;      % Max gantry angle spacing for dose calculation
-pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing = 8;      % Max gantry angle spacing for DAO
-pln.propOpt.VMAToptions.maxFMOGantryAngleSpacing = 32;      % Max gantry angle spacing for FMO
+pln.propOpt.VMAToptions.startingAngle               = -180;
+pln.propOpt.VMAToptions.finishingAngle              = 180;
+pln.propOpt.VMAToptions.maxGantryAngleSpacing       = 4;      % Max gantry angle spacing for dose calculation
+pln.propOpt.VMAToptions.maxFluGantryAngleSpacing    = 1;    % Max gantry angle spacing for fluence calculation
+pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing    = 8;      % Max gantry angle spacing for DAO
+pln.propOpt.VMAToptions.maxFMOGantryAngleSpacing    = 32;      % Max gantry angle spacing for FMO
 
-pln.propOpt.run4D = true;
-pln.propOpt.varOpt = false;
-pln.propOpt.prop4D.singlePhaseFMO = true;
+pln.propOpt.run4D                   = true;
+pln.propOpt.varOpt                  = false;
+pln.propOpt.prop4D.singlePhaseFMO   = true;
 % multi-phase FMO hasn't been implemented fully (would have to do changes in FMO and leaf
 % sequencing - probably better only for fluence, not DAO).
 
@@ -64,7 +61,7 @@ stf = matRad_generateStf(ct,cst,pln);
 
 %% calculate dij
 
-%dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
+dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
 
 %% conventional optimization
 
@@ -259,22 +256,21 @@ pln.propOpt.VMAToptions.machineConstraintFile = [pln.radiationMode '_' pln.machi
 
 %% 3D optimization on ITV
 
-pln.propOpt.run4D = false;
+pln.propOpt.run4D = true;
 pln.propOpt.varOpt = false;
-
-% load ITV CT
-load('lungPatient2_3mm5p_rep_ITV.mat','ct')
 
 % change obj function goals
 cst{26,6}       = cst{25,6};
 cst{25,6}       = [];
 pln.RxStruct    = 26;
 
-% get average CT
-ct_ITV = matRad_ctITV(ct,pln);
+% change phase information in ct.tumourMotion struct
+ct.tumourMotion.numPhases       = 1;
+ct.tumourMotion.frames2Phases   = repelem(1,ct.tumourMotion.numFrames,1);
+ct.tumourMotion.nFramesPerPhase = 1./pln.propOpt.prop4D.motionModel.probPhase;
 
 % recalculate dij 
-dij_ITV = matRad_calcPhotonDoseVmc(ct_ITV,stf,pln,cst);
+dij_ITV = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
 
 % turn off 4d
 pln.propOpt.run4D = false;

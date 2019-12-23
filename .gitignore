@@ -15,3 +15,5 @@ vmc++/compressed/*
 vmc++/conf/*
 vmc++/src/*
 Fluence Resolution Test/Max fluence gantry angle spacing = *.mat
+Fluence Resolution Test/SBRT max flu gantry angle spacing = *.mat
+Fluence Resolution Test/stf/0.063 deg.mat

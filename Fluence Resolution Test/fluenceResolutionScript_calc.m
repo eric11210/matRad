@@ -12,7 +12,7 @@ pln.propDoseCalc.marginOptions.margin.y     = 10; % margin size in mm
 pln.propDoseCalc.marginOptions.margin.z     = 10; % margin size in mm
 pln.propDoseCalc.memorySaverPhoton          = false;
 pln.propDoseCalc.vmc                        = true;
-pln.propDoseCalc.vmcOptions.keepError       = true;
+pln.propDoseCalc.vmcOptions.keepError       = false;
 pln.propDoseCalc.vmcOptions.source          = 'phsp';
 pln.propDoseCalc.vmcOptions.phspBaseName    = '5cmx5cm_SSD50cm';
 pln.propDoseCalc.vmcOptions.SCD             = 500;
@@ -20,6 +20,7 @@ pln.propDoseCalc.vmcOptions.dumpDose        = 1;
 pln.propDoseCalc.vmcOptions.version         = 'Carleton';
 pln.propDoseCalc.vmcOptions.nCasePerBixel   = 500;
 pln.propDoseCalc.vmcOptions.numOfParMCSim   = 16;
+pln.propDoseCalc.sampleTargetProb           = 1;
 
 % beam geometry settings
 pln.propStf.bixelWidth = 5;
@@ -34,6 +35,7 @@ pln.propOpt.numLevels = 7;
 
 pln.propOpt.VMAToptions.machineConstraintFile = [pln.radiationMode '_' pln.machine];
 pln.propOpt.VMAToptions.continuousAperture = true;
+pln.propOpt.VMAToptions.fixedGantrySpeed = false;
 
 pln.propOpt.VMAToptions.startingAngle               = -180;
 pln.propOpt.VMAToptions.finishingAngle              = 180;
@@ -49,15 +51,19 @@ pln.propOpt.prop4D.singlePhaseFMO = true;
 % sequencing - probably better only for fluence, not DAO).
 
 pln = matRad_VMATGantryAngles(pln,cst,ct);
+stf = matRad_generateStf(ct,cst,pln);
+
+% dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
 
 % load results
-load('CO.mat');
+%load('CO.mat');
+load('SBRT nonOpt.mat');
 
 oldDir = pwd;
 
 %%
 
-maxFluGantryAngleSpacingS = [4 2 1 0.5 0.25];
+maxFluGantryAngleSpacingS = [4 2 1 0.5 0.25 0.125 0.0625];
 
 for maxFluGantryAngleSpacing = maxFluGantryAngleSpacingS
     % calculate dose at original fluence gantry spacing, work our way down
@@ -66,7 +72,7 @@ for maxFluGantryAngleSpacing = maxFluGantryAngleSpacingS
     recalc.pln = pln;
     recalc.pln.propOpt.VMAToptions.maxFluGantryAngleSpacing = maxFluGantryAngleSpacing;
     
-    fname = sprintf('Max fluence gantry angle spacing = %.3f.mat',maxFluGantryAngleSpacing);
+    fname = sprintf('SBRT max flu gantry angle spacing = %.4f.mat',maxFluGantryAngleSpacing);
     fprintf('%s\n',fname);
     recalc.continuousAperture = true;
     recalc.interpNew = true;
@@ -74,6 +80,6 @@ for maxFluGantryAngleSpacing = maxFluGantryAngleSpacingS
     
     recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo,false,dij,'flu');
     cd(oldDir);
-    save(fname,'resultGUI','recalc');
+    save(fname,'resultGUI','recalc','-v7.3');
     
 end
