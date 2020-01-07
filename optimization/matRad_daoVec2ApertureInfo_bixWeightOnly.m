@@ -81,8 +81,10 @@ for i = 1:numel(updatedInfo.beam)
                 
                 updatedInfo.beam(i).shape{phase}(j).MU = updatedInfo.beam(i).shape{phase}(j).weight*updatedInfo.weightToMU;
                 if phase == 1
-                    updatedInfo.beam(i).time = apertureInfoVect((updatedInfo.totalNumOfShapes+updatedInfo.totalNumOfLeafPairs*2)*updatedInfo.numPhases+updatedInfo.propVMAT.beam(i).DAOIndex)*updatedInfo.propVMAT.beam(i).timeFacCurr;
-                    updatedInfo.beam(i).gantryRot = updatedInfo.propVMAT.beam(i).fluAngleBordersDiff/updatedInfo.beam(i).time;
+                    if ~updatedInfo.propVMAT.fixedGantrySpeed
+                        updatedInfo.beam(i).time        = apertureInfoVect((updatedInfo.totalNumOfShapes+updatedInfo.totalNumOfLeafPairs*2)*updatedInfo.numPhases+updatedInfo.propVMAT.beam(i).DAOIndex)*updatedInfo.propVMAT.beam(i).timeFacCurr;
+                        updatedInfo.beam(i).gantryRot   = updatedInfo.propVMAT.beam(i).fluAngleBordersDiff/updatedInfo.beam(i).time;
+                    end
                 end
                 updatedInfo.beam(i).shape{phase}(j).MURate = updatedInfo.beam(i).shape{phase}(j).MU./updatedInfo.beam(i).time;
             end
@@ -148,15 +150,6 @@ for i = 1:numel(updatedInfo.beam)
                 
                 % update the shape weight
                 updatedInfo.beam(i).shape{phase}(j).weight = apertureInfoVect(updatedInfo.beam(i).shape{phase}(j).weightOffset)./updatedInfo.beam(i).shape{phase}(j).jacobiScale;
-                
-                if updatedInfo.runVMAT
-                    updatedInfo.beam(i).shape{phase}(j).MU = updatedInfo.beam(i).shape{phase}(j).weight*updatedInfo.weightToMU;
-                    if phase == 1
-                        updatedInfo.beam(i).time = apertureInfoVect((updatedInfo.totalNumOfShapes+updatedInfo.totalNumOfLeafPairs*2)*updatedInfo.numPhases+updatedInfo.propVMAT.beam(i).DAOIndex)*updatedInfo.propVMAT.beam(i).timeFacCurr;
-                        updatedInfo.beam(i).gantryRot = updatedInfo.propVMAT.beam(i).fluAngleBordersDiff/updatedInfo.beam(i).time;
-                    end
-                    updatedInfo.beam(i).shape{phase}(j).MURate = updatedInfo.beam(i).shape{phase}(j).MU./updatedInfo.beam(i).time;
-                end
                 
                 if ~updatedInfo.propVMAT.continuousAperture
                     % extract left and right leaf positions from shape vector

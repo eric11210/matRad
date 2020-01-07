@@ -58,7 +58,7 @@ else
     if apertureInfo.propVMAT.continuousAperture
         
         % calculate scaling factor
-        scalingFactor = apertureInfo.propVMAT.beam(1).fluAngleBordersDiff./(2.*apertureInfo.propVMAT.beam(1).DAOAngleBordersDiff-apertureInfo.propVMAT.beam(1).fluAngleBordersDiff);
+        scalingFactor = apertureInfo.propVMAT.beam(1).fluAngleBordersDiff./(2.*apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(1).nextDAOIndex).DAOAngleBordersDiff-apertureInfo.propVMAT.beam(1).fluAngleBordersDiff);
         
         cl_lfspd = machine.constraints.leafSpeed(1)*ones(2*apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs,1); %Minimum leaf travel speed (mm/s)
         cu_lfspd = scalingFactor.*machine.constraints.leafSpeed(2)*ones(2*apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs,1); %Maximum leaf travel speed (mm/s)
