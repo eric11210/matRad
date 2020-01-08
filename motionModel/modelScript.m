@@ -24,9 +24,6 @@ options.processing.nPosPhases   = 5;
 options.processing.nVelPhases   = 1;    % is this necessary?
 options.processing.velBinning   = true; % is this necessary? just set nVelSubPhases to 1
 
-% for resampling
-options.processing.fResample = 6; % Hz, 6 deg/s * 1 deg
-
 % for FSM
 options.processing.doFSM                = true;
 options.processing.FSM.timeLd           = 0.5; % s
@@ -52,12 +49,14 @@ options.hist.timePoints = [1 4 6 22.5 45 90 180 270 360]/6; %s
 nSubPerPosPhaseVec  = 1:10;
 nSubPerVelPhaseVec  = 1:10;
 nTimeFracsVec       = 1:10;
+fResampleVec        = [1 3 6 9 12 24];
 
 totNumPosSubPhases  = numel(nSubPerPosPhaseVec);
 totNumVelSubPhases  = numel(nSubPerVelPhaseVec);
 totNumTimeFracs     = numel(nTimeFracsVec);
+totNumFResample     = numel(fResampleVec);
 
-nRuns = totNumPosSubPhases.*totNumVelSubPhases.*totNumTimeFracs;
+nRuns = totNumPosSubPhases.*totNumVelSubPhases.*totNumTimeFracs.*totNumFResample;
 
 % deprecated?
 Pij_meanOfStdVec = zeros(size(nSubPerPosPhaseVec));
@@ -81,49 +80,57 @@ nTimeFracsArr       = zeros(nRuns,1);
 
 i = 1;
 
-for nTimeFracs = nTimeFracsVec
+for fResample = fResampleVec
     
-    fprintf('Number of time fractions: %d.\n',nTimeFracs);
+    fprintf('Resampling frequency: %d.\n',fResample);
     
-    for nSubPerVelPhase = nSubPerVelPhaseVec
+    for nTimeFracs = nTimeFracsVec
         
-        fprintf('Number of vel subphases per vel phase: %d.\n',nSubPerVelPhase);
+        fprintf('Number of time fractions: %d.\n',nTimeFracs);
         
-        for nSubPerPosPhase = nSubPerPosPhaseVec
+        for nSubPerVelPhase = nSubPerVelPhaseVec
             
-            fprintf('Number of pos subphases per pos phase: %d.\n',nSubPerPosPhase);
+            fprintf('Number of vel subphases per vel phase: %d.\n',nSubPerVelPhase);
             
-            fprintf('Run %d of %d.\n',i,nRuns);
-            
-            % variable parameters
-            options.processing.nSubPerPosPhase  = nSubPerPosPhase;
-            options.processing.nSubPerVelPhase  = nSubPerVelPhase;
-            options.processing.FSM.nTimeFracs   = nTimeFracs;
-            
-            % extract model
-            model = matRad_generateMotionModel(options);
-            
-            % get outputs
-            pSumArr(i)          = model.pSum;
-            chiSquareSumArr(i)  = sum(model.chiSquares);
-            
-            pArr(i,:)           = model.p;
-            chiSquaresArr(i,:)  = model.chiSquares;
-            
-            nSubPerPosPhaseArr(i)   = nSubPerPosPhase;
-            nSubPerVelPhaseArr(i)   = nSubPerVelPhase;
-            nTimeFracsArr(i)        = nTimeFracs;
-            
-            % put data in vectors
-            %{
+            for nSubPerPosPhase = nSubPerPosPhaseVec
+                
+                fprintf('Number of pos subphases per pos phase: %d.\n',nSubPerPosPhase);
+                
+                fprintf('Run %d of %d.\n',i,nRuns);
+                
+                % variable parameters
+                options.processing.nSubPerPosPhase  = nSubPerPosPhase;
+                options.processing.nSubPerVelPhase  = nSubPerVelPhase;
+                options.processing.FSM.nTimeFracs   = nTimeFracs;
+                options.processing.fResample        = fResample;
+                
+                % extract model
+                model = matRad_generateMotionModel(options);
+                
+                % get outputs
+                pSumArr(i)          = model.pSum;
+                chiSquareSumArr(i)  = sum(model.chiSquares);
+                
+                pArr(i,:)           = model.p;
+                chiSquaresArr(i,:)  = model.chiSquares;
+                
+                nSubPerPosPhaseArr(i)   = nSubPerPosPhase;
+                nSubPerVelPhaseArr(i)   = nSubPerVelPhase;
+                nTimeFracsArr(i)        = nTimeFracs;
+                
+                % put data in vectors
+                %{
                 Pij_meanOfStdVec(i) = mean(Pij_std(Pij_std ~= 0));
                 Pij_relMeanOfStdVec(i) = mean(Pij_relStd(Pij_relStd ~= 0));
                 convergeTVec(i) = convergeT;
-            %}
-            i = i+1;
+                %}
+                i = i+1;
+                
+                % save after every iteration
+                save('stats','*Arr','i')
+                
+            end
             
-            % save after every iteration
-            save('stats','*Arr','i')
         end
         
     end

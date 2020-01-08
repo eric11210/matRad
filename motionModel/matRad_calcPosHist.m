@@ -3,9 +3,11 @@ function model = matRad_calcPosHist(model,data,options)
 %% initialize
 
 % determine integer number of time steps to take
-numSteps = round(options.timePoints./model.deltaT_sample);
+numStepsModel_timePoints = round(options.timePoints./model.deltaT_sample);
+numStepsData_timePoints = round(options.timePoints./data.deltaT_sample);
+numStepsModel_simulate   = round(data.deltaT_sample*numel(data.l_sample)./model.deltaT_sample);
 % determine actual time points
-roundTimePoints = numSteps.*model.deltaT_sample;
+roundTimePoints = numStepsModel_timePoints.*model.deltaT_sample;
 
 %% determine initial distribution for histograms
 
@@ -30,7 +32,7 @@ initDist = initDist./sum(initDist);
 nHistories = 1000;
 
 % initialize number of triggering phase
-numTriggerPhaseMC  = zeros(1,numel(numSteps));
+numTriggerPhaseMC  = zeros(1,numel(numStepsModel_timePoints));
 
 % now calculate cumulative distribution
 cumInitSimDist = cumsum(initDist);
@@ -43,16 +45,16 @@ for history = 1:nHistories
     initSubPhase = find(r < cumInitSimDist,1,'first');
     
     % do MC
-    l_simulated = matRad_runMarkovChain_P(model.Pij_deltaTSample,numel(data.l_sample),initSubPhase,false);
+    l_simulated = matRad_runMarkovChain_P(model.Pij_deltaTSample,numStepsModel_simulate,initSubPhase,false);
     
     % convert l_sample to p_sample
     p_MCsample = model.indices.subPhase2PosPhase(l_simulated);
     
     % loop through time points
-    for i = 1:numel(numSteps)
+    for i = 1:numel(numStepsModel_timePoints)
         
         % determine number of steps
-        n = numSteps(i);
+        n = numStepsModel_timePoints(i);
         
         % determine number of times triggering phase occurs
         numTriggerPhaseMC(i) = numTriggerPhaseMC(i)+nnz(p_MCsample(1:(end-n)) == triggerPhase)./nHistories;
@@ -62,17 +64,17 @@ end
 %% calculate Markov chain histograms
 
 % initialize probabilities
-hist_pred = zeros(data.indices.nPosPhases,numel(numSteps));
+hist_pred = zeros(data.indices.nPosPhases,numel(numStepsModel_timePoints));
 
 % calculate sum of n-step transition matrices for total signal
 %polyTransTot        = ones(numel(data.l_sample),1);
 %sumNStepTransTot    = polyvalm(polyTransTot,model.Pij_deltaTSample);
 
 % loop through time points
-for i = 1:numel(numSteps)
+for i = 1:numel(numStepsModel_timePoints)
     
     % determine number of steps
-    n = numSteps(i);
+    n = numStepsModel_timePoints(i);
     
     % calculate sum of n-step transition matrices for particular number of
     % steps
@@ -109,7 +111,12 @@ end
 p_sample = data.indices.subPhase2PosPhase(data.l_sample);
 
 % calculate histograms
-[hist_obs,initDists] = calcHist(p_sample,data.l_sample,triggerPhase,data.indices.nPosPhases,data.indices.nSubPhases,numSteps);
+[hist_obs,initDists] = calcHist(p_sample,data.l_sample,triggerPhase,data.indices.nPosPhases,data.indices.nSubPhases,numStepsData_timePoints);
+
+% scale the histogram of observed (training) data to match the testing data
+% this is required due to the difference sampling intervals between the
+% training and testing data (former is decimated, latter is not)
+hist_obs = hist_obs.*numStepsModel_simulate./numel(data.l_sample);
 
 % now calc chi squares
 chiSquares = calcChiSquares(hist_obs,hist_pred);
@@ -120,7 +127,7 @@ chiSquares = calcChiSquares(hist_obs,hist_pred);
 nHistories = 1000;
 
 % initialize chi squares
-chiSquaresMC        = zeros(nHistories,numel(numSteps));
+chiSquaresMC        = zeros(nHistories,numel(numStepsModel_timePoints));
 
 for history = 1:nHistories
     
@@ -130,13 +137,13 @@ for history = 1:nHistories
     initSubPhase = find(r < cumInitSimDist,1,'first');
     
     % do MC
-    l_simulated = matRad_runMarkovChain_P(model.Pij_deltaTSample,numel(p_sample),initSubPhase,false);
+    l_simulated = matRad_runMarkovChain_P(model.Pij_deltaTSample,numStepsModel_simulate,initSubPhase,false);
     
     % convert l_sample to p_sample
     p_MCsample = model.indices.subPhase2PosPhase(l_simulated);
     
     % calculate histograms
-    [hist_MCobs,initMCDists] = calcHist(p_MCsample,l_simulated,triggerPhase,data.indices.nPosPhases,data.indices.nSubPhases,numSteps);
+    [hist_MCobs,initMCDists] = calcHist(p_MCsample,l_simulated,triggerPhase,data.indices.nPosPhases,data.indices.nSubPhases,numStepsModel_timePoints);
     
     % for each history, calculate chi square
     chiSquaresMC(history,:) = calcChiSquares(hist_MCobs,hist_pred);
@@ -146,10 +153,10 @@ end
 %% calculate p values
 
 % initialize vector
-p = zeros(1,numel(numSteps));
+p = zeros(1,numel(numStepsModel_timePoints));
 
 % loop through time points
-for i = 1:numel(numSteps)
+for i = 1:numel(numStepsModel_timePoints)
     
     % p is the probability of getting a worse disagreement than that
     % observed, just by random chance (under the assumption that our model

@@ -22,20 +22,26 @@ x_sample = interp1(t_cut,x_cut,t_sample);
 % remove mean so data is centred around 0
 x_sample = x_sample-mean(x_sample);
 
+% start time at 0
+t_sample = t_sample-t_sample(1);
+
 % decimate data to desired frequency
+% NOTE: training data should use the decimated signal, while testing data
+% should use the original signal
 decFactor           = round(1./(deltaT_sample.*options.fResample));
 %x_sample        = lowpass(x_sample,0.8./decFactor);
-deltaT_sample_dec   = decFactor.*deltaT_sample;
+deltaT_sample_dec   = decFactor*deltaT_sample;
 x_sample_dec        = decimate(x_sample,decFactor,8);
 t_sample_dec        = flipud((max(t_sample):(-deltaT_sample_dec):min(t_sample))');
 
 % determine velocity
-v_sample_dec = gradient(x_sample_dec,deltaT_sample_dec);
+v_sample        = gradient(x_sample,deltaT_sample);
+v_sample_dec    = gradient(x_sample_dec,deltaT_sample_dec);
 
 % determine number of bins for the motion data (not incl. inhale/exhale
 % information)
-xBoundsMax = max(x_sample_dec);
-xBoundsMin = min(x_sample_dec);
+xBoundsMax = max(x_sample);
+xBoundsMin = min(x_sample);
 vBoundsMax = max(v_sample_dec);
 vBoundsMin = min(v_sample_dec);
 vBoundsM = max(abs([vBoundsMax vBoundsMin]));
@@ -66,8 +72,8 @@ while percAbove < percExtTarg || percBelow < percExtTarg
     lMaxThres = xBoundsMax-nPosSubPhasesMaxExt.*deltaL;
     lMinThres = xBoundsMin+nPosSubPhasesMinExt.*deltaL;
     
-    percAbove = 100.*nnz(x_sample_dec > lMaxThres)./numel(x_sample_dec);
-    percBelow = 100*nnz(x_sample_dec < lMinThres)./numel(x_sample_dec);
+    percAbove = 100.*nnz(x_sample > lMaxThres)./numel(x_sample);
+    percBelow = 100*nnz(x_sample < lMinThres)./numel(x_sample);
     
     if percAbove < percExtTarg
         nPosSubPhasesMaxExt_final = nPosSubPhasesMaxExt;
@@ -87,8 +93,8 @@ nPosBins = nPosPhases.*nSubPerPosPhase/oneOrTwo+nPosSubPhasesMaxExt+nPosSubPhase
 deltaL = (xBoundsMax-xBoundsMin)./nPosBins;
 lMaxThres = xBoundsMax-nPosSubPhasesMaxExt.*deltaL;
 lMinThres = xBoundsMin+nPosSubPhasesMinExt.*deltaL;
-percAbove = 100.*nnz(x_sample_dec > lMaxThres)./numel(x_sample_dec);
-percBelow = 100*nnz(x_sample_dec < lMinThres)./numel(x_sample_dec);
+percAbove = 100.*nnz(x_sample > lMaxThres)./numel(x_sample);
+percBelow = 100*nnz(x_sample < lMinThres)./numel(x_sample);
 
 nPosSubPhases = oneOrTwo.*nPosBins;
 
@@ -97,9 +103,11 @@ xBounds = linspace(xBoundsMax,xBoundsMin,nPosBins+1);
 %% bin data
 
 % do position binning
-l_sample_dec = zeros(size(x_sample_dec));
+l_sample        = zeros(size(x_sample));
+l_sample_dec    = zeros(size(x_sample_dec));
 for posBin = 1:nPosBins
-    l_sample_dec(xBounds(posBin+1) <= x_sample_dec & x_sample_dec <= xBounds(posBin)) = posBin;
+    l_sample(xBounds(posBin+1) <= x_sample & x_sample <= xBounds(posBin))       = posBin;
+    l_sample_dec(xBounds(posBin+1) <= x_sample_dec & x_sample_dec <= xBounds(posBin))   = posBin;
 end
 
 if options.doFSM
@@ -125,19 +133,26 @@ if options.doFSM
     % (1>2>3>1>...)
     % also getting starting and stopping indices for the training and
     % testing data
-    [FS_sample_dec,t_sample_dec,x_sample_dec,v_sample_dec,l_sample_dec,indFirstCycle_train,indLastCycle_train,indFirstCycle_test,indLastCycle_test] = matRad_splitTrainTest(FS_sample_dec,t_sample_dec,x_sample_dec,v_sample_dec,l_sample_dec,0.5);
+    [FS_sample,t_sample,x_sample,v_sample,l_sample,indFirstCycle_train,indLastCycle_train,indFirstCycle_test,indLastCycle_test] ...
+        = matRad_splitTrainTest(FS_sample,t_sample,x_sample,v_sample,l_sample,0.5);
+    [FS_sample_dec,t_sample_dec,x_sample_dec,v_sample_dec,l_sample_dec,indFirstCycle_dec_train,indLastCycle_dec_train,indFirstCycle_dec_test,indLastCycle_dec_test] ...
+        = matRad_splitTrainTest(FS_sample_dec,t_sample_dec,x_sample_dec,v_sample_dec,l_sample_dec,0.5);
     
     % do time split
-    FS_sample_dec = matRad_FSMfracTime(FS_sample_dec,deltaT_sample_dec,options.FSM);
+    FS_sample       = matRad_FSMfracTime(FS_sample,deltaT_sample,options.FSM);
+    FS_sample_dec   = matRad_FSMfracTime(FS_sample_dec,deltaT_sample_dec,options.FSM);
     
     % each non-IRR is split into time fractions; the IRR state is not
     nStates = 3.*options.FSM.nTimeFracs+1;
     
     % include finite states in l_sample
-    l_sample_dec = (FS_sample_dec-1).*nPosSubPhases + l_sample_dec;
+    l_sample        = (FS_sample-1).*nPosSubPhases + l_sample;
+    l_sample_dec    = (FS_sample_dec-1).*nPosSubPhases + l_sample_dec;
     
 else
     % only do this part if not doing FSM
+    
+    error('Non-dec not supported yet!');
     
     % number of states is 1
     nStates = 1;
@@ -239,7 +254,8 @@ if options.velBinning
     
     % now do velocity binning
     for velBin = 1:nVelBins
-        l_sample_dec(vBounds(velBin) <= v_sample_dec & v_sample_dec <= vBounds(velBin+1)) = l_sample_dec(vBounds(velBin) <= v_sample_dec & v_sample_dec <= vBounds(velBin+1))+nStates.*nPosSubPhases.*(velBin-1);
+        l_sample(vBounds(velBin) <= v_sample_dec & v_sample_dec <= vBounds(velBin+1))       = l_sample(vBounds(velBin) <= v_sample_dec & v_sample_dec <= vBounds(velBin+1))+nStates.*nPosSubPhases.*(velBin-1);
+        l_sample_dec(vBounds(velBin) <= v_sample_dec & v_sample_dec <= vBounds(velBin+1))   = l_sample_dec(vBounds(velBin) <= v_sample_dec & v_sample_dec <= vBounds(velBin+1))+nStates.*nPosSubPhases.*(velBin-1);
     end
     
     
@@ -341,10 +357,6 @@ if options.velBinning
 end
 
 %% put variables in struct
-data.l_sample                   = l_sample_dec;
-data.t_sample                   = t_sample_dec;
-data.x_sample                   = x_sample_dec;
-data.deltaT_sample              = deltaT_sample_dec;
 
 indices.subPhase2PosSubPhase    = subPhase2PosSubPhase;
 indices.subPhase2VelSubPhase    = subPhase2VelSubPhase;
@@ -378,14 +390,16 @@ data.indices    = indices;
 data_train = data;
 data_test = data;
 
-% indFirstCycle_train indLastCycle_train indFirstCycle_test indLastCycle_test
-data_train.l_sample = data.l_sample(indFirstCycle_train:indLastCycle_train);
-data_train.t_sample = data.t_sample(indFirstCycle_train:indLastCycle_train);
-data_train.x_sample = data.x_sample(indFirstCycle_train:indLastCycle_train);
+% training data is decimated, testing data is not
+data_train.l_sample         = l_sample_dec(indFirstCycle_dec_train:indLastCycle_dec_train);
+data_train.t_sample         = t_sample_dec(indFirstCycle_dec_train:indLastCycle_dec_train);
+data_train.x_sample         = x_sample_dec(indFirstCycle_dec_train:indLastCycle_dec_train);
+data_train.deltaT_sample    = deltaT_sample_dec;
 
-data_test.l_sample = data.l_sample(indFirstCycle_test:indLastCycle_test);
-data_test.t_sample = data.t_sample(indFirstCycle_test:indLastCycle_test);
-data_test.x_sample = data.x_sample(indFirstCycle_test:indLastCycle_test);
+data_test.l_sample          = l_sample(indFirstCycle_test:indLastCycle_test);
+data_test.t_sample          = t_sample(indFirstCycle_test:indLastCycle_test);
+data_test.x_sample          = x_sample(indFirstCycle_test:indLastCycle_test);
+data_test.deltaT_sample    = deltaT_sample;
 
 end
 
