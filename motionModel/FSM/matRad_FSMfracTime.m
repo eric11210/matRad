@@ -1,4 +1,4 @@
-function FS_sample = matRad_FSMfracTime(FS_sample,deltaT_sample,options)
+function FS_sample = matRad_FSMfracTime(FS_sample,options)
 
 %% find maximum time spent in each state
 

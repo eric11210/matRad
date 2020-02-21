@@ -7,12 +7,12 @@ qij_D       = motionModel.qij_D;
 qij_V       = motionModel.qij_V;
 initProb    = motionModel.initProb;
 
-if nargin < 4
+if nargin < 3
     indexMap = (1:numel(initProb))';
     maxProb = false;
 end
 
-if nargin < 5
+if nargin < 4
     maxProb = false;
 end
 

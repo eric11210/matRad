@@ -16,7 +16,7 @@ options.processing.nVelPhases   = 1;    % is this necessary?
 options.processing.velBinning   = true; % is this necessary? just set nVelSubPhases to 1
 
 % for resampling
-options.processing.fResample = 6; % Hz, 6 deg/s * 1 deg
+options.processing.fResample = 3; % Hz, 6 deg/s * 1 deg
 
 % for FSM
 options.processing.doFSM                = true;
@@ -28,21 +28,26 @@ options.processing.FSM.velocityRangeEOE = [0 10]; % mm/s
 %options.processing.FSM.cLambda          = 4; % mm
 options.processing.FSM.cSLength         = 0.133; % s
 
-%% deprecated?
+%% FFT options
 
-options.convTime.percRMSD_targ  = 1;
-options.stdANDfft.nHistories    = 10;
-options.stdANDfft.doWindowing   = true;
+options.FFT.doFFT       = true;
+options.FFT.doWindowing = true;
 
 %% histogram options
 
-options.hist.timePoints = [1 4 6 22.5 45 90 180 270 360]/6; %s
+options.hist.doHist     = true;
+options.hist.timePoints = 0:0.04:80; %s
+
+%% convergence time options
+
+options.convTime.doConvTime = true;
+options.convTime.l2_targ    = 0.01;
 
 %% get model
 
 % best fit parameters
-options.processing.nSubPerPosPhase  = 3;
-options.processing.nSubPerVelPhase  = 10;
+options.processing.nSubPerPosPhase  = 1;
+options.processing.nSubPerVelPhase  = 7;
 options.processing.FSM.nTimeFracs   = 10;
 
 % extract model

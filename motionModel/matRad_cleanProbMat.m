@@ -11,6 +11,9 @@ model.qij(:,deleteSubPhase)                 = [];
 model.qij(deleteSubPhase,:)                 = [];
 model.Pi_deltaTSample(deleteSubPhase)       = [];
 
+% diagonalize matrix
+[model.qij_V,model.qij_D]   = eig(model.qij);
+
 % get new number of subPhases
 nSubPhases_new = nnz(~deleteSubPhase);
 

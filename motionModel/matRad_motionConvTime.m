@@ -1,48 +1,65 @@
 function model = matRad_motionConvTime(model,options)
 
-% extract variables from struct
-Pij_deltaTSample    = model.Pij_deltaTSample;
-Pi_deltaTSample     = model.Pi_deltaTSample;
-deltaT_sample       = model.deltaT_sample;
-subPhase2Phase      = model.indices.subPhase2Phase;
-nSubPhases          = model.indices.nSubPhases;
-nSubPhasePerPhase   = model.indices.nSubPhasePerPhase;
-percRMSD_targ       = options.percRMSD_targ;
+%% setup
 
-Pi_recombined = accumarray(subPhase2Phase,Pi_deltaTSample);
+% extract model variables from struct
+Pij_deltaTSample        = model.Pij_deltaTSample;
+deltaT_sample           = model.deltaT_sample;
+subPhase2PosPhase       = model.indices.subPhase2PosPhase;
+nPosPhases              = model.indices.nPosPhases;
+nSubPhases              = model.indices.nSubPhases;
+nSubPhasePerPosPhase    = model.indices.nSubPhasePerPhase;
+l2_targ                 = options.l2_targ;
+
+%% determine steady state of distribution & decay timescale
+
+% get eigenvalues and eigenvectors of Pij
+[r,d,l] = eig(Pij_deltaTSample);
+
+% calculate steady state of the phase probability distribution
+idEVec_ind          = find(abs(diag(d)-1) < 1e-10);
+Pi_inf              = l(:,idEVec_ind)./sum(l(:,idEVec_ind));
+Pi_inf_recombined   = accumarray(subPhase2PosPhase,Pi_inf,[nPosPhases 1]);
+
+% get decay timescale, stepsize
+dAbsVec                         = sort(diag(abs(d)),'descend');
+dAbsVec(abs(dAbsVec-1) < 1e-10) = [];
+decayT                          = round(-1./log(dAbsVec(2)));
+stepSize                        = round(decayT/8);
+
+%% estimate convergence time
+
+% pre-calculate matrix power
+Pij_deltaTSample_pStepsize = Pij_deltaTSample^stepSize;
 
 % initial probability vector
 initPVec = zeros(1,nSubPhases);
-initPVec(subPhase2Phase == 1) = 1./nSubPhasePerPhase(1);
+initPVec(subPhase2PosPhase == 1) = 1./nSubPhasePerPosPhase(1);
 
 % initial error
 convergeT = 0;
 Pij_T = eye(nSubPhases,nSubPhases);
-Pi_T_recombined = accumarray(subPhase2Phase,initPVec*Pij_T);
-SD = ((Pi_T_recombined-Pi_recombined)./Pi_recombined).^2;
-SD(Pi_recombined == 0) = 0;
-percRMSD = 100*sqrt(mean(SD));
+Pi_T_recombined = accumarray(subPhase2PosPhase,initPVec*Pij_T,[nPosPhases 1]);
+l2 = sqrt(sum((Pi_T_recombined-Pi_inf_recombined).^2));
 
-while percRMSD > percRMSD_targ
+while l2 > l2_targ && convergeT/decayT < 100
     
     % take another step
-    convergeT = convergeT+deltaT_sample;
+    convergeT = convergeT+stepSize;
     
     % matrix mult
-    Pij_T = Pij_T*Pij_deltaTSample;
+    Pij_T = Pij_T*Pij_deltaTSample_pStepsize;
     
     % sum over subphases
-    Pi_T_recombined = accumarray(subPhase2Phase,initPVec*Pij_T);
+    Pi_T_recombined = accumarray(subPhase2PosPhase,initPVec*Pij_T,[nPosPhases 1]);
     
-    % calculate error
-    SD = ((Pi_T_recombined-Pi_recombined)./Pi_recombined).^2;
-    SD(Pi_recombined == 0) = 0;
-    percRMSD = 100*sqrt(mean(SD));
+    % calculate l2
+    l2 = sqrt(sum((Pi_T_recombined-Pi_inf_recombined).^2));
     
 end
 
-% put variables in struct
-model.convergeT = convergeT;
+% multiply deltaT into convergence time
+model.convergeT = convergeT.*deltaT_sample;
 
 end
 

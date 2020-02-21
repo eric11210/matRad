@@ -28,22 +28,27 @@ t_sample = t_sample-t_sample(1);
 % decimate data to desired frequency
 % NOTE: training data should use the decimated signal, while testing data
 % should use the original signal
-decFactor           = round(1./(deltaT_sample.*options.fResample));
+filtFactor           = round(1./(deltaT_sample.*options.fResample));
 %x_sample        = lowpass(x_sample,0.8./decFactor);
-deltaT_sample_dec   = decFactor*deltaT_sample;
-x_sample_dec        = decimate(x_sample,decFactor,8);
-t_sample_dec        = flipud((max(t_sample):(-deltaT_sample_dec):min(t_sample))');
+deltaT_sample_filt   = filtFactor*deltaT_sample;
+x_sample_filt        = matRad_decimate(x_sample,filtFactor,8);
+t_sample_filt        = t_sample;
+%x_sample_dec        = decimate(x_sample,decFactor,8);
+%t_sample_dec        = flipud((t_sample(end):(-deltaT_sample_dec):t_sample(1))');
 
 % determine velocity
 v_sample        = gradient(x_sample,deltaT_sample);
-v_sample_dec    = gradient(x_sample_dec,deltaT_sample_dec);
+v_sample_filt   = gradient(x_sample_filt,deltaT_sample);
+
+% combine filtered and non-filtered sample traces to get bounds
+x_sample_combined = [x_sample; x_sample_filt];
 
 % determine number of bins for the motion data (not incl. inhale/exhale
 % information)
-xBoundsMax = max(x_sample);
-xBoundsMin = min(x_sample);
-vBoundsMax = max(v_sample_dec);
-vBoundsMin = min(v_sample_dec);
+xBoundsMax = max(x_sample_combined);
+xBoundsMin = min(x_sample_combined);
+vBoundsMax = max(v_sample_filt);
+vBoundsMin = min(v_sample_filt);
 vBoundsM = max(abs([vBoundsMax vBoundsMin]));
 
 % find min and max thresholds for the extreme phases of motion
@@ -72,8 +77,8 @@ while percAbove < percExtTarg || percBelow < percExtTarg
     lMaxThres = xBoundsMax-nPosSubPhasesMaxExt.*deltaL;
     lMinThres = xBoundsMin+nPosSubPhasesMinExt.*deltaL;
     
-    percAbove = 100.*nnz(x_sample > lMaxThres)./numel(x_sample);
-    percBelow = 100*nnz(x_sample < lMinThres)./numel(x_sample);
+    percAbove = 100.*nnz(x_sample_combined > lMaxThres)./numel(x_sample_combined);
+    percBelow = 100*nnz(x_sample_combined < lMinThres)./numel(x_sample_combined);
     
     if percAbove < percExtTarg
         nPosSubPhasesMaxExt_final = nPosSubPhasesMaxExt;
@@ -93,8 +98,8 @@ nPosBins = nPosPhases.*nSubPerPosPhase/oneOrTwo+nPosSubPhasesMaxExt+nPosSubPhase
 deltaL = (xBoundsMax-xBoundsMin)./nPosBins;
 lMaxThres = xBoundsMax-nPosSubPhasesMaxExt.*deltaL;
 lMinThres = xBoundsMin+nPosSubPhasesMinExt.*deltaL;
-percAbove = 100.*nnz(x_sample > lMaxThres)./numel(x_sample);
-percBelow = 100*nnz(x_sample < lMinThres)./numel(x_sample);
+percAbove = 100.*nnz(x_sample_combined > lMaxThres)./numel(x_sample_combined);
+percBelow = 100*nnz(x_sample_combined < lMinThres)./numel(x_sample_combined);
 
 nPosSubPhases = oneOrTwo.*nPosBins;
 
@@ -104,10 +109,10 @@ xBounds = linspace(xBoundsMax,xBoundsMin,nPosBins+1);
 
 % do position binning
 l_sample        = zeros(size(x_sample));
-l_sample_dec    = zeros(size(x_sample_dec));
+l_sample_dec    = zeros(size(x_sample_filt));
 for posBin = 1:nPosBins
     l_sample(xBounds(posBin+1) <= x_sample & x_sample <= xBounds(posBin))       = posBin;
-    l_sample_dec(xBounds(posBin+1) <= x_sample_dec & x_sample_dec <= xBounds(posBin))   = posBin;
+    l_sample_dec(xBounds(posBin+1) <= x_sample_filt & x_sample_filt <= xBounds(posBin))   = posBin;
 end
 
 if options.doFSM
@@ -125,9 +130,10 @@ if options.doFSM
     FS_sample = matRad_doFSM(x_sample,deltaT_sample,options.FSM);
     
     % now decimate it
-    endInd = numel(x_sample);
-    startInd = decFactor-(decFactor*ceil(endInd./decFactor)-endInd);
-    FS_sample_dec = FS_sample(startInd:decFactor:endInd);
+    %endInd = numel(x_sample);
+    %startInd = decFactor-(decFactor*ceil(endInd./decFactor)-endInd);
+    %FS_sample_dec = FS_sample(startInd:decFactor:endInd);
+    FS_sample_dec = FS_sample;
     
     % cut off the signal until we begin and end with a complete cycle
     % (1>2>3>1>...)
@@ -135,12 +141,12 @@ if options.doFSM
     % testing data
     [FS_sample,t_sample,x_sample,v_sample,l_sample,indFirstCycle_train,indLastCycle_train,indFirstCycle_test,indLastCycle_test] ...
         = matRad_splitTrainTest(FS_sample,t_sample,x_sample,v_sample,l_sample,0.5);
-    [FS_sample_dec,t_sample_dec,x_sample_dec,v_sample_dec,l_sample_dec,indFirstCycle_dec_train,indLastCycle_dec_train,indFirstCycle_dec_test,indLastCycle_dec_test] ...
-        = matRad_splitTrainTest(FS_sample_dec,t_sample_dec,x_sample_dec,v_sample_dec,l_sample_dec,0.5);
+    [FS_sample_dec,t_sample_filt,x_sample_filt,v_sample_filt,l_sample_dec,indFirstCycle_dec_train,indLastCycle_dec_train,indFirstCycle_dec_test,indLastCycle_dec_test] ...
+        = matRad_splitTrainTest(FS_sample_dec,t_sample_filt,x_sample_filt,v_sample_filt,l_sample_dec,0.5);
     
     % do time split
-    FS_sample       = matRad_FSMfracTime(FS_sample,deltaT_sample,options.FSM);
-    FS_sample_dec   = matRad_FSMfracTime(FS_sample_dec,deltaT_sample_dec,options.FSM);
+    FS_sample       = matRad_FSMfracTime(FS_sample,options.FSM);
+    FS_sample_dec   = matRad_FSMfracTime(FS_sample_dec,options.FSM);
     
     % each non-IRR is split into time fractions; the IRR state is not
     nStates = 3.*options.FSM.nTimeFracs+1;
@@ -165,8 +171,8 @@ else
     
     % define breathing in/out by peaks: points after a min and before a max are
     % exhale, points after a max and before a min are inhale.
-    [~,ind_maxPeaks] = findpeaks(x_sample_dec,'MinPeakProminence',0.5);
-    [~,ind_minPeaks] = findpeaks(-x_sample_dec,'MinPeakProminence',0.5);
+    [~,ind_maxPeaks] = findpeaks(x_sample_filt,'MinPeakProminence',0.5);
+    [~,ind_minPeaks] = findpeaks(-x_sample_filt,'MinPeakProminence',0.5);
     
     numMinPeaks = numel(ind_minPeaks);
     numMaxPeaks = numel(ind_maxPeaks);
@@ -247,15 +253,15 @@ if options.velBinning
     deltaL = 2*vBoundsM./nVelBins;
     lMaxThres = vBoundsM-nVelSubPhasesExt.*deltaL;
     lMinThres = -vBoundsM+nVelSubPhasesExt.*deltaL;
-    percAboveAndBelow = 100.*nnz(v_sample_dec > lMaxThres)./numel(v_sample_dec)+100*nnz(v_sample_dec < lMinThres)./numel(v_sample_dec);
+    percAboveAndBelow = 100.*nnz(v_sample_filt > lMaxThres)./numel(v_sample_filt)+100*nnz(v_sample_filt < lMinThres)./numel(v_sample_filt);
     
     nVelSubPhases = nVelBins;
     vBounds = linspace(-vBoundsM,vBoundsM,nVelBins+1);
     
     % now do velocity binning
     for velBin = 1:nVelBins
-        l_sample(vBounds(velBin) <= v_sample_dec & v_sample_dec <= vBounds(velBin+1))       = l_sample(vBounds(velBin) <= v_sample_dec & v_sample_dec <= vBounds(velBin+1))+nStates.*nPosSubPhases.*(velBin-1);
-        l_sample_dec(vBounds(velBin) <= v_sample_dec & v_sample_dec <= vBounds(velBin+1))   = l_sample_dec(vBounds(velBin) <= v_sample_dec & v_sample_dec <= vBounds(velBin+1))+nStates.*nPosSubPhases.*(velBin-1);
+        l_sample(vBounds(velBin) <= v_sample_filt & v_sample_filt <= vBounds(velBin+1))       = l_sample(vBounds(velBin) <= v_sample_filt & v_sample_filt <= vBounds(velBin+1))+nStates.*nPosSubPhases.*(velBin-1);
+        l_sample_dec(vBounds(velBin) <= v_sample_filt & v_sample_filt <= vBounds(velBin+1))   = l_sample_dec(vBounds(velBin) <= v_sample_filt & v_sample_filt <= vBounds(velBin+1))+nStates.*nPosSubPhases.*(velBin-1);
     end
     
     
@@ -392,14 +398,15 @@ data_test = data;
 
 % training data is decimated, testing data is not
 data_train.l_sample         = l_sample_dec(indFirstCycle_dec_train:indLastCycle_dec_train);
-data_train.t_sample         = t_sample_dec(indFirstCycle_dec_train:indLastCycle_dec_train);
-data_train.x_sample         = x_sample_dec(indFirstCycle_dec_train:indLastCycle_dec_train);
-data_train.deltaT_sample    = deltaT_sample_dec;
+data_train.t_sample         = t_sample_filt(indFirstCycle_dec_train:indLastCycle_dec_train);
+data_train.x_sample         = x_sample_filt(indFirstCycle_dec_train:indLastCycle_dec_train);
+data_train.deltaT_sample    = deltaT_sample_filt;
+data_train.filtFactor       = filtFactor;
 
 data_test.l_sample          = l_sample(indFirstCycle_test:indLastCycle_test);
 data_test.t_sample          = t_sample(indFirstCycle_test:indLastCycle_test);
 data_test.x_sample          = x_sample(indFirstCycle_test:indLastCycle_test);
-data_test.deltaT_sample    = deltaT_sample;
+data_test.deltaT_sample     = deltaT_sample;
 
 end
 

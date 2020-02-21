@@ -34,15 +34,20 @@ options.processing.FSM.velocityRangeEOE = [0 10]; % mm/s
 %options.processing.FSM.cLambda          = 4; % mm
 options.processing.FSM.cSLength         = 0.133; % s
 
-%% deprecated?
+%% FFT options
 
-options.convTime.percRMSD_targ  = 1;
-options.stdANDfft.nHistories    = 10;
-options.stdANDfft.doWindowing   = true;
+options.FFT.doFFT       = true;
+options.FFT.doWindowing = true;
 
 %% histogram options
 
-options.hist.timePoints = [1 4 6 22.5 45 90 180 270 360]/6; %s
+options.hist.doHist     = true;
+options.hist.timePoints = 0:0.04:80; %s
+
+%% convergence time options
+
+options.convTime.doConvTime = true;
+options.convTime.l2_targ    = 0.01;
 
 %% parameter options
 
@@ -58,11 +63,6 @@ totNumFResample     = numel(fResampleVec);
 
 nRuns = totNumPosSubPhases.*totNumVelSubPhases.*totNumTimeFracs.*totNumFResample;
 
-% deprecated?
-Pij_meanOfStdVec = zeros(size(nSubPerPosPhaseVec));
-Pij_relMeanOfStdVec = zeros(size(nSubPerPosPhaseVec));
-convergeTVec = zeros(size(nSubPerPosPhaseVec));
-
 %% set up outputs
 
 pSumArr         = zeros(nRuns,1);
@@ -74,7 +74,8 @@ chiSquaresArr   = zeros(nRuns,numel(options.hist.timePoints));
 nSubPerPosPhaseArr  = zeros(nRuns,1);
 nSubPerVelPhaseArr  = zeros(nRuns,1);
 nTimeFracsArr       = zeros(nRuns,1);
-
+fResampleArr        = zeros(nRuns,1);
+convergeTArr        = zeros(nRuns,1);
 
 %% loop over parameters
 
@@ -82,7 +83,7 @@ i = 1;
 
 for fResample = fResampleVec
     
-    fprintf('Resampling frequency: %d.\n',fResample);
+    fprintf('Resampling frequency: %d Hz.\n',fResample);
     
     for nTimeFracs = nTimeFracsVec
         
@@ -108,15 +109,20 @@ for fResample = fResampleVec
                 model = matRad_generateMotionModel(options);
                 
                 % get outputs
-                pSumArr(i)          = model.pSum;
-                chiSquareSumArr(i)  = sum(model.chiSquares);
-                
-                pArr(i,:)           = model.p;
-                chiSquaresArr(i,:)  = model.chiSquares;
+                if options.hist.doHist
+                    pSumArr(i)          = model.pSum;
+                    chiSquareSumArr(i)  = sum(model.chiSquares);
+                    pArr(i,:)           = model.p;
+                    chiSquaresArr(i,:)  = model.chiSquares;
+                end
+                if options.convTime.doConvTime
+                    convergeTArr(i)     = model.convergeT;
+                end
                 
                 nSubPerPosPhaseArr(i)   = nSubPerPosPhase;
                 nSubPerVelPhaseArr(i)   = nSubPerVelPhase;
                 nTimeFracsArr(i)        = nTimeFracs;
+                fResampleArr(i)         = fResample;
                 
                 % put data in vectors
                 %{

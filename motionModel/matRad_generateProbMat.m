@@ -5,36 +5,26 @@ function model = matRad_generateProbMat(data)
 l_sample        = data.l_sample;
 nSubPhases      = data.indices.nSubPhases;
 deltaT_sample   = data.deltaT_sample;
+filtFactor      = data.filtFactor;
 
 % count number of transitions from one phase to the next
 zij_deltaTSample = zeros(nSubPhases,nSubPhases);
 
 for i = 1:numel(l_sample)
     
-    if i == 1
+    if i <= numel(l_sample)-filtFactor
+        % normal current and next phase
         currPhase = l_sample(i);
-        nextPhase = l_sample(i+1);
-    elseif i == numel(l_sample)
-        %prevPhase = p_sample(i-1);
-        currPhase = l_sample(i);
+        nextPhase = l_sample(i+filtFactor);
     else
-        %prevPhase = p_sample(i-1);
+        % let the next phase actually be the previous phase to prevent
+        % normalization issues
         currPhase = l_sample(i);
-        nextPhase = l_sample(i+1);
+        nextPhase = l_sample(i-filtFactor);
     end
     
-    if i ~= numel(l_sample)
-        % if this isn't the last point, increment count by 1
-        zij_deltaTSample(currPhase,nextPhase) = zij_deltaTSample(currPhase,nextPhase)+1;
-    else
-        % if it is, check if the current phase goes anywhere
-        if ~any(zij_deltaTSample(currPhase,:))
-            % if not, then let it go to the last phase with probability 1
-            prevPhase = l_sample(i-1);
-            
-            zij_deltaTSample(currPhase,prevPhase) = zij_deltaTSample(currPhase,prevPhase)+1;
-        end
-    end
+    % if this isn't the last point, increment count by 1
+    zij_deltaTSample(currPhase,nextPhase) = zij_deltaTSample(currPhase,nextPhase)+1;
 end
 
 % construction of probability transition matrix
@@ -49,7 +39,7 @@ Pi_deltaTSample = zeros(nSubPhases,1);
 deleteSubPhase = zeros(nSubPhases,1,'logical');
 
 for i = 1:nSubPhases
-    Pi_deltaTSample(i) = nnz(l_sample == i)./numel(l_sample);
+    Pi_deltaTSample(i) = nnz(l_sample(1:(end-filtFactor)) == i)./numel(l_sample(1:(end-filtFactor)));
     
     deleteSubPhase(i) = sum(Pij_deltaTSample(i,:)) == 0;
 end
@@ -57,30 +47,7 @@ end
 % construct transition rate matrix
 identity = eye(nSubPhases);
 identity(deleteSubPhase,deleteSubPhase) = 0;
-qij = (Pij_deltaTSample-identity)./deltaT_sample;
-
-if false
-    % determine possible transitions
-    transij = zeros(nPhases,nPhases);
-    for iSubPhase = 1:nSubPhases
-        
-        iPhase = subPhase2Phase(iSubPhase);
-        if iPhase > nPhases
-            continue
-        end
-        
-        transij_inclExt = accumarray(subPhase2Phase,Pij_deltaTSample(iSubPhase,:));
-        transij(iPhase,:) = transij(iPhase,:)+transij_inclExt(1:nPhases)';
-    end
-    transij = transij./repmat(nSubPhasePerPhase(1:nPhases),1,nPhases);
-    
-    transij(transij < 0.01) = 0;
-    transij = logical(transij);
-    % NOTE THAT THIS TRANSIJ IS FOR deltaT_sample
-    % SHOULD DO MATRIX MULT TO GET A BETTER IDEA OF ACTUAL POSSIBLE TRANSITIONS
-    % FROM ONE ANGLE TO THE NEXT
-    % MAYBE NEED TO MOVE THIS TO THE PLN STRUCT
-end
+qij = (Pij_deltaTSample-identity)./(deltaT_sample);
 
 % put variables in model struct
 model.Pij_deltaTSample  = Pij_deltaTSample;

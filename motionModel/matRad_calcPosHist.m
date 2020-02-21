@@ -3,11 +3,9 @@ function model = matRad_calcPosHist(model,data,options)
 %% initialize
 
 % determine integer number of time steps to take
-numStepsModel_timePoints = round(options.timePoints./model.deltaT_sample);
-numStepsData_timePoints = round(options.timePoints./data.deltaT_sample);
-numStepsModel_simulate   = round(data.deltaT_sample*numel(data.l_sample)./model.deltaT_sample);
-% determine actual time points
-roundTimePoints = numStepsModel_timePoints.*model.deltaT_sample;
+numStepsModel_timePoints    = round(options.timePoints./model.deltaT_sample);
+numStepsData_timePoints     = round(options.timePoints./data.deltaT_sample);
+numStepsModel_simulate      = round(data.deltaT_sample*numel(data.l_sample)./model.deltaT_sample);
 
 %% determine initial distribution for histograms
 
@@ -32,7 +30,7 @@ initDist = initDist./sum(initDist);
 nHistories = 1000;
 
 % initialize number of triggering phase
-numTriggerPhaseMC  = zeros(1,numel(numStepsModel_timePoints));
+numTriggerPhaseMC  = zeros(1,numel(numStepsData_timePoints));
 
 % now calculate cumulative distribution
 cumInitSimDist = cumsum(initDist);
@@ -92,12 +90,11 @@ for i = 1:numel(numStepsModel_timePoints)
     % calculate probability of observing a phase nSteps after the
     % triggering phase
     distObsSubPhase     = triggerDist'*nStepTransPart;
-    distObsPhase        = accumarray(model.indices.subPhase2PosPhase,distObsSubPhase);
+    distObsPhase        = accumarray(model.indices.subPhase2PosPhase,distObsSubPhase,[data.indices.nPosPhases 1]);
     
     % calculate combined histogram: probability of observing a phase nSteps
     % after the triggering phase multiplied by the number of times the
     % triggering phase is observed
-    %histPhase = numTriggerPhase.*distObsPhase;
     histPhase = numTriggerPhaseMC(i).*distObsPhase;
     
     % insert into histogram
@@ -111,7 +108,7 @@ end
 p_sample = data.indices.subPhase2PosPhase(data.l_sample);
 
 % calculate histograms
-[hist_obs,initDists] = calcHist(p_sample,data.l_sample,triggerPhase,data.indices.nPosPhases,data.indices.nSubPhases,numStepsData_timePoints);
+hist_obs = calcHist(p_sample,triggerPhase,data.indices.nPosPhases,numStepsData_timePoints);
 
 % scale the histogram of observed (training) data to match the testing data
 % this is required due to the difference sampling intervals between the
@@ -127,7 +124,7 @@ chiSquares = calcChiSquares(hist_obs,hist_pred);
 nHistories = 1000;
 
 % initialize chi squares
-chiSquaresMC        = zeros(nHistories,numel(numStepsModel_timePoints));
+chiSquaresMC        = zeros(nHistories,numel(numStepsData_timePoints));
 
 for history = 1:nHistories
     
@@ -143,7 +140,7 @@ for history = 1:nHistories
     p_MCsample = model.indices.subPhase2PosPhase(l_simulated);
     
     % calculate histograms
-    [hist_MCobs,initMCDists] = calcHist(p_MCsample,l_simulated,triggerPhase,data.indices.nPosPhases,data.indices.nSubPhases,numStepsModel_timePoints);
+    hist_MCobs = calcHist(p_MCsample,triggerPhase,data.indices.nPosPhases,numStepsModel_timePoints);
     
     % for each history, calculate chi square
     chiSquaresMC(history,:) = calcChiSquares(hist_MCobs,hist_pred);
@@ -153,10 +150,10 @@ end
 %% calculate p values
 
 % initialize vector
-p = zeros(1,numel(numStepsModel_timePoints));
+p = zeros(1,numel(numStepsData_timePoints));
 
 % loop through time points
-for i = 1:numel(numStepsModel_timePoints)
+for i = 1:numel(numStepsData_timePoints)
     
     % p is the probability of getting a worse disagreement than that
     % observed, just by random chance (under the assumption that our model
@@ -211,13 +208,14 @@ Gs = 2.*sum(obsMultLnRatios,1);
 end
 
 % calculate observed histograms
-function [hist_obs,initDists] = calcHist(b_sample,sb_sample,initBin,nBins,nSubBins,numSteps)
+function hist_obs = calcHist(b_sample,initBin,nBins,numSteps)
+%[hist_obs,initDists] = calcHist(b_sample,sb_sample,initBin,nBins,nSubBins,numSteps)
 
 % initialize histograms
 hist_obs = zeros(nBins,numel(numSteps));
 
 % initialize initial distribution as func of t
-initDists = zeros(nSubBins,numel(numSteps));
+%initDists = zeros(nSubBins,numel(numSteps));
 
 % loop through trace
 for i = 1:numel(b_sample)
@@ -243,7 +241,7 @@ for i = 1:numel(b_sample)
         hist_obs(hist_obs_ind) = hist_obs(hist_obs_ind)+1;
         
         % put subphase into histogram
-        initDists(sb_sample(i),numSteps_i_ind) = initDists(sb_sample(i),numSteps_i_ind)+1;
+        %initDists(sb_sample(i),numSteps_i_ind) = initDists(sb_sample(i),numSteps_i_ind)+1;
         
     end
     
