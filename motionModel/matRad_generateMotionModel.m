@@ -45,7 +45,7 @@ end
 
 if options.FFT.doFFT
     % calculate the Fourier transform of the testing data
-    [fft_abs,fft_phase,fft_freq] = matRad_FFT(data_test,options.FFT.doWindowing);
+    [model.FFT.fft_abs,model.FFT.fft_phase,model.FFT.fft_freq] = matRad_FFT(data_test,options.FFT.doWindowing);
 end
 
 % insert options in model struct

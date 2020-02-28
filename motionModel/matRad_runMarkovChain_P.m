@@ -1,52 +1,45 @@
-function [l_simulated,relProb]= matRad_runMarkovChain_P(Pij,nSteps,l_init,maxProb)
+function lSimulated = matRad_runMarkovChain_P(motionModel,nSteps,maxProb)
+% simulate a history of the Markov Chain using the P matrix
 
-if nargin < 4
+% extract transition matrix and initial probabilities
+Pij             = motionModel.Pij_deltaTSample;
+initProb        = motionModel.initProb;
+
+if nargin < 3
     maxProb = false;
 end
 
-l_simulated = zeros(nSteps,1);
+% allocate states
+lSimulated = zeros(nSteps,1);
 
-% the state of the first step in the sequence is given by l_init
-step = 1;
-l_simulated(step) = l_init;
+% determine number of states in Markov chain
+numStates = numel(initProb);
 
-if nargout > 1
-    relProb = 1;
-end
+% sample first frame
+lSimulated(1) = randsample(numStates,1,true,initProb);
 
+% loop through the steps
 for step = 2:nSteps
     
-    % extra current phase
-    l_curr = l_simulated(step-1);
+    % get current state
+    lCurrent = lSimulated(step-1);
     
-    if maxProb || nargout > 1
+    if maxProb
         % next phase is the maximum probability
         
         % maximum probability
-        l_nextMax = find(Pij(l_curr,:) == max(Pij(l_curr,:)));
-        l_nextMax = l_nextMax(randi(numel(l_nextMax)));
+        lNext = find(Pij(lCurrent,:) == max(Pij(lCurrent,:)));
+        lNext = lNext(randi(numel(lNext)));
         
-        % next phase is the maximum probability
-        l_next = l_nextMax;
     else
         % do normal Monte Carlo
         
-        % calculate cumulative probability distribution
-        cumProb = cumsum(Pij(l_curr,:));
-        
-        % generate random number between 0 and 1
-        r = rand;
-        
-        % determine next phase
-        % Monte Carlo
-        l_next = find(r < cumProb,1,'first');
-    end
-    l_simulated(step) = l_next;
-    
-    if nargout > 1
-        relProb = relProb.*Pij(l_curr,l_next)./Pij(l_curr,l_nextMax);
+        % sample from current row of Pij
+        lNext = randsample(numStates,1,true,Pij(lCurrent,:));
     end
     
+    % insert next state
+    lSimulated(step) = lNext;
 end
 
 end

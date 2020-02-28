@@ -13,17 +13,18 @@ numStepsModel_simulate      = round(data.deltaT_sample*numel(data.l_sample)./mod
 [~,triggerPhase] = max(accumarray(model.indices.subPhase2PosPhase,model.Pi_deltaTSample));
 
 % initial distribution is all subphases giving the initial phase equally likely
-triggerInd = model.indices.subPhase2PosPhase == triggerPhase;
-triggerDist = model.Pi_deltaTSample;
-triggerDist(~triggerInd) = 0;
-triggerDist = triggerDist./sum(triggerDist);
+triggerInd                  = model.indices.subPhase2PosPhase == triggerPhase;
+triggerDist                 = model.Pi_deltaTSample;
+triggerDist(~triggerInd)    = 0;
+triggerDist                 = triggerDist./sum(triggerDist);
 
 % determine distribution of initial subphases for simulation
-initPhase = data.indices.subPhase2PosPhase(data.l_sample(1));
-initInd = model.indices.subPhase2PosPhase == initPhase;
-initDist = model.Pi_deltaTSample;
-initDist(~initInd) = 0;
-initDist = initDist./sum(initDist);
+initPhase           = data.indices.subPhase2PosPhase(data.l_sample(1));
+initInd             = model.indices.subPhase2PosPhase == initPhase;
+initProb            = model.Pi_deltaTSample;
+initProb(~initInd)  = 0;
+initProb            = initProb./sum(initProb);
+model.initProb      = initProb;
 
 %% Markov chain Monte Carlo trace: expected number of visits to triggering phase
 
@@ -32,18 +33,10 @@ nHistories = 1000;
 % initialize number of triggering phase
 numTriggerPhaseMC  = zeros(1,numel(numStepsData_timePoints));
 
-% now calculate cumulative distribution
-cumInitSimDist = cumsum(initDist);
-
 for history = 1:nHistories
     
-    % determine initial subphase for simulation by sampling for the
-    % distribution
-    r = rand;
-    initSubPhase = find(r < cumInitSimDist,1,'first');
-    
     % do MC
-    l_simulated = matRad_runMarkovChain_P(model.Pij_deltaTSample,numStepsModel_simulate,initSubPhase,false);
+    l_simulated = matRad_runMarkovChain_P(model,numStepsModel_simulate,false);
     
     % convert l_sample to p_sample
     p_MCsample = model.indices.subPhase2PosPhase(l_simulated);
@@ -81,7 +74,15 @@ for i = 1:numel(numStepsModel_timePoints)
     %sumNStepTransPart           = sumNStepTransTot-polyvalm(polyTransPart,model.Pij_deltaTSample);
     
     % calculate n-step transition matrix for particular number of steps
-    nStepTransPart = model.Pij_deltaTSample^n;
+    if i > 1 && n == numStepsModel_timePoints(i-1)
+        % if we are still using the same number of time points as last
+        % time, reuse the transition probability matrix
+    else
+        % otherwise, recalculate it
+        nStepTransPart = model.Pij_deltaTSample^n;
+    end
+        
+    
     
     % calculate expected number of times to observe the triggering phase
     %histTriggerSubPhase = initDist'*sumNStepTransPart;
@@ -113,7 +114,8 @@ hist_obs = calcHist(p_sample,triggerPhase,data.indices.nPosPhases,numStepsData_t
 % scale the histogram of observed (training) data to match the testing data
 % this is required due to the difference sampling intervals between the
 % training and testing data (former is decimated, latter is not)
-hist_obs = hist_obs.*numStepsModel_simulate./numel(data.l_sample);
+%hist_obs = hist_obs.*numStepsModel_simulate./numel(data.l_sample);
+hist_obs = hist_obs.*(numStepsModel_simulate-numStepsModel_timePoints)./(numel(data.l_sample)-numStepsData_timePoints);
 
 % now calc chi squares
 chiSquares = calcChiSquares(hist_obs,hist_pred);
@@ -128,13 +130,8 @@ chiSquaresMC        = zeros(nHistories,numel(numStepsData_timePoints));
 
 for history = 1:nHistories
     
-    % determine initial subphase for simulation by sampling for the
-    % distribution
-    r = rand;
-    initSubPhase = find(r < cumInitSimDist,1,'first');
-    
     % do MC
-    l_simulated = matRad_runMarkovChain_P(model.Pij_deltaTSample,numStepsModel_simulate,initSubPhase,false);
+    l_simulated = matRad_runMarkovChain_P(model,numStepsModel_simulate,false);
     
     % convert l_sample to p_sample
     p_MCsample = model.indices.subPhase2PosPhase(l_simulated);
