@@ -45,15 +45,30 @@ if ~isfield(pln.propOpt.VMAToptions,'maxFMOGantryAngleSpacing')
     error('Please define pln.propOpt.maxFMOGantryAngleSpacing.');
 end
 
+if pln.propOpt.run4D && ~pln.propOpt.VMAToptions.fixedGantrySpeed
+    warning('For 4D optimization, only fixed gantry speed is supported!');
+    
+    % set fixedGantrySpeed to true
+    pln.propOpt.VMAToptions.fixedGantrySpeed = true;
+end
+
+% calculate total angular range
 angularRange = abs(pln.propOpt.VMAToptions.finishingAngle-pln.propOpt.VMAToptions.startingAngle);
 
 if pln.propOpt.VMAToptions.continuousAperture
     
-    % angularRange = fluGantryAngleSpacing*numFluGantryAngles
-    % ensure that fluGantryAngleSpacing < maxFluGantryAngleSpacing (as close as
-    % possible)
-    numFluGantryAngles = ceil(angularRange./pln.propOpt.VMAToptions.maxFluGantryAngleSpacing);
-    fluGantryAngleSpacing = angularRange./numFluGantryAngles;
+    if pln.propOpt.run4D
+        % angularRange = fluGantryAngleSpacing*numFluGantryAngles
+        % also, deliveryTime = numFluGantryAngles*deltaT_sample
+        numFluGantryAngles = round(pln.propOpt.VMAToptions.deliveryTime/pln.propOpt.prop4D.motionModel.deltaT_sample);
+        fluGantryAngleSpacing = angularRange./numFluGantryAngles;
+    else
+        % angularRange = fluGantryAngleSpacing*numFluGantryAngles
+        % ensure that fluGantryAngleSpacing < maxFluGantryAngleSpacing (as 
+        % close as possible)
+        numFluGantryAngles = ceil(angularRange./pln.propOpt.VMAToptions.maxFluGantryAngleSpacing);
+        fluGantryAngleSpacing = angularRange./numFluGantryAngles;
+    end
     
     % numGantryAngles*gantryAngleSpacing = numFluGantryAngles*fluGantryAngleSpacing
     % where
@@ -62,7 +77,11 @@ if pln.propOpt.VMAToptions.continuousAperture
     numGantryAngles = ceil(numFluGantryAngles.*fluGantryAngleSpacing./pln.propOpt.VMAToptions.maxGantryAngleSpacing);
     % now ensure that numFluGantryAngles is an odd multiple of numGantryAngles so
     % that they align
-    numFluGantryAngles = numGantryAngles.*(floor(numFluGantryAngles./(2.*numGantryAngles)).*2+1);
+    if pln.propOpt.run4D
+        numFluGantryAngles = numGantryAngles.*(round(numFluGantryAngles./(2.*numGantryAngles)).*2+1);
+    else
+        numFluGantryAngles = numGantryAngles.*(floor(numFluGantryAngles./(2.*numGantryAngles)).*2+1);
+    end
     gantryAngleSpacing = angularRange/numGantryAngles;
     
     
@@ -78,7 +97,11 @@ if pln.propOpt.VMAToptions.continuousAperture
     %DAOGantryAngleSpacing = (angularRange-gantryAngleSpacing)/(numDAOGantryAngles-1);
     % now ensure that numFluGantryAngles is an odd multiple of numGantryAngles so
     % that they align
-    numFluGantryAngles = numGantryAngles.*(floor(numFluGantryAngles./(2.*numGantryAngles)).*2+1);
+    if pln.propOpt.run4D
+        numFluGantryAngles = numGantryAngles.*(round(numFluGantryAngles./(2.*numGantryAngles)).*2+1);
+    else
+        numFluGantryAngles = numGantryAngles.*(floor(numFluGantryAngles./(2.*numGantryAngles)).*2+1);
+    end
     fluGantryAngleSpacing = angularRange/numFluGantryAngles;
     gantryAngleSpacing = angularRange/numGantryAngles;
     DAOGantryAngleSpacing = (angularRange-gantryAngleSpacing)/(numDAOGantryAngles-1);
@@ -135,6 +158,11 @@ pln.propStf.FMOGantryAngles = firstFMOGantryAngle:FMOGantryAngleSpacing:lastFMOG
 pln.propStf.numOfBeams      = numel(pln.propStf.gantryAngles);
 pln.propStf.couchAngles     = 0*pln.propStf.gantryAngles;
 pln.propStf.isoCenter       = ones(pln.propStf.numOfBeams,1) * matRad_getIsoCenter(cst,ct,0);
+
+% update delivery time
+if pln.propOpt.run4D
+    pln.propOpt.VMAToptions.deliveryTime = pln.propOpt.prop4D.motionModel.deltaT_sample*numFluGantryAngles;
+end
 
 
 

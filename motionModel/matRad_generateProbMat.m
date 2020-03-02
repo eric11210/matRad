@@ -52,7 +52,7 @@ qij = (Pij_deltaTSample-identity)./(deltaT_sample);
 % put variables in model struct
 model.Pij_deltaTSample  = Pij_deltaTSample;
 model.Pi_deltaTSample   = Pi_deltaTSample;
-model.qij               = qij;
+model.qij_NOMORE        = qij;
 model.deltaT_sample     = data.deltaT_sample;
 model.indices           = data.indices;
 model.deleteSubPhase    = deleteSubPhase;

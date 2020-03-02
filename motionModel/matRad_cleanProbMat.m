@@ -7,12 +7,12 @@ model           = rmfield(model,'deleteSubPhase');
 % delete indices in Pij, qij, Pi
 model.Pij_deltaTSample(:,deleteSubPhase)    = [];
 model.Pij_deltaTSample(deleteSubPhase,:)    = [];
-model.qij(:,deleteSubPhase)                 = [];
-model.qij(deleteSubPhase,:)                 = [];
+model.qij_NOMORE(:,deleteSubPhase)          = [];
+model.qij_NOMORE(deleteSubPhase,:)          = [];
 model.Pi_deltaTSample(deleteSubPhase)       = [];
 
 % diagonalize matrix
-[model.qij_V,model.qij_D]   = eig(model.qij);
+[model.qij_NOMORE_V,model.qij_NOMORE_D] = eig(model.qij_NOMORE);
 
 % get new number of subPhases
 nSubPhases_new = nnz(~deleteSubPhase);
