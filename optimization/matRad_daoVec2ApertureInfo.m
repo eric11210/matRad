@@ -287,8 +287,8 @@ for i = 1:numel(updatedInfo.beam)
     % matRad_bixWeightAndGrad
     
     % weights
-    bixWeightAndGradBase_lastDose_angle.w(:) = {zeros(apertureInfo.beam(i).effNumBixels_lastDose,1)};
-    bixWeightAndGradBase_nextDose_angle.w(:) = {zeros(apertureInfo.beam(i).effNumBixels_nextDose,1)};
+    bixWeightAndGradBase_lastDose_angle.w(:) = {zeros(apertureInfo.beam(i).lastNumBixels,1)};
+    bixWeightAndGradBase_nextDose_angle.w(:) = {zeros(apertureInfo.beam(i).nextNumBixels,1)};
     % jacobian
     bixWeightAndGradBase_lastDose_angle.bixelJApVec_vec(:) = {zeros(updatedInfo.beam(i).bixelJApVecLastDose_sz,1)};
     bixWeightAndGradBase_nextDose_angle.bixelJApVec_vec(:) = {zeros(updatedInfo.beam(i).bixelJApVecNextDose_sz,1)};

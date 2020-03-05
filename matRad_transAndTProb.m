@@ -2,9 +2,11 @@ function [Pij_transT,Pij_transT_dot,Pi_T,Pi_T_dot] = matRad_transAndTProb(transT
 
 % calculate probabilities differently depending on type of motion model
 switch motionModel.type
-    case 'Markov'
+    case 'Markov_Q'
+        % Markov chain based on transition rate matrix (Q)
+        % no longer used except for trivial, non-4D optimization
         
-        % extract transition matrix and initial probabilities
+        % extract transition rate matrix and initial probabilities
         qij         = motionModel.qij;
         qij_D       = motionModel.qij_D;
         qij_V       = motionModel.qij_V;
@@ -28,6 +30,31 @@ switch motionModel.type
         end
         Pi_T_dot    = Pi_T*qij;
         
+    case 'Markov_P'
+        % Markov chain based on transition probability matrix (P)
+        
+        % extract transition matrix, deltaT, and initial probabilities
+        Pij         = motionModel.Pij_deltaTSample;
+        initProb    = motionModel.initProb;
+        deltaT      = motionModel.deltaT_sample;
+        
+        % find nearest integer multiples of transT/deltaTSample and
+        % T/deltaTSample
+        transT_n    = round(transT/deltaT);
+        T_n         = round(T/deltaT);
+        
+        % calculate transition probability matrix
+        Pij_transT = Pij^transT_n;
+        
+        % calculate probability to arrive at i at T and derivative
+        Pi_T = initProb*Pij^T_n;
+        
+        % the derivatives are just equal to 0
+        % indeed, for Markov_P these are not needed since the delivery time
+        % is fixed
+        Pij_transT_dot  = zeros(motionModel.indices.nSubPhases,motionModel.indices.nSubPhases);
+        Pi_T_dot        = zeros(1,motionModel.indices.nSubPhases);
+        
     case 'single'
         
         % allocate the probability matrices and vectors
@@ -46,7 +73,7 @@ switch motionModel.type
         Pij_transT(phase_I,phase_F) = 1;
         Pi_T(phase_I)               = 1;
         
-        % the derivatives can just be equal to 0
+        % the derivatives are just equal to 0
         Pij_transT_dot  = zeros(motionModel.numPhases,motionModel.numPhases);
         Pi_T_dot        = zeros(1,motionModel.numPhases);
         
@@ -62,9 +89,10 @@ switch motionModel.type
         Pi_T        = motionModel.Pi_arrivalT(:,motionModel.arrivalT == T)';
         
         % the derivatives can just be equal to 0
+        % indeed, for precalculated these are not needed since the delivery
+        % time is fixed
         Pij_transT_dot  = zeros(motionModel.indices.nSubPhases,motionModel.indices.nSubPhases);
         Pi_T_dot        = zeros(1,motionModel.indices.nSubPhases);
-        
 end
 
 end

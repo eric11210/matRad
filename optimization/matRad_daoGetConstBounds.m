@@ -57,11 +57,8 @@ else
     
     if apertureInfo.propVMAT.continuousAperture
         
-        % calculate scaling factor
-        scalingFactor = apertureInfo.propVMAT.beam(1).fluAngleBordersDiff./(2.*apertureInfo.propVMAT.beam(apertureInfo.propVMAT.beam(1).nextDAOIndex).DAOAngleBordersDiff-apertureInfo.propVMAT.beam(1).fluAngleBordersDiff);
-        
         cl_lfspd = machine.constraints.leafSpeed(1)*ones(2*apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs,1); %Minimum leaf travel speed (mm/s)
-        cu_lfspd = scalingFactor.*machine.constraints.leafSpeed(2)*ones(2*apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs,1); %Maximum leaf travel speed (mm/s)
+        cu_lfspd = machine.constraints.leafSpeed(2)*ones(2*apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs,1); %Maximum leaf travel speed (mm/s)
         %apertureInfo.beam(i).numOfActiveLeafPairs should be independent of i, due to using the union of all ray positions in the stf
         %Convert from cm/deg when checking constraints; cannot do it at this stage since gantry rotation speed is not hard-coded
     else

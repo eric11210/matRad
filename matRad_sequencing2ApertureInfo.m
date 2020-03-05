@@ -225,13 +225,13 @@ for i = 1:size(stf,2)
         % put all propVMAT stuff from stf into apertureInfo
         apertureInfo.propVMAT.beam(i) = stf(i).propVMAT;
         
+        apertureInfo.beam(i).gantryRot  = sequencing.beam(i).gantryRot;
+        apertureInfo.beam(i).time       = apertureInfo.propVMAT.beam(i).fluAngleBordersDiff./apertureInfo.beam(i).gantryRot;
+        
         if apertureInfo.propVMAT.beam(i).DAOBeam
             
             totalNumOfOptBixels = totalNumOfOptBixels+stf(i).totalNumOfBixels;
             totalNumOfLeafPairs = totalNumOfLeafPairs+apertureInfo.beam(i).numOfShapes*apertureInfo.beam(i).numOfActiveLeafPairs;
-            
-            apertureInfo.beam(i).gantryRot  = sequencing.beam(i).gantryRot;
-            apertureInfo.beam(i).time       = apertureInfo.propVMAT.beam(i).fluAngleBordersDiff./apertureInfo.beam(i).gantryRot;
             
             apertureInfo.propVMAT.jacobT(stf(i).propVMAT.DAOIndex,i) = stf(i).propVMAT.timeFacCurr;
             

@@ -217,14 +217,31 @@ for phase_I = 1:apertureInfo.numPhases
     % loop over all (final) phases
     for phase_F = 1:apertureInfo.numPhases
         
+        % determine cell index
+        cellInd = (phase_I-1).*apertureInfo.numPhases+phase_F;
+        
         % skip to next phase if probability to transition from phase_I
         % to phase_F and its derivative are both 0
         if pMat(phase_I,phase_F)  == 0 && pGradMat1(phase_I,phase_F) == 0 && pGradMat2(phase_I,phase_F) == 0
+            
+            % cut out zeros, i.e. all elements after the offset
+            results.arcI.lastDose.bixelJApVec_i{cellInd}((results.arcI.lastDose.bixelJApVec_offset{cellInd}+1):end)   = [];
+            results.arcI.lastDose.bixelJApVec_j{cellInd}((results.arcI.lastDose.bixelJApVec_offset{cellInd}+1):end)   = [];
+            results.arcI.lastDose.bixelJApVec_vec{cellInd}((results.arcI.lastDose.bixelJApVec_offset{cellInd}+1):end) = [];
+            results.arcI.nextDose.bixelJApVec_i{cellInd}((results.arcI.nextDose.bixelJApVec_offset{cellInd}+1):end)   = [];
+            results.arcI.nextDose.bixelJApVec_j{cellInd}((results.arcI.nextDose.bixelJApVec_offset{cellInd}+1):end)   = [];
+            results.arcI.nextDose.bixelJApVec_vec{cellInd}((results.arcI.nextDose.bixelJApVec_offset{cellInd}+1):end) = [];
+            results.arcF.lastDose.bixelJApVec_i{cellInd}((results.arcF.lastDose.bixelJApVec_offset{cellInd}+1):end)   = [];
+            results.arcF.lastDose.bixelJApVec_j{cellInd}((results.arcF.lastDose.bixelJApVec_offset{cellInd}+1):end)   = [];
+            results.arcF.lastDose.bixelJApVec_vec{cellInd}((results.arcF.lastDose.bixelJApVec_offset{cellInd}+1):end) = [];
+            results.arcF.nextDose.bixelJApVec_i{cellInd}((results.arcF.nextDose.bixelJApVec_offset{cellInd}+1):end)   = [];
+            results.arcF.nextDose.bixelJApVec_j{cellInd}((results.arcF.nextDose.bixelJApVec_offset{cellInd}+1):end)   = [];
+            results.arcF.nextDose.bixelJApVec_vec{cellInd}((results.arcF.nextDose.bixelJApVec_offset{cellInd}+1):end) = [];
+            
             continue
         end
         
-        % determine cell index
-        cellInd = (phase_I-1).*apertureInfo.numPhases+phase_F;
+        
         
         
         % loop over all shapes

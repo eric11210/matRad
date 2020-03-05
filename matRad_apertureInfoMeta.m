@@ -97,15 +97,15 @@ if pln.propOpt.runVMAT
         end
         
         % prepare motion model
-        apertureInfo.motionModel = matRad_prepModelForOpt(pln,stf);
+        apertureInfo.motionModel = matRad_prepModelForOpt(pln,stf,apertureInfo);
         
     else
         
         % use "dummy" motion model, which gives probability 1 for trivial
         % trajectory
-        apertureInfo.motionModel.type   = 'Markov';
-        apertureInfo.motionModel.qij       = 0;
-        apertureInfo.motionModel.initProb  = 1;
+        apertureInfo.motionModel.type       = 'Markov_Q';
+        apertureInfo.motionModel.qij        = 0;
+        apertureInfo.motionModel.initProb   = 1;
         
         % diagonalize matrix
         [apertureInfo.motionModel.qij_V,apertureInfo.motionModel.qij_D] = eig(apertureInfo.motionModel.qij);
@@ -127,7 +127,8 @@ if pln.propOpt.runVMAT
     if apertureInfo.propVMAT.fixedGantrySpeed
         % this should correspond to the speed calculated in
         % matRad_arcSequencing
-        minGantryRot = (pln.propOpt.VMAToptions.finishingAngle-pln.propOpt.VMAToptions.startingAngle)./pln.propOpt.VMAToptions.deliveryTime;
+        %minGantryRot = (pln.propOpt.VMAToptions.finishingAngle-pln.propOpt.VMAToptions.startingAngle)./pln.propOpt.VMAToptions.deliveryTime;
+        minGantryRot = apertureInfo.beam(1).gantryRot;
     else
         % just use the machine speed
         minGantryRot = machine.constraints.gantryRotationSpeed(1);
@@ -141,25 +142,10 @@ if pln.propOpt.runVMAT
         maxTime_flu = apertureInfo.propVMAT.beam(i).fluAngleBordersDiff./minGantryRot;
         [Pij_transT_flu,~,~,~] = matRad_transAndTProb(maxTime_flu,0,apertureInfo.motionModel);
         PIJ_transT_flu = accumarray([apertureInfo.motionModel.indices.subPhase2PosPhase_gridI(:) apertureInfo.motionModel.indices.subPhase2PosPhase_gridJ(:)],Pij_transT_flu(:))./apertureInfo.motionModel.indices.nSubPhasePerPosPhase;
-        transMask_flu = PIJ_transT_flu > 0.01;
+        transMask_flu = PIJ_transT_flu > 0;
         
-        apertureInfo.propVMAT.beam(i).transMask             = repmat(1:apertureInfo.numPhases,[apertureInfo.numPhases 1]);
+        apertureInfo.propVMAT.beam(i).transMask                 = repmat(1:apertureInfo.numPhases,[apertureInfo.numPhases 1]);
         apertureInfo.propVMAT.beam(i).transMask(~transMask_flu) = 0;
-        
-        if apertureInfo.propVMAT.continuousAperture
-            if apertureInfo.propVMAT.beam(i).DAOBeam
-                
-                % determine possible phase transitions between DAO angles
-                % (for leaf speed constraints)
-                maxTime_DAO = apertureInfo.propVMAT.beam(i).DAOAngleBordersDiff./minGantryRot;
-                [Pij_transT_DAO,~,~,~] = matRad_transAndTProb(maxTime_DAO,0,apertureInfo.motionModel);
-                PIJ_transT_DAO = accumarray([apertureInfo.motionModel.indices.subPhase2PosPhase_gridI(:) apertureInfo.motionModel.indices.subPhase2PosPhase_gridJ(:)],Pij_transT_DAO(:))./apertureInfo.motionModel.indices.nSubPhasePerPosPhase;
-                transMask_DAO = PIJ_transT_DAO > 0.01;
-                
-                apertureInfo.propVMAT.beam(i).leafConstMask             = repmat(1:apertureInfo.numPhases,[apertureInfo.numPhases 1]);
-                apertureInfo.propVMAT.beam(i).leafConstMask(~transMask_DAO) = 0;
-            end
-        end
         
         % calculate individual size of jacobian vector
         % construct conversion from local to global optimization variables
@@ -262,8 +248,8 @@ if pln.propOpt.runVMAT
     if apertureInfo.propVMAT.continuousAperture
         
         % count number of transitions
-        apertureInfo.propVMAT.numLeafSpeedConstraint      = nnz([apertureInfo.propVMAT.beam.leafConstMask]);
-        apertureInfo.propVMAT.numLeafSpeedConstraintDAO   = nnz([apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).leafConstMask]);
+        apertureInfo.propVMAT.numLeafSpeedConstraint      = nnz([apertureInfo.propVMAT.beam.transMask]);
+        apertureInfo.propVMAT.numLeafSpeedConstraintDAO   = nnz([apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).transMask]);
     end
     
 else

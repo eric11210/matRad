@@ -10,8 +10,8 @@ nSubPhases_new = nnz(~indOOB_subPhase);
 % delete indices in Pij, qij, Pi
 model.Pij_deltaTSample(:,indOOB_subPhase)   = [];
 model.Pij_deltaTSample(indOOB_subPhase,:)   = [];
-model.qij(:,indOOB_subPhase)                = [];
-model.qij(indOOB_subPhase,:)                = [];
+model.qij_NOMORE(:,indOOB_subPhase)                = [];
+model.qij_NOMORE(indOOB_subPhase,:)                = [];
 model.Pi_deltaTSample(indOOB_subPhase)      = [];
 
 % update indices (by deleting some)

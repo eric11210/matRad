@@ -65,14 +65,6 @@ if ~apertureInfo.runVMAT
     c = [c_dao; c_dos];
 else
     
-    % values of times spent in an arc surrounding the optimized angles (full
-    % arc/dose influence arc)
-    timeDoseBorderAngles    = [apertureInfo.beam([apertureInfo.propVMAT.beam.DAOBeam]).time]';
-    timeFacCurr             = [apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).timeFacCurr]';
-    timeDAOBorderAngles     = timeDoseBorderAngles./timeFacCurr;
-    
-    timeDoseBorderAngles_rep    = repmat(timeDoseBorderAngles,apertureInfo.numPhases,1);
-    
     if apertureInfo.propVMAT.continuousAperture
         % Using the dynamic fluence calculation, we have the leaf positions in
         % the vector be the leaf positions at the borders of the DAO arcs
@@ -85,57 +77,51 @@ else
         rightLeafSpeed  = zeros(apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs,1);
         
         offset      = 0;
-        shapeInd    = 1;
         
         for i = 1:numel(apertureInfo.beam)
             % loop over beams
             n = apertureInfo.beam(i).numOfActiveLeafPairs;
             
-            if ~isempty(apertureInfo.propVMAT.beam(i).leafConstMask)
-                % only true for DAO beams
-                for phase_I = 1:apertureInfo.numPhases
-                    % loop over initial phases
-                    
-                    transitions = apertureInfo.propVMAT.beam(i).leafConstMask(phase_I,:);
-                    transitions(transitions == 0) = [];
-                    
-                    for phase_F = transitions
-                        % loop over possible final phases
-                        
-                        % get vector indices
-                        % it's a DAO beam, so use own vector offset
-                        vectorIx_LI = apertureInfo.beam(i).shape{phase_I}(1).vectorOffset(1) + ((1:n)-1);
-                        vectorIx_LF = apertureInfo.beam(i).shape{phase_F}(1).vectorOffset(2) + ((1:n)-1);
-                        vectorIx_RI = vectorIx_LI+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
-                        vectorIx_RF = vectorIx_LF+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
-                        
-                        % extract leaf positions, time
-                        leftLeafPos_I   = apertureInfoVec(vectorIx_LI);
-                        rightLeafPos_I  = apertureInfoVec(vectorIx_RI);
-                        leftLeafPos_F   = apertureInfoVec(vectorIx_LF);
-                        rightLeafPos_F  = apertureInfoVec(vectorIx_RF);
-                        t               = timeDAOBorderAngles(shapeInd);
-                        
-                        % determine indices
-                        indInConVec = offset+(1:n);
-                        
-                        % calc speeds
-                        leftLeafSpeed(indInConVec)      = abs(leftLeafPos_F-leftLeafPos_I)./t;
-                        rightLeafSpeed(indInConVec)     = abs(rightLeafPos_F-rightLeafPos_I)./t;
-                        
-                        % update offset
-                        offset = offset+n;
-                    end
-                end
+            % extract time spent in fluence angle arc
+            tFluBorderAngle = apertureInfo.beam(i).time;
+            
+            for phase_I = 1:apertureInfo.numPhases
+                % loop over initial phases
                 
-                % increment shapeInd only for beams which have transtion
-                % defined
-                shapeInd = shapeInd+1;
+                % find allowable transitions
+                transMask                   = apertureInfo.propVMAT.beam(i).transMask(phase_I,:);
+                transMask(transMask == 0)   = [];
+                
+                for phase_F = transMask
+                    % loop over possible final phases
+                    
+                    % extract leaf positions
+                    leftLeafPos_I   = apertureInfo.beam(i).shape{phase_I}.leftLeafPos_I;
+                    leftLeafPos_F   = apertureInfo.beam(i).shape{phase_F}.leftLeafPos_F;
+                    rightLeafPos_I  = apertureInfo.beam(i).shape{phase_I}.rightLeafPos_I;
+                    rightLeafPos_F  = apertureInfo.beam(i).shape{phase_F}.rightLeafPos_F;
+                    
+                    % determine indices
+                    indInConVec = offset+(1:n);
+                    
+                    % calc speeds
+                    leftLeafSpeed(indInConVec)      = abs(leftLeafPos_F-leftLeafPos_I)./tFluBorderAngle;
+                    rightLeafSpeed(indInConVec)     = abs(rightLeafPos_F-rightLeafPos_I)./tFluBorderAngle;
+                    
+                    % update offset
+                    offset = offset+n;
+                end
             end
         end
         
         c_lfspd = [leftLeafSpeed; rightLeafSpeed];
     else
+        
+        % values of times spent in an arc surrounding the optimized angles
+        % (full arc)
+        timeFluBorderAngles     = [apertureInfo.beam([apertureInfo.propVMAT.beam.DAOBeam]).time]';
+        timeFacCurr             = [apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).timeFacCurr]';
+        timeDAOBorderAngles     = timeFluBorderAngles./timeFacCurr;
         
         i = sort(repmat(1:(apertureInfo.totalNumOfShapes-1),1,2));
         j = sort(repmat(1:apertureInfo.totalNumOfShapes,1,2));
@@ -155,6 +141,11 @@ else
             abs(diff(reshape(rightLeafPos,apertureInfo.beam(1).numOfActiveLeafPairs,apertureInfo.totalNumOfShapes),1,2))]./ ...
             repmat(timeBNOptAngles',apertureInfo.beam(1).numOfActiveLeafPairs,2),2*apertureInfo.beam(1).numOfActiveLeafPairs*numel(timeBNOptAngles),1);
     end
+    
+    % values of times spent in an arc surrounding the optimized angles
+    % (dose influence arc)
+    timeFluBorderAngles        = [apertureInfo.beam([apertureInfo.propVMAT.beam.DAOBeam]).time]';
+    timeDoseBorderAngles_rep    = repmat(timeFluBorderAngles,apertureInfo.numPhases,1);
     
     % values of doserate (MU/sec) in an arc surrounding the optimized angles
     weights = apertureInfoVec(1:(apertureInfo.totalNumOfShapes*apertureInfo.numPhases))./apertureInfo.jacobiScale;

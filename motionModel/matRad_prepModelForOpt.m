@@ -1,43 +1,44 @@
-function motionModel = matRad_prepModelForOpt(pln,stf)
+function motionModel = matRad_prepModelForOpt(pln,stf,apertureInfo)
 
 % check if motion model already exists
 if isfield(pln.propOpt.prop4D,'motionModel')
-    
-    % use model if it exists (and we're not doing a fixed gantry speed)
-    motionModel        = pln.propOpt.prop4D.motionModel;
-    motionModel.type   = 'Markov';
-    
-    % strip model of the "out of bounds" phases
-    motionModel = matRad_stripMarkovOOB(motionModel);
-    
-    % diagonalize matrix
-    [motionModel.qij_V,motionModel.qij_D] = eig(motionModel.qij);
-    
-    % determine initial position phase
-    posPhaseProb = accumarray(motionModel.indices.subPhase2PosPhase,motionModel.Pi_deltaTSample);
-    initPosPhase = find(posPhaseProb == max(posPhaseProb));
-    
-    % determine initial probabililty
-    motionModel.initProb = zeros(1,motionModel.indices.nSubPhases);
-    % trigger on first phase and EOE
-    initSubPhases   = motionModel.indices.subPhase2PosPhase == initPosPhase & motionModel.indices.subPhase2FS == 3;
-    % let all subphases corresponding to the initial position phase
-    % and FS (EOE) have the same probability
-    motionModel.initProb(initSubPhases) = 1;
-    % let all other subphases have the same (much smaller, but
-    % nonzero) probability
-    motionModel.initProb(~initSubPhases) = 1e-8;
-    % normalize
-    motionModel.initProb = motionModel.initProb./sum(motionModel.initProb);
-    
     
     % if we're doing a fixed gantry speed, we can pre-calculate all of the
     % probabilities to save time
     if pln.propOpt.VMAToptions.fixedGantrySpeed
         
+        % fixed gantry speed, use transition probability matrix P to
+        % precalculate probabilities
+        
+        % use model if it exists (and we're not doing a fixed gantry speed)
+        motionModel        = pln.propOpt.prop4D.motionModel;
+        motionModel.type   = 'Markov_P';
+        
+        % strip model of the "out of bounds" phases
+        motionModel = matRad_stripMarkovOOB(motionModel);
+        
+        % determine initial position phase
+        posPhaseProb = accumarray(motionModel.indices.subPhase2PosPhase,motionModel.Pi_deltaTSample);
+        initPosPhase = find(posPhaseProb == max(posPhaseProb));
+        
+        % determine initial probabililty
+        motionModel.initProb = zeros(1,motionModel.indices.nSubPhases);
+        % trigger on first phase and EOE
+        initSubPhases   = motionModel.indices.subPhase2PosPhase == initPosPhase & motionModel.indices.subPhase2FS == 3;
+        % let all subphases corresponding to the initial position phase
+        % and FS (EOE) have the same probability
+        motionModel.initProb(initSubPhases) = 1;
+        % let all other subphases have the same (much smaller, but
+        % nonzero) probability
+        motionModel.initProb(~initSubPhases) = 1e-8;
+        % normalize
+        motionModel.initProb = motionModel.initProb./sum(motionModel.initProb);
+        
+        
         % calculate the fixed gantry speed
         % this should be equal to the speed calculated in matRad_arcSequencing
-        gantryRot = (pln.propOpt.VMAToptions.finishingAngle-pln.propOpt.VMAToptions.startingAngle)./pln.propOpt.VMAToptions.deliveryTime;
+        %gantryRot = (pln.propOpt.VMAToptions.finishingAngle-pln.propOpt.VMAToptions.startingAngle)./pln.propOpt.VMAToptions.deliveryTime;
+        gantryRot = apertureInfo.beam(1).gantryRot;
         
         % loop through the stf structure to find all possible transition and
         % arrival times
@@ -107,11 +108,42 @@ if isfield(pln.propOpt.prop4D,'motionModel')
             % insert into motionModel structure
             motionModel.Pij_transT(:,:,i) = Pij_transT;
         end
-       
+        
         % change the motionModel type to precalculated
         motionModel.type = 'precalculated';
         
+    else
+        % variable gantry speed, use transition rate matrix q
+        % not currently supported
+        
+        % use model if it exists (and we're not doing a fixed gantry speed)
+        motionModel        = pln.propOpt.prop4D.motionModel;
+        motionModel.type   = 'Markov_Q';
+        
+        % strip model of the "out of bounds" phases
+        motionModel = matRad_stripMarkovOOB(motionModel);
+        
+        % diagonalize matrix
+        [motionModel.qij_V,motionModel.qij_D] = eig(motionModel.qij);
+        
+        % determine initial position phase
+        posPhaseProb = accumarray(motionModel.indices.subPhase2PosPhase,motionModel.Pi_deltaTSample);
+        initPosPhase = find(posPhaseProb == max(posPhaseProb));
+        
+        % determine initial probabililty
+        motionModel.initProb = zeros(1,motionModel.indices.nSubPhases);
+        % trigger on first phase and EOE
+        initSubPhases   = motionModel.indices.subPhase2PosPhase == initPosPhase & motionModel.indices.subPhase2FS == 3;
+        % let all subphases corresponding to the initial position phase
+        % and FS (EOE) have the same probability
+        motionModel.initProb(initSubPhases) = 1;
+        % let all other subphases have the same (much smaller, but
+        % nonzero) probability
+        motionModel.initProb(~initSubPhases) = 1e-8;
+        % normalize
+        motionModel.initProb = motionModel.initProb./sum(motionModel.initProb);
     end
+    
 else
     
     % if it doesn't, throw an error
