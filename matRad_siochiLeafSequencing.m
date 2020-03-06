@@ -79,6 +79,10 @@ for i = 1:numOfBeams
             continue %if this is not a beam to be initialized, continue to next iteration without generating segments
         else
             numToKeep = stf(i).propVMAT.numOfBeamChildren;
+            
+            if pln.propOpt.VMAToptions.continuousAperture && stf(i).propVMAT.firstFMO
+                numToKeep = numToKeep+1;
+            end
         end
     else
         

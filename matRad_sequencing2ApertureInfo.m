@@ -44,6 +44,9 @@ centralLeafPair = ceil(numOfMLCLeafPairs/2);
 bixelIndOffset = 0; % used for creation of bixel index maps
 totalNumOfBixels = sum([stf(:).totalNumOfBixels]);
 totalNumOfShapes = sum([sequencing.beam.numOfShapes]);
+if pln.propOpt.VMAToptions.continuousAperture
+    totalNumOfShapes = totalNumOfShapes-1;
+end
 weightOffset = 1;
 vectorOffset = totalNumOfShapes + 1; % used for bookkeeping in the vector for optimization
 bixOffset = 1; %used for gradient calculations
@@ -52,7 +55,7 @@ if pln.propOpt.runVMAT
     totalNumOfOptBixels = 0;
     totalNumOfLeafPairs = 0;
     
-    apertureInfo.propVMAT.jacobT = zeros(sum([sequencing.beam.numOfShapes]),numel(sequencing.beam));
+    apertureInfo.propVMAT.jacobT = zeros(totalNumOfShapes,numel(sequencing.beam));
     
     % preallocate propVMAT.beam (metadata)
     stf(stf(1).propVMAT.beamParentIndex).propVMAT.leafDir = 1;
@@ -150,14 +153,50 @@ for i = 1:size(stf,2)
             end
         end
         
-        % save data for each shape of this beam
-        apertureInfo.beam(i).shape{1}(m).leftLeafPos = leftLeafPos;
-        apertureInfo.beam(i).shape{1}(m).rightLeafPos = rightLeafPos;
-        apertureInfo.beam(i).shape{1}(m).weight = sequencing.beam(i).shapesWeight(m);
-        apertureInfo.beam(i).shape{1}(m).shapeMap = shapeMap;
+        if pln.propOpt.runVMAT && pln.propOpt.VMAToptions.continuousAperture
+            
+            if sequencing.beam(i).numOfShapes == 1
+                % this is not the first DAO beam
+                
+                % this data is saved to _F_DAO (to be eliminated in
+                % daoApertureInfo2Vec)
+                apertureInfo.beam(i).shape{1}.leftLeafPos_F_DAO = leftLeafPos;
+                apertureInfo.beam(i).shape{1}.rightLeafPos_F_DAO = rightLeafPos;
+                apertureInfo.beam(i).shape{1}.weight = sequencing.beam(i).shapesWeight;
+                apertureInfo.beam(i).shape{1}.shapeMap = shapeMap;
+            elseif sequencing.beam(i).numOfShapes == 2
+                % this is the first DAO beam
+                
+                % change numOfShapes to 1
+                sequencing.beam(i).numOfShapes = 1;
+                
+                % m = 1 is saved to _I_DAO, m = 2 to _F_DAO (both are to be
+                % eliminated in daoApertureInfo2Vec)
+                if m == 1
+                    apertureInfo.beam(i).shape{1}.leftLeafPos_I_DAO = leftLeafPos;
+                    apertureInfo.beam(i).shape{1}.rightLeafPos_I_DAO = rightLeafPos;
+                    apertureInfo.beam(i).shape{1}.weight = sequencing.beam(i).shapesWeight;
+                    apertureInfo.beam(i).shape{1}.shapeMap = shapeMap;
+                elseif m == 2
+                    apertureInfo.beam(i).shape{1}.leftLeafPos_F_DAO = leftLeafPos;
+                    apertureInfo.beam(i).shape{1}.rightLeafPos_F_DAO = rightLeafPos;
+                    apertureInfo.beam(i).shape{1}.weight = sequencing.beam(i).shapesWeight;
+                    apertureInfo.beam(i).shape{1}.shapeMap = shapeMap;
+                end
+            end
+        else
+            % save data for each shape of this beam
+            apertureInfo.beam(i).shape{1}(m).leftLeafPos = leftLeafPos;
+            apertureInfo.beam(i).shape{1}(m).rightLeafPos = rightLeafPos;
+            apertureInfo.beam(i).shape{1}(m).weight = sequencing.beam(i).shapesWeight(m);
+            apertureInfo.beam(i).shape{1}(m).shapeMap = shapeMap;
+        end
         
         if pln.propOpt.runVMAT
-            apertureInfo.beam(i).shape{1}(m).MURate = sequencing.beam(i).MURate;
+            apertureInfo.beam(i).shape{1}.MURate = sequencing.beam(i).MURate;
+            if m == 2
+                continue
+            end
         end
         
         apertureInfo.beam(i).shape{1}(m).jacobiScale = 1;

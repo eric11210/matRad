@@ -43,7 +43,7 @@ end
 
 numOfBeams = numel(stf);
 
-leafDir = 1;
+leafDir = -1;
 
 for i = 1:numOfBeams
     
@@ -60,31 +60,63 @@ for i = 1:numOfBeams
             childrenIndex = flipud(childrenIndex);
         end
         
-        count = 1;
-        numOfShapes = beam(i).numOfShapes;
+        shape = 1;
+        if stf(i).propVMAT.firstFMO
+            numOfChildren = beam(i).numOfShapes-1;
+        else
+            numOfChildren = beam(i).numOfShapes;
+        end
         
-        for shape = 1:numOfShapes
-            childIndex = childrenIndex(count);
+        for child = 1:numOfChildren
+            
+            childIndex = childrenIndex(child);
             beam(childIndex).leafDir = leafDir;
             
-            if childIndex == i
-                % do not overwrite information, since we will need it for
-                % the remaining beams (DAO, not init)
-                beam(childIndex).tempNumOfShapes = 1;
-                beam(childIndex).tempShapes = beam(i).shapes(:,:,shape);
-                beam(childIndex).tempShapesWeight = beam(i).shapesWeight(shape);
-                beam(childIndex).fluence = beam(childIndex).tempShapes;
-                beam(childIndex).sum = beam(childIndex).tempShapesWeight*beam(childIndex).tempShapes;
-            else
-                % don't worry about overwriting
-                beam(childIndex).numOfShapes = 1;
-                beam(childIndex).shapes = beam(i).shapes(:,:,shape);
-                beam(childIndex).shapesWeight = beam(i).shapesWeight(shape);
-                beam(childIndex).fluence = beam(childIndex).shapes;
-                beam(childIndex).sum = beam(childIndex).shapesWeight*beam(childIndex).shapes;
-            end
             
-            count = count+1;
+            if stf(i).propVMAT.firstFMO && child == 1
+                % the very first DAO beam needs two shapes
+                
+                if childIndex == i
+                    % do not overwrite information, since we will need it for
+                    % the remaining beams (DAO, not init)
+                    beam(childIndex).tempNumOfShapes    = 2;
+                    beam(childIndex).tempShapes(:,:,1)  = beam(i).shapes(:,:,shape);
+                    beam(childIndex).tempShapes(:,:,2)  = beam(i).shapes(:,:,shape+1);
+                    beam(childIndex).tempShapesWeight   = (beam(i).shapesWeight(shape)+beam(i).shapesWeight(shape+1))/2;
+                    %beam(childIndex).fluence            = beam(childIndex).tempShapes;
+                    %beam(childIndex).sum                = beam(childIndex).tempShapesWeight*beam(childIndex).tempShapes;
+                else
+                    % don't worry about overwriting
+                    beam(childIndex).numOfShapes    = 2;
+                    beam(childIndex).shapes(:,:,1)  = beam(i).shapes(:,:,shape);
+                    beam(childIndex).shapes(:,:,2)  = beam(i).shapes(:,:,shape+1);
+                    beam(childIndex).shapesWeight   = (beam(i).shapesWeight(shape)+beam(i).shapesWeight(shape+1))/2;
+                    %beam(childIndex).fluence        = beam(childIndex).shapes;
+                    %beam(childIndex).sum            = beam(childIndex).shapesWeight*beam(childIndex).shapes;
+                end
+                
+                % increment shape by 2
+                shape = shape+2;
+            else
+                % all other DAO beams need only one shape
+                
+                if childIndex == i
+                    % do not overwrite information, since we will need it for
+                    % the remaining beams (DAO, not init)
+                    beam(childIndex).tempNumOfShapes    = 1;
+                    beam(childIndex).tempShapes         = beam(i).shapes(:,:,shape);
+                    beam(childIndex).tempShapesWeight   = beam(i).shapesWeight(shape);
+                    %beam(childIndex).fluence            = beam(childIndex).tempShapes;
+                    %beam(childIndex).sum                = beam(childIndex).tempShapesWeight*beam(childIndex).tempShapes;
+                else
+                    % don't worry about overwriting
+                    beam(childIndex).numOfShapes    = 1;
+                    beam(childIndex).shapes         = beam(i).shapes(:,:,shape);
+                    beam(childIndex).shapesWeight   = beam(i).shapesWeight(shape);
+                    %beam(childIndex).fluence        = beam(childIndex).shapes;
+                    %beam(childIndex).sum            = beam(childIndex).shapesWeight*beam(childIndex).shapes;
+                end
+            end
         end
     else
         % if beam isn't an FMO beam, then there is no info in the beam
@@ -95,7 +127,7 @@ end
 
 for i = 1:numOfBeams
     % now go through and calculate gantry rotation speed, MU rate, etc.
-    
+
     if stf(i).propVMAT.FMOBeam
         beam(i).numOfShapes = beam(i).tempNumOfShapes;
         beam(i).shapes = beam(i).tempShapes;

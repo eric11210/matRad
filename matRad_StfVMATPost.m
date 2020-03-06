@@ -44,6 +44,8 @@ numDAO = 1;
 DAOAngleBorders = zeros(2*numel(pln.propStf.DAOGantryAngles),1);
 offset = 1;
 timeFacIndOffset = 1;
+firstDAO = true;
+firstFMO = true;
 
 % initialize values for last/next DAO/dose indices
 lastDAOIndex    = find(abs(pln.propStf.fluGantryAngles - pln.propStf.DAOGantryAngles(1)) < 1e-8);
@@ -65,7 +67,26 @@ for i = 1:length(stf)
     stf(i).propVMAT.DAOBeam     = any(abs(pln.propStf.DAOGantryAngles - pln.propStf.fluGantryAngles(i)) < 1e-6);
     stf(i).propVMAT.doseBeam    = any(abs(pln.propStf.gantryAngles - pln.propStf.fluGantryAngles(i)) < 1e-6);
     
-    if ~stf(i).propVMAT.FMOBeam
+    if stf(i).propVMAT.DAOBeam
+        if firstDAO
+            stf(i).propVMAT.firstDAO = true;
+            firstDAO = false;
+        else
+            stf(i).propVMAT.firstDAO = false;
+        end
+    else
+        % dummy variables for DAO stuff
+        stf(i).propVMAT.firstDAO = [];
+    end
+    
+    if stf(i).propVMAT.FMOBeam
+        if firstFMO
+            stf(i).propVMAT.firstFMO = true;
+            firstFMO = false;
+        else
+            stf(i).propVMAT.firstFMO = false;
+        end
+    else
         % dummy variables for FMO stuff
         stf(i).propVMAT.numOfBeamSubChildren        = [];
         stf(i).propVMAT.beamSubChildrenGantryAngles = [];
@@ -73,6 +94,7 @@ for i = 1:length(stf)
         stf(i).propVMAT.numOfBeamChildren           = [];
         stf(i).propVMAT.beamChildrenGantryAngles    = [];
         stf(i).propVMAT.beamChildrenIndex           = [];
+        stf(i).propVMAT.firstFMO                    = [];
     end
     
     %% Determine different angle borders
@@ -322,7 +344,6 @@ for i = 1:length(stf)
     
     matRad_progress(i,length(stf));
 end
-
 
 %% final cleanup and calculation of factors we couldn't calc before
 fprintf('matRad: VMAT post-processing (2/2)... ');

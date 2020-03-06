@@ -2,7 +2,7 @@ function apertureInfo = matRad_leafTouching(apertureInfo)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % matRad function to improve instances of leaf touching by moving leaves
 % from the centre to sweep with the non-touching leaves.
-% 
+%
 % Currently only works with VMAT, add option to work with IMRT (not as
 % crucial)
 %
@@ -16,146 +16,86 @@ function apertureInfo = matRad_leafTouching(apertureInfo)
 %   apertureInfo: matRad aperture weight and shape info struct
 %
 % References
-%   
+%
 %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Copyright 2015 the matRad development team. 
-% 
-% This file is part of the matRad project. It is subject to the license 
-% terms in the LICENSE file found in the top-level directory of this 
-% distribution and at https://github.com/e0404/matRad/LICENSES.txt. No part 
-% of the matRad project, including this file, may be copied, modified, 
-% propagated, or distributed except according to the terms contained in the 
+% Copyright 2015 the matRad development team.
+%
+% This file is part of the matRad project. It is subject to the license
+% terms in the LICENSE file found in the top-level directory of this
+% distribution and at https://github.com/e0404/matRad/LICENSES.txt. No part
+% of the matRad project, including this file, may be copied, modified,
+% propagated, or distributed except according to the terms contained in the
 % LICENSE file.
 %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% for each beam, look for instances where the left and right leaves touch
+% replace those positions with the mean leaf position over both banks
+% this is to ensure smooth leaf motion
 
-%initialize
-dimZ = apertureInfo.beam(1).numOfActiveLeafPairs;
-numBeams = nnz([apertureInfo.propVMAT.beam.DAOBeam]);
-
-% Each non-interpolated beam should have 1 left/right leaf position
-leftLeafPoss = nan(dimZ,numBeams);
-rightLeafPoss = nan(dimZ,numBeams);
-gantryAngles = zeros(1,numBeams);
-
-initBorderGantryAngles = unique([apertureInfo.propVMAT.beam.FMOAngleBorders]);
-initBorderLeftLeafPoss = nan(dimZ,numel(initBorderGantryAngles));
-
-l = 1;
-m = 1;
-%collect all leaf positions
-for k = 1:numel(apertureInfo.beam)
-    if (k ~= 1 && apertureInfo.beam(k).gantryAngle == apertureInfo.beam(k-1).gantryAngle) || ~apertureInfo.propVMAT.beam(k).DAOBeam
-        continue
-    end
-    
-    % define original leaf positions and gantry angles
-    leftLeafPoss(:,l) = apertureInfo.beam(k).shape{1}(1).leftLeafPos;
-    rightLeafPoss(:,l) = apertureInfo.beam(k).shape{1}(1).rightLeafPos;
-    %leftLeafPoss(:,l) = apertureInfoVect(vectorIx);
-    %rightLeafPoss(:,l) = apertureInfoVect(vectorIx+apertureInfo.totalNumOfLeafPairs);
-    gantryAngles(l) = apertureInfo.beam(k).gantryAngle;
-    
-    l = l+1;
-    
-    %Only important when cleaning up instances of opposing
-    %leaves touching.
-    if apertureInfo.propVMAT.beam(k).FMOBeam
-        if apertureInfo.propVMAT.beam(k).leafDir == 1
-            %This means that the current arc sector is moving
-            %in the normal direction (L-R).
-            initBorderLeftLeafPoss(:,m) = apertureInfo.beam(k).lim_l;
-            
-        elseif apertureInfo.propVMAT.beam(k).leafDir == -1
-            %This means that the current arc sector is moving
-            %in the reverse direction (R-L).
-            initBorderLeftLeafPoss(:,m) = apertureInfo.beam(k).lim_r;
-        end
-        m = m+1;
-        
-        %end of last sector
-        if m == numel(initBorderGantryAngles)
-            %This gives ending angle of the current sector.
-            if apertureInfo.propVMAT.beam(k).leafDir == 1
-                %This means that the current arc sector is moving
-                %in the normal direction (L-R), so the next arc
-                %sector is moving opposite
-                initBorderLeftLeafPoss(:,m) = apertureInfo.beam(k).lim_r;
-            elseif apertureInfo.propVMAT.beam(k).leafDir == -1
-                %This means that the current arc sector is moving
-                %in the reverse direction (R-L), so the next
-                %arc sector is moving opposite
-                initBorderLeftLeafPoss(:,m) = apertureInfo.beam(k).lim_l;
-            end
-        end
-    end
-end
-
-[gantryAngles,ind] = unique(gantryAngles);
-leftLeafPoss = leftLeafPoss(:,ind);
-rightLeafPoss = rightLeafPoss(:,ind);
-
-%Any time leaf pairs are touching, they are set to
-%be in the middle of the field.  Instead, move them
-%so that they are still touching, but that they
-%follow the motion of the MLCs across the field.
-for row = 1:dimZ
-    
-    touchingInd = find(leftLeafPoss(row,:) == rightLeafPoss(row,:));
-    
-    if ~exist('leftLeafPossAug','var')
-        %leftLeafPossAug = [reshape(mean([leftLeafPoss(:) rightLeafPoss(:)],2),size(leftLeafPoss)),borderLeftLeafPoss];
-        leftLeafPossAugTemp = reshape(mean([leftLeafPoss(:) rightLeafPoss(:)],2),size(leftLeafPoss));
-        
-        numRep = 0;
-        repInd = nan(size(gantryAngles));
-        for j = 1:numel(gantryAngles)
-            if any(gantryAngles(j) == initBorderGantryAngles)
-                %replace leaf positions with the ones at
-                %the borders (eliminates repetitions)
-                numRep = numRep+1;
-                %these are the gantry angles that are
-                %repeated
-                repInd(numRep) = j;
-                
-                delInd = find(gantryAngles(j) == initBorderGantryAngles);
-                leftLeafPossAugTemp(:,j) = initBorderLeftLeafPoss(:,delInd);
-                initBorderLeftLeafPoss(:,delInd) = [];
-                initBorderGantryAngles(delInd) = [];
-            end
-        end
-        repInd(isnan(repInd)) = [];
-        leftLeafPossAug = [leftLeafPossAugTemp,initBorderLeftLeafPoss];
-        gantryAnglesAug = [gantryAngles,initBorderGantryAngles];
-    end
-    notTouchingInd = [setdiff(1:numBeams,touchingInd),repInd];
-    notTouchingInd = unique(notTouchingInd);
-    %make sure to include the repeated ones in the
-    %interpolation!
-    
-    notTouchingIndAug = [notTouchingInd,(1+numel(gantryAngles)):(numel(gantryAngles)+numel(initBorderGantryAngles))];
-    
-    leftLeafPoss(row,touchingInd) = interp1(gantryAnglesAug(notTouchingIndAug),leftLeafPossAug(row,notTouchingIndAug),gantryAngles(touchingInd))-0.5;
-    rightLeafPoss(row,touchingInd) = leftLeafPoss(row,touchingInd)+1;
-end
-
-
-%finally, set new leaf positions
 for i = 1:numel(apertureInfo.beam)
-    apertureInfo.beam(i).shape{1}(1).leftLeafPos = max((interp1(gantryAngles',leftLeafPoss',apertureInfo.beam(i).gantryAngle,'linear','extrap'))',apertureInfo.beam(i).lim_l);
-    apertureInfo.beam(i).shape{1}(1).rightLeafPos = min((interp1(gantryAngles',rightLeafPoss',apertureInfo.beam(i).gantryAngle,'linear','extrap'))',apertureInfo.beam(i).lim_r);
-    
-    apertureInfo.beam(i).shape{1}(1).leftLeafPos_I = max((interp1(gantryAngles',leftLeafPoss',apertureInfo.propVMAT.beam(i).fluAngleBorders(1),'linear','extrap'))',apertureInfo.beam(i).lim_l);
-    apertureInfo.beam(i).shape{1}(1).rightLeafPos_I = min((interp1(gantryAngles',rightLeafPoss',apertureInfo.propVMAT.beam(i).fluAngleBorders(1),'linear','extrap'))',apertureInfo.beam(i).lim_r);
-    
-    apertureInfo.beam(i).shape{1}(1).leftLeafPos_F = max((interp1(gantryAngles',leftLeafPoss',apertureInfo.propVMAT.beam(i).fluAngleBorders(2),'linear','extrap'))',apertureInfo.beam(i).lim_l);
-    apertureInfo.beam(i).shape{1}(1).rightLeafPos_F = min((interp1(gantryAngles',rightLeafPoss',apertureInfo.propVMAT.beam(i).fluAngleBorders(2),'linear','extrap'))',apertureInfo.beam(i).lim_r);
+    if apertureInfo.propVMAT.beam(i).DAOBeam
+        
+        if apertureInfo.propVMAT.continuousAperture
+            % leafPos defined at ends of arc
+            if apertureInfo.propVMAT.beam(i).firstDAO
+                % beginning of arc
+                
+                % extract left and right leaf positions
+                leftLeafPos     = apertureInfo.beam(i).shape{1}.leftLeafPos_I_DAO;
+                rightLeafPos    = apertureInfo.beam(i).shape{1}.rightLeafPos_I_DAO;
+                
+                % fix leaf touching
+                [leftLeafPos,rightLeafPos] = fixLeafTouching(leftLeafPos,rightLeafPos);
+
+                % replace positions in struct
+                apertureInfo.beam(i).shape{1}.leftLeafPos_I_DAO     = leftLeafPos;
+                apertureInfo.beam(i).shape{1}.rightLeafPos_I_DAO    = rightLeafPos;
+            end
+            
+            % end of arc
+            leftLeafPos = apertureInfo.beam(i).shape{1}.leftLeafPos_F_DAO;
+            rightLeafPos = apertureInfo.beam(i).shape{1}.rightLeafPos_F_DAO;
+            
+            % fix leaf touching
+            [leftLeafPos,rightLeafPos] = fixLeafTouching(leftLeafPos,rightLeafPos);
+            
+            % replace positions in struct
+            apertureInfo.beam(i).shape{1}.leftLeafPos_F_DAO     = leftLeafPos;
+            apertureInfo.beam(i).shape{1}.rightLeafPos_F_DAO    = rightLeafPos;
+        else
+            % leafPos defined in middle of arc
+            leftLeafPos = apertureInfo.beam(i).shape{1}.leftLeafPos;
+            rightLeafPos = apertureInfo.beam(i).shape{1}.rightLeafPos;
+            
+            % fix leaf touching
+            [leftLeafPos,rightLeafPos] = fixLeafTouching(leftLeafPos,rightLeafPos);
+
+            % replace positions in struct
+            apertureInfo.beam(i).shape{1}.leftLeafPos   = leftLeafPos;
+            apertureInfo.beam(i).shape{1}.rightLeafPos  = rightLeafPos;
+        end
+    end
 end
+
+end
+
+function [leftLeafPos,rightLeafPos] = fixLeafTouching(leftLeafPos,rightLeafPos)
+% helper function to fix instances of leaf touching
+
+% find where the leaves touch
+touchingInd = leftLeafPos == rightLeafPos;
+
+% take the mean of left and right non-touching leaf positions
+meanLeafPos = mean([leftLeafPos(~touchingInd); rightLeafPos(~touchingInd)]);
+
+% substitue touching positions with the mean
+leftLeafPos(touchingInd)    = meanLeafPos;
+rightLeafPos(touchingInd)   = meanLeafPos;
 
 end
 

@@ -86,11 +86,16 @@ for i = 1:size(apertureInfo.beam,2)
     end
     
     for phase = 1:apertureInfo.numPhases
-        factorMURate = machine.constraints.monitorUnitRate(1)/apertureInfo.beam(i).shape{phase}.MURate;
+        factorsMURate = machine.constraints.monitorUnitRate/apertureInfo.beam(i).shape{phase}.MURate;
         
-        if factorMURate > 1
-            apertureInfo.beam(i).shape{phase}.MURate = factorMURate*apertureInfo.beam(i).shape{phase}.MURate;
-            apertureInfo.beam(i).shape{phase}(1).weight = factorMURate*apertureInfo.beam(i).shape{phase}(1).weight;
+        if factorsMURate(1) > 1
+            apertureInfo.beam(i).shape{phase}.MURate = factorsMURate(1)*apertureInfo.beam(i).shape{phase}.MURate;
+            apertureInfo.beam(i).shape{phase}(1).weight = factorsMURate(1)*apertureInfo.beam(i).shape{phase}(1).weight;
+        end
+        
+        if factorsMURate(2) < 1
+            apertureInfo.beam(i).shape{phase}.MURate = factorsMURate(2)*apertureInfo.beam(i).shape{phase}.MURate;
+            apertureInfo.beam(i).shape{phase}(1).weight = factorsMURate(2)*apertureInfo.beam(i).shape{phase}(1).weight;
         end
     end
 end

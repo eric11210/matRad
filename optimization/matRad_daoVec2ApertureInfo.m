@@ -277,6 +277,16 @@ for i = 1:numel(updatedInfo.beam)
                 
                 updatedInfo.beam(i).shape{phase}(j).leftLeafPos_F   = fracFromNextDAOI_leafF.*leftLeafPos_nextDAOI+fracFromNextDAOF_leafF.*leftLeafPos_nextDAOF;
                 updatedInfo.beam(i).shape{phase}(j).rightLeafPos_F  = fracFromNextDAOI_leafF.*rightLeafPos_nextDAOI+fracFromNextDAOF_leafF.*rightLeafPos_nextDAOF;
+                
+                % also update DAO leaf positions in struct
+                if updatedInfo.propVMAT.beam(i).DAOBeam
+                    if apertureInfo.propVMAT.beam(i).firstDAO
+                        updatedInfo.beam(i).shape{phase}(j).leftLeafPos_I_DAO   = leftLeafPos_lastDAOI;
+                        updatedInfo.beam(i).shape{phase}(j).rightLeafPos_I_DAO  = rightLeafPos_lastDAOI;
+                    end
+                    updatedInfo.beam(i).shape{phase}(j).leftLeafPos_F_DAO   = leftLeafPos_lastDAOF;
+                    updatedInfo.beam(i).shape{phase}(j).rightLeafPos_F_DAO  = rightLeafPos_lastDAOF;
+                end
             end
         end
     end

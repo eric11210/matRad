@@ -73,60 +73,24 @@ for phase = 1:apertureInfo.numPhases
             
             if ~apertureInfo.propVMAT.continuousAperture
                 
-                apertureInfoVec(offset+[1:apertureInfo.beam(i).numOfActiveLeafPairs]) = apertureInfo.beam(i).shape{phase}(j).leftLeafPos;
-                apertureInfoVec(offset+[1:apertureInfo.beam(i).numOfActiveLeafPairs]+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases) = apertureInfo.beam(i).shape{phase}(j).rightLeafPos;
+                apertureInfoVec(offset+(1:apertureInfo.beam(i).numOfActiveLeafPairs)) = apertureInfo.beam(i).shape{phase}(j).leftLeafPos;
+                apertureInfoVec(offset+(1:apertureInfo.beam(i).numOfActiveLeafPairs)+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases) = apertureInfo.beam(i).shape{phase}(j).rightLeafPos;
                 
                 offset = offset + apertureInfo.beam(i).numOfActiveLeafPairs;
             else
-                % the leaf positions in the vector are defined at the
-                % borders of the DAO arc, whereas they are defined at the
-                % borders of the fluence arc in the apertureInfo struct 
-                % (leftLeafPos_I, _F, etc.)
-                % use fracFromLastDAOI_leafI etc. to convert between the
-                % two
-                % NOTE: here, since we are strictly using DAO beams,
-                % lastDAOIndex = nextDAOIndex
-                % so we can safely mix up the two
                 
-                % leafPos_I = fracFromLastDAOI_leafI.*leafPos_vecI+fracFromLastDAOF_leafI.*leafPos_vecF
-                % leafPos_F = fracFromNextDAOI_leafF.*leafPos_vecI+fracFromNextDAOF_leafF.*leafPos_vecF
-                
-                fracToDAOI_leafI = apertureInfo.propVMAT.beam(i).fracFromNextDAOF_leafF ...
-                    ./(apertureInfo.propVMAT.beam(i).fracFromLastDAOI_leafI.*apertureInfo.propVMAT.beam(i).fracFromNextDAOF_leafF-apertureInfo.propVMAT.beam(i).fracFromLastDAOF_leafI.*apertureInfo.propVMAT.beam(i).fracFromNextDAOI_leafF);
-                fracToDAOI_leafF = -apertureInfo.propVMAT.beam(i).fracFromLastDAOF_leafI ...
-                    ./(apertureInfo.propVMAT.beam(i).fracFromLastDAOI_leafI.*apertureInfo.propVMAT.beam(i).fracFromNextDAOF_leafF-apertureInfo.propVMAT.beam(i).fracFromLastDAOF_leafI.*apertureInfo.propVMAT.beam(i).fracFromNextDAOI_leafF);
-                fracToDAOF_leafI = -apertureInfo.propVMAT.beam(i).fracFromNextDAOI_leafF ...
-                    ./(apertureInfo.propVMAT.beam(i).fracFromLastDAOI_leafI.*apertureInfo.propVMAT.beam(i).fracFromNextDAOF_leafF-apertureInfo.propVMAT.beam(i).fracFromLastDAOF_leafI.*apertureInfo.propVMAT.beam(i).fracFromNextDAOI_leafF);
-                fracToDAOF_leafF = apertureInfo.propVMAT.beam(i).fracFromLastDAOI_leafI ...
-                    ./(apertureInfo.propVMAT.beam(i).fracFromLastDAOI_leafI.*apertureInfo.propVMAT.beam(i).fracFromNextDAOF_leafF-apertureInfo.propVMAT.beam(i).fracFromLastDAOF_leafI.*apertureInfo.propVMAT.beam(i).fracFromNextDAOI_leafF);
-                
-                if apertureInfo.propVMAT.beam(i).doseAngleDAO(1)
-                    
-                    % right then left
-                    % ensure that the leaf positions are within bounds
-                    leftLeafPos_vecI    = fracToDAOI_leafI.*apertureInfo.beam(i).shape{phase}(j).leftLeafPos_I+fracToDAOI_leafF.*apertureInfo.beam(i).shape{phase}(j).leftLeafPos_F;
-                    rightLeafPos_vecI   = fracToDAOI_leafI.*apertureInfo.beam(i).shape{phase}(j).rightLeafPos_I+fracToDAOI_leafF.*apertureInfo.beam(i).shape{phase}(j).rightLeafPos_F;
-                    
-                    apertureInfoVec(offset+[1:apertureInfo.beam(i).numOfActiveLeafPairs]) = min(max(leftLeafPos_vecI,apertureInfo.beam(i).lim_l),apertureInfo.beam(i).lim_r);
-                    apertureInfoVec(offset+[1:apertureInfo.beam(i).numOfActiveLeafPairs]+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases) = min(max(rightLeafPos_vecI,apertureInfo.beam(i).lim_l),apertureInfo.beam(i).lim_r);
+                if apertureInfo.propVMAT.beam(i).firstDAO
+                    apertureInfoVec(offset+(1:apertureInfo.beam(i).numOfActiveLeafPairs)) = apertureInfo.beam(i).shape{phase}(j).leftLeafPos_I_DAO;
+                    apertureInfoVec(offset+(1:apertureInfo.beam(i).numOfActiveLeafPairs)+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases) = apertureInfo.beam(i).shape{phase}(j).rightLeafPos_I_DAO;
                     
                     offset = offset + apertureInfo.beam(i).numOfActiveLeafPairs;
                 end
                 
-                if apertureInfo.propVMAT.beam(i).doseAngleDAO(2)
-                    
-                    % right then left
-                    % ensure that the leaf positions are within bounds
-                    leftLeafPos_vecF    = fracToDAOF_leafI.*apertureInfo.beam(i).shape{phase}(j).leftLeafPos_I+fracToDAOF_leafF.*apertureInfo.beam(i).shape{phase}(j).leftLeafPos_F;
-                    rightLeafPos_vecF   = fracToDAOF_leafI.*apertureInfo.beam(i).shape{phase}(j).rightLeafPos_I+fracToDAOF_leafF.*apertureInfo.beam(i).shape{phase}(j).rightLeafPos_F;
-                    
-                    apertureInfoVec(offset+[1:apertureInfo.beam(i).numOfActiveLeafPairs]) = min(max(leftLeafPos_vecF,apertureInfo.beam(i).lim_l),apertureInfo.beam(i).lim_r);
-                    apertureInfoVec(offset+[1:apertureInfo.beam(i).numOfActiveLeafPairs]+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases) = min(max(rightLeafPos_vecF,apertureInfo.beam(i).lim_l),apertureInfo.beam(i).lim_r);
-                    
-                    offset = offset + apertureInfo.beam(i).numOfActiveLeafPairs;
-                end
+                apertureInfoVec(offset+(1:apertureInfo.beam(i).numOfActiveLeafPairs)) = apertureInfo.beam(i).shape{phase}(j).leftLeafPos_F_DAO;
+                apertureInfoVec(offset+(1:apertureInfo.beam(i).numOfActiveLeafPairs)+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases) = apertureInfo.beam(i).shape{phase}(j).rightLeafPos_F_DAO;
+                
+                offset = offset + apertureInfo.beam(i).numOfActiveLeafPairs;
             end
-            
         end
     end
 end
