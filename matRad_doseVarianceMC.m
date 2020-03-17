@@ -27,11 +27,14 @@ apertureInfo_hist.motionModel.indices.nSubPhases = apertureInfo_hist.numPhases;
 
 [apertureInfo_hist.motionModel.indices.subPhase2PosPhase_gridJ,apertureInfo_hist.motionModel.indices.subPhase2PosPhase_gridI] = meshgrid(1:apertureInfo_hist.numPhases);
 
+% determine the times for each step, which are the same for all histories
+tSimulated_hist = [0; cumsum(tTrans)];
+
 % loop over number of histories
 for hist = 1:nHistories
     
     % MC simulation of tumour trajectory
-    [lSimulated_hist,tSimulated_hist]= matRad_runMarkovChain_Q(apertureInfo.motionModel,tTrans);
+    lSimulated_hist= matRad_runMarkovChain_P(apertureInfo.motionModel,numel(tSimulated_hist));
     
     % insert trajectory in apertureInfo struct
     apertureInfo_hist.motionModel.lSimulated = apertureInfo.motionModel.indices.subPhase2Phase(lSimulated_hist);

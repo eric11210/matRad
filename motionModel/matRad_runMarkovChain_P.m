@@ -1,6 +1,9 @@
 function lSimulated = matRad_runMarkovChain_P(motionModel,nSteps,maxProb)
 % simulate a history of the Markov Chain using the P matrix
 
+% NOTE: nSteps is the total number of steps, including the first one at
+% time t = 0
+
 % extract transition matrix and initial probabilities
 Pij             = motionModel.Pij_deltaTSample;
 initProb        = motionModel.initProb;

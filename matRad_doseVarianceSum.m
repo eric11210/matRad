@@ -151,6 +151,9 @@ for i = 1:numel(apertureInfo.beam)
             for subPhase_F = find(apertureInfo.motionModel.indices.subPhase2PosPhase == phase_F)'
                 
                 % determine factors
+                if apertureInfo.probI_Ij{i}(phase_I,subPhase_F) == 0
+                    continue
+                end
                 factor_I = apertureInfo.probI_Ij{i}(phase_I,subPhase_F)./apertureInfo.probI_IJ{i}(phase_I,phase_F);
                 
                 % store sums of doses (over initial and final phases)
@@ -160,6 +163,9 @@ for i = 1:numel(apertureInfo.beam)
             for subPhase_I = find(apertureInfo.motionModel.indices.subPhase2PosPhase == phase_I)'
                 
                 % determine factors
+                if apertureInfo.probF_kL{i}(subPhase_I,phase_F) == 0
+                    continue
+                end
                 factor_F = apertureInfo.probF_kL{i}(subPhase_I,phase_F)./apertureInfo.probI_IJ{i}(phase_I,phase_F);
                 
                 % store sums of doses (over initial and final phases)
@@ -202,7 +208,7 @@ for i = 1:numel(apertureInfo.beam)
             %% do d2 for i1 == i2 now
             
             % determine probability normalization for d2
-            pNorm       = pNormMat(phase_I,phase_F);
+            pNorm = pNormMat(phase_I,phase_F);
             
             % determine if we're doing d2 for this combo
             dod2 = abs(pNorm) > eps && pNorm < inf;

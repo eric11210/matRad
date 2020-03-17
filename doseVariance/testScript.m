@@ -4,30 +4,28 @@
 options.numOfScenarios  = resultGUI.apertureInfo.numPhases;
 options.bioOpt          = 'none';
 
+resultGUI.apertureInfo = matRad_daoVec2ApertureInfo(resultGUI.apertureInfo,resultGUI.apertureInfo.apertureVector);
+
 % analytical
 dMean       = matRad_backProjection(resultGUI.apertureInfo.bixelWeights,dij,options);
-dVar        = matRad_doseVariance(resultGUI.apertureInfo,dij);
+% prep cuts
+dMax        = max(dMean);
+voxelMask   = dMean > 0.5*dMax;
+% continue analytical
+dVar        = matRad_doseVariance(resultGUI.apertureInfo,dij,voxelMask);
 dVar_summed = sum(dVar(dij.targetVox));
 [dVarSum,~] = matRad_doseVarianceSum(resultGUI.apertureInfo,dij);
 
 % Monte Carlo
-nHistories          = 10000;
+nHistories          = 50000;
 [dMean_MC,dVar_MC]  = matRad_doseVarianceMC(resultGUI.apertureInfo,dij,nHistories);
 
 %% analysis
 
-% prep 50% cuts
-dMax        = max(dMean(dij.structVox));
-deleteInd   = dMean(dij.structVox) < 0.01*dMax;
-
 % calculate delta, the difference of MC to analytical divided by the SD of
 % the mean (which is equal to SD divided by sqrt(nHistories)
-delta       = (dMean(dij.structVox)-dMean_MC(dij.structVox))./sqrt(dVar./nHistories);
-delta_varMC = (dMean(dij.structVox)-dMean_MC(dij.structVox))./sqrt(dVar_MC(dij.structVox)./nHistories);
-
-% perform 50% cuts
-delta(deleteInd)        = [];
-delta_varMC(deleteInd)  = [];
+delta       = (dMean(voxelMask)-dMean_MC(voxelMask))./sqrt(dVar(voxelMask)./nHistories);
+delta_varMC = (dMean(voxelMask)-dMean_MC(voxelMask))./sqrt(dVar_MC(voxelMask)./nHistories);
 
 % calculate chi square
 chiSquare       = delta'*delta;
@@ -35,7 +33,7 @@ chiSquare_varMC = delta_varMC'*delta_varMC;
 
 % calculate p values
 p       = chi2cdf(chiSquare,numel(delta),'upper');
-p_varMC = chi2cdf(chiSquare_varMC,numel(delta),'upper');
+p_varMC = chi2cdf(chiSquare_varMC,numel(delta_varMC),'upper');
 
 %% graphing deltas
 
@@ -58,13 +56,13 @@ title(sprintf('Monte Carlo variance, \\chi^2 = %.0f p = %.2f',chiSquare_varMC,p_
 savefig('Monte Carlo variance')
 
 % save
-save('analysis','dMean*','dVar*','delta*','chiSquare*','p*')
+save('analysis','dMean*','dVar*','delta*','chiSquare*','p*','voxelMask')
 
 %% graphing difference in analytical vs MC
 
 figure
 hold on
-plot(dVar)
+plot(dVar(dij.structVox))
 plot(dVar_MC(dij.structVox))
 xlabel('voxel index')
 ylabel('\sigma^2')
@@ -83,7 +81,7 @@ title('Analytical and Monte Carlo mean')
 savefig('Both means')
 
 figure
-plot((dVar_MC(dij.structVox)-dVar)./dVar)
+plot((dVar_MC(dij.structVox)-dVar(dij.structVox))./dVar(dij.structVox))
 xlabel('voxel index')
 ylabel('(\sigma^2_{MC}-\sigma^2_{analytical})/\sigma^2_{analytical}')
 title('Comparing analytical to Monte Carlo variance')

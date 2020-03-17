@@ -264,8 +264,8 @@ for i = 1:numel(updatedInfo.beam)
     % matRad_bixWeightAndGrad
     
     % weights
-    bixWeightBase_lastDose_angle.w(:) = {zeros(apertureInfo.beam(i).effNumBixels_lastDose,1)};
-    bixWeightBase_nextDose_angle.w(:) = {zeros(apertureInfo.beam(i).effNumBixels_nextDose,1)};
+    bixWeightBase_lastDose_angle.w(:) = {zeros(apertureInfo.beam(i).lastNumBixels,1)};
+    bixWeightBase_nextDose_angle.w(:) = {zeros(apertureInfo.beam(i).nextNumBixels,1)};
     
     % make arcI and arcF structs
     bixWeight_angle.arcI.lastDose = bixWeightBase_lastDose_angle;

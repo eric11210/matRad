@@ -1,4 +1,4 @@
-function dVar = matRad_doseVariance(apertureInfo,dij)
+function dVar = matRad_doseVariance(apertureInfo,dij,voxelMask)
 
 %% setup
 
@@ -10,11 +10,16 @@ numSubPhases    = apertureInfo.motionModel.indices.nSubPhases;
 dRawCell_sumI   = cell(numel(apertureInfo.beam).*numSubPhases,1);
 dRawCell_sumF   = cell(numel(apertureInfo.beam).*numSubPhases,1);
 
+% determine voxels of interest
+if nargin < 3
+    voxelMask = dij.targetVox;
+end
+
 % allocate mean of dose
-d = zeros(numel(dij.targetVox),1);
+d = zeros(nnz(voxelMask),1);
 
 % allocate mean of squared dose
-d2 = zeros(numel(dij.targetVox),1);
+d2 = zeros(nnz(voxelMask),1);
 
 %% precalculate doses
 % loop over all beams
@@ -28,8 +33,8 @@ for i = 1:numel(apertureInfo.beam)
     nextFixelIx = apertureInfo.beam(i).nextFixelIndMap(~isnan(apertureInfo.beam(i).nextFixelIndMap));
     
     % allocate raw doses
-    dRawCell_sumI((i-1).*numSubPhases+(1:numSubPhases)) = {zeros(numel(dij.targetVox),1)};
-    dRawCell_sumF((i-1).*numSubPhases+(1:numSubPhases)) = {zeros(numel(dij.targetVox),1)};
+    dRawCell_sumI((i-1).*numSubPhases+(1:numSubPhases)) = {zeros(nnz(voxelMask),1)};
+    dRawCell_sumF((i-1).*numSubPhases+(1:numSubPhases)) = {zeros(nnz(voxelMask),1)};
     
     % calculate probability normalization matrix
     pNormMat = 1./apertureInfo.probI_IJ{i};
@@ -38,13 +43,13 @@ for i = 1:numel(apertureInfo.beam)
     for phase_I = 1:numPhases
         
         % extract dij for last dose beam and phase_I
-        dij_lastDose_phaseI = dij.scaleFactor .* dij.physicalDose{phase_I}(dij.targetVox,lastBixelIx);
+        dij_lastDose_phaseI = dij.scaleFactor .* dij.physicalDose{phase_I}(voxelMask,lastBixelIx);
         
         % extract dij for next dose beam and phase_I
         if all(lastBixelIx == nextBixelIx)
             dij_nextDose_phaseI = dij_lastDose_phaseI;
         else
-            dij_nextDose_phaseI = dij.scaleFactor .* dij.physicalDose{phase_I}(dij.targetVox,nextBixelIx);
+            dij_nextDose_phaseI = dij.scaleFactor .* dij.physicalDose{phase_I}(voxelMask,nextBixelIx);
         end
         
         for phase_F = 1:numPhases
@@ -56,14 +61,14 @@ for i = 1:numel(apertureInfo.beam)
             if phase_I == phase_F
                 dij_lastDose_phaseF      = dij_lastDose_phaseI;
             else
-                dij_lastDose_phaseF      = dij.scaleFactor .* dij.physicalDose{phase_F}(dij.targetVox,lastBixelIx);
+                dij_lastDose_phaseF      = dij.scaleFactor .* dij.physicalDose{phase_F}(voxelMask,lastBixelIx);
             end
             
             % extract dij for next dose beam and phase_F
             if all(lastBixelIx == nextBixelIx)
                 dij_nextDose_phaseF = dij_lastDose_phaseF;
             else
-                dij_nextDose_phaseF = dij.scaleFactor .* dij.physicalDose{phase_F}(dij.targetVox,nextBixelIx);
+                dij_nextDose_phaseF = dij.scaleFactor .* dij.physicalDose{phase_F}(voxelMask,nextBixelIx);
             end
             
             % now extract fixel weights for last/next dose beam and
@@ -89,6 +94,9 @@ for i = 1:numel(apertureInfo.beam)
             for subPhase_F = find(apertureInfo.motionModel.indices.subPhase2PosPhase == phase_F)'
                 
                 % determine factors
+                if apertureInfo.probI_Ij{i}(phase_I,subPhase_F) == 0
+                    continue
+                end
                 factor_I = apertureInfo.probI_Ij{i}(phase_I,subPhase_F)./apertureInfo.probI_IJ{i}(phase_I,phase_F);
                 
                 % store sums of doses (over initial and final phases)
@@ -98,17 +106,24 @@ for i = 1:numel(apertureInfo.beam)
             for subPhase_I = find(apertureInfo.motionModel.indices.subPhase2PosPhase == phase_I)'
                 
                 % determine factors
+                if apertureInfo.probF_kL{i}(subPhase_I,phase_F) == 0
+                    continue
+                end
                 factor_F = apertureInfo.probF_kL{i}(subPhase_I,phase_F)./apertureInfo.probI_IJ{i}(phase_I,phase_F);
                 
                 % store sums of doses (over initial and final phases)
                 dRawCell_sumF{(i-1).*numSubPhases+subPhase_I} = dRawCell_sumF{(i-1).*numSubPhases+subPhase_I}+dRawTemp.*factor_F;
             end
             
-            % do d2 for i1 == i2 now
+            %%  do d2 for i1 == i2 now
+            
             % determine probability normalization for d2
             pNorm = pNormMat(phase_I,phase_F);
             
-            if abs(pNorm) > eps
+            % determine if we're doing d2 for this combo
+            dod2 = abs(pNorm) > eps && pNorm < inf;
+            
+            if dod2
                 
                 % combine into a single multiplication
                 d2Raw = dRawTemp.*dRawTemp;
@@ -169,6 +184,6 @@ end
 dVarSmall = d2-d.*d;
 
 dVar = zeros(dij.numOfVoxels,1);
-dVar(dij.targetVox) = dVarSmall;
+dVar(voxelMask) = dVarSmall;
 
 end
