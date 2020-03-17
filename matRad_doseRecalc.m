@@ -55,7 +55,10 @@ recalc.apertureInfo = apertureInfo;
 %Calculate dose directly
 
 %first, we need to update/generate new apertures for these angles
-recalc.pln = matRad_VMATGantryAngles(recalc.pln,cst,ct);
+run4D                       = recalc.pln.propOpt.run4D;
+recalc.pln.propOpt.run4D    = false;
+recalc.pln                  = matRad_VMATGantryAngles(recalc.pln,cst,ct);
+recalc.pln.propOpt.run4D    = run4D;
 if ~recalc.interpNew
     %we will not interpolate new apertures
     %easiest way to to this is to make ALL gantryAngles optGantryAngles

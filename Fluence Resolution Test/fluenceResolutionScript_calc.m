@@ -35,7 +35,8 @@ pln.propOpt.numLevels = 7;
 
 pln.propOpt.VMAToptions.machineConstraintFile = [pln.radiationMode '_' pln.machine];
 pln.propOpt.VMAToptions.continuousAperture = true;
-pln.propOpt.VMAToptions.fixedGantrySpeed = false;
+pln.propOpt.VMAToptions.fixedGantrySpeed = true;
+pln.propOpt.VMAToptions.deliveryTime = 70;
 
 pln.propOpt.VMAToptions.startingAngle               = -180;
 pln.propOpt.VMAToptions.finishingAngle              = 180;
@@ -56,14 +57,14 @@ stf = matRad_generateStf(ct,cst,pln);
 % dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
 
 % load results
-%load('CO.mat');
-load('SBRT nonOpt.mat');
+load('convFrac Opt.mat');
+%load('SBRT nonOpt.mat');
 
 oldDir = pwd;
 
 %%
 
-maxFluGantryAngleSpacingS = [4 2 1 0.5 0.25 0.125 0.0625];
+maxFluGantryAngleSpacingS = pln.propOpt.VMAToptions.fluGantryAngleSpacing./(1:round(pln.propOpt.prop4D.motionModel.deltaT_sample/0.05));
 
 for maxFluGantryAngleSpacing = maxFluGantryAngleSpacingS
     % calculate dose at original fluence gantry spacing, work our way down

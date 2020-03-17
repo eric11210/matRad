@@ -100,6 +100,12 @@ for i = 1:size(stf,2)
         apertureInfoNew.propVMAT.jacobT(stf(stf(i).propVMAT.nextDAOIndex).propVMAT.DAOIndex,i) = apertureInfoNew.propVMAT.jacobT(stf(stf(i).propVMAT.nextDAOIndex).propVMAT.DAOIndex,i)+stf(stf(i).propVMAT.nextDAOIndex).propVMAT.timeFacCurr.*stf(i).propVMAT.fracFromNextDAO_gantryRot.*stf(i).propVMAT.fluAngleBordersDiff./stf(stf(i).propVMAT.nextDAOIndex).propVMAT.fluAngleBordersDiff;
     end
     
+    if pln.propOpt.VMAToptions.fixedGantrySpeed
+        apertureInfoNew.beam(i).gantryRot   = apertureInfoOld.beam(1).gantryRot;
+        apertureInfoNew.beam(i).time        = apertureInfoNew.propVMAT.beam(i).fluAngleBordersDiff./apertureInfoNew.beam(i).gantryRot;
+    else
+        error('Variable gantry speed not yet supported!');
+    end
     
     % save data for each beam
     apertureInfoNew.beam(i).numOfShapes = 1;
