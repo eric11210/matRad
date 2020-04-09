@@ -18,3 +18,4 @@ Fluence Resolution Test/Max fluence gantry angle spacing = *.mat
 Fluence Resolution Test/SBRT max flu gantry angle spacing = *.mat
 Fluence Resolution Test/stf/*
 Fluence Resolution Test/convFrac Opt.mat
+Fluence Resolution Test/convFrac *max flu gantry angle spacing = *.mat
