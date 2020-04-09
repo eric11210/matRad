@@ -77,8 +77,8 @@ while percAbove < percExtTarg || percBelow < percExtTarg
     lMaxThres = xBoundsMax-nPosSubPhasesMaxExt.*deltaL;
     lMinThres = xBoundsMin+nPosSubPhasesMinExt.*deltaL;
     
-    percAbove = 100.*nnz(x_sample_combined > lMaxThres)./numel(x_sample_combined);
-    percBelow = 100*nnz(x_sample_combined < lMinThres)./numel(x_sample_combined);
+    percAbove = 100*nnz(x_sample_combined > lMaxThres)/numel(x_sample_combined);
+    percBelow = 100*nnz(x_sample_combined < lMinThres)/numel(x_sample_combined);
     
     if percAbove < percExtTarg
         nPosSubPhasesMaxExt_final = nPosSubPhasesMaxExt;
@@ -98,8 +98,8 @@ nPosBins = nPosPhases.*nSubPerPosPhase/oneOrTwo+nPosSubPhasesMaxExt+nPosSubPhase
 deltaL = (xBoundsMax-xBoundsMin)./nPosBins;
 lMaxThres = xBoundsMax-nPosSubPhasesMaxExt.*deltaL;
 lMinThres = xBoundsMin+nPosSubPhasesMinExt.*deltaL;
-percAbove = 100.*nnz(x_sample_combined > lMaxThres)./numel(x_sample_combined);
-percBelow = 100*nnz(x_sample_combined < lMinThres)./numel(x_sample_combined);
+percAbove = 100*nnz(x_sample_combined > lMaxThres)/numel(x_sample_combined);
+percBelow = 100*nnz(x_sample_combined < lMinThres)/numel(x_sample_combined);
 
 nPosSubPhases = oneOrTwo.*nPosBins;
 
@@ -140,9 +140,9 @@ if options.doFSM
     % also getting starting and stopping indices for the training and
     % testing data
     [FS_sample,t_sample,x_sample,v_sample,l_sample,indFirstCycle_train,indLastCycle_train,indFirstCycle_test,indLastCycle_test] ...
-        = matRad_splitTrainTest(FS_sample,t_sample,x_sample,v_sample,l_sample,0.5);
+        = matRad_splitTrainTest(FS_sample,t_sample,x_sample,v_sample,l_sample,options.trainRatio);
     [FS_sample_dec,t_sample_filt,x_sample_filt,v_sample_filt,l_sample_dec,indFirstCycle_dec_train,indLastCycle_dec_train,indFirstCycle_dec_test,indLastCycle_dec_test] ...
-        = matRad_splitTrainTest(FS_sample_dec,t_sample_filt,x_sample_filt,v_sample_filt,l_sample_dec,0.5);
+        = matRad_splitTrainTest(FS_sample_dec,t_sample_filt,x_sample_filt,v_sample_filt,l_sample_dec,options.trainRatio);
     
     % do time split
     FS_sample       = matRad_FSMfracTime(FS_sample,options.FSM);

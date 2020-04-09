@@ -4,7 +4,7 @@ switch options.data.origin
     case 'file'
         % read motion data from file
         fprintf('matRad: Reading motion data... ');
-        data = matRad_readMotionData(options.data.fileInfo);
+        data = matRad_readMotionData(options.data.fileInfo,options.processing.percExtTarg);
         
     case 'function'
         % generate data from function

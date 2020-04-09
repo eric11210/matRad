@@ -165,11 +165,12 @@ pSum = nnz(sum(chiSquaresMC,2) > sum(chiSquares))./nHistories;
 
 %% put hists into structure
 
+model.hist_pred     = hist_pred;
+model.hist_obs      = hist_obs;
 model.chiSquares    = chiSquares;
 model.chiSquaresMC  = chiSquaresMC;
 model.p             = p;
 model.pSum          = pSum;
-
 
 end
 

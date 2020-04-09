@@ -1,9 +1,29 @@
-function data = matRad_readMotionData(fileInfo)
+function data = matRad_readMotionData(fileInfo,percExtTarg)
 
-p   = fileInfo.p;
-f   = fileInfo.f;
-m   = fileInfo.m;
+%% tested properties
 
+fTested         = [19 21];
+mTested         = [1 3];
+flipTested      = [false true];
+t_startTested   = [2503 2000];
+
+%% get appropriate properties
+
+f = fileInfo.f;
+m = fileInfo.m;
+
+ind = fTested == f & mTested == m;
+
+flip    = flipTested(ind);
+t_start = t_startTested(ind);
+
+t_tot = fileInfo.t_tot;
+
+t_end = t_start+t_tot;
+
+%% actual function
+
+% read training data
 if fileInfo.processed
     fname_wild = sprintf('p*_f%d_m%d_proc2_pca.csv',f,m);
     path = 'ck_processed';
@@ -24,22 +44,63 @@ contents = dlmread(fullfile(fileparts(mfilename('fullpath')),path,matchedFiles.n
 
 t = contents(:,1);
 x = contents(:,2);
-%x = -x; % flip x-direction for this patient
 
-t_start = 2503; % 2151 start at inhale for f = 42
-t_tot   = 60.*10;
-t_end   = t_start+t_tot;
+% check if we need to flip x-direction for this patient
+if flip
+    x = -x;
+end
 
 ind_start   = round(interp1(t,1:numel(t),t_start));
 ind_end     = round(interp1(t,1:numel(t),t_end));
 
-ind_start   = max([ind_start 1]);
-ind_end     = min([ind_end numel(t)]);
+ind_start  = max([ind_start 1]);
+ind_end    = min([ind_end numel(t)]);
 
-data.t_cut = t(ind_start:ind_end);
-data.x_cut = x(ind_start:ind_end);
+t_cut = t(ind_start:ind_end);
+x_cut = x(ind_start:ind_end);
 
-% trim up to first exhale, use min/peakfinder?
+t_cut = t_cut-t_cut(1);
+x_cut = scaleData(x_cut,percExtTarg);
+
+data.t_cut = t_cut;
+data.x_cut = x_cut;
+
+end
+
+function xScaled = scaleData(x,percExtTarg)
+
+% we want all of the data scaled between 0 and 1, with the exception of the
+% percentage percExtTarg at both extrema
+
+% find cutoffs
+cutOff_top      = max(x);
+cutOff_bottom   = min(x);
+
+stepSize = (cutOff_top-cutOff_bottom)./1e6;
+
+percAbove = 0;
+percBelow = 0;
+
+while percAbove < percExtTarg || percBelow < percExtTarg
+    
+    if percAbove < percExtTarg
+        cutOff_top = cutOff_top-stepSize;
+    end
+    
+    if percBelow < percExtTarg
+        cutOff_bottom = cutOff_bottom+stepSize;
+    end
+    
+    percAbove = 100.*nnz(x > cutOff_top)./numel(x);
+    percBelow = 100.*nnz(x < cutOff_bottom)./numel(x);
+    
+end
+
+% scale the data
+m = 1.6888./(cutOff_top-cutOff_bottom);
+b = -cutOff_bottom.*m;
+
+xScaled = m.*x+b;
 
 end
 

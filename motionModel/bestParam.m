@@ -2,10 +2,10 @@
 
 % file
 options.data.origin             = 'file';
-options.data.fileInfo.p         = 9;
 options.data.fileInfo.f         = 19;
 options.data.fileInfo.m         = 1;
 options.data.fileInfo.processed = true;
+options.data.fileInfo.t_tot     = 600; % seconds
 
 %% processing options
 
@@ -27,6 +27,9 @@ options.processing.FSM.velocityRangeEOE = [0 10]; % mm/s
 %options.processing.FSM.cTheta           = 4.5; % mm/s
 %options.processing.FSM.cLambda          = 4; % mm
 options.processing.FSM.cSLength         = 0.133; % s
+
+% training ratio
+options.processing.trainRatio = 0.5;
 
 %% FFT options
 
