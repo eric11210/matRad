@@ -1,17 +1,17 @@
 %% load in CT and setup
 
-load lungPatient2_3mm5p_rep
+%load lungPatient2_3mm5p_rep
 
 % threshold factor
 threshFac = 0.5;
 
 % set of fluence gantry angle spacings
-maxFluGantryAngleSpacingS = [4 2 1 0.5 0.125 0.0625];
+maxFluGantryAngleSpacingS = pln.propOpt.VMAToptions.fluGantryAngleSpacing./(1:round(pln.propOpt.prop4D.motionModel.deltaT_sample/0.04));
 
 % this is the reference plan, the most accurate way of calculating dose
-fname = sprintf('SBRT max flu gantry angle spacing = %.4f.mat',maxFluGantryAngleSpacingS(end));
+fname = sprintf('convFrac max flu gantry angle spacing = %.4f.mat',maxFluGantryAngleSpacingS(end));
 load(fname)
-refDose = recalc.resultGUI.physicalDose;
+refDose = recalc.resultGUI.dMean_MC;
 %refDoseError = recalc.resultGUI.physicalDoseError;
 
 % adjust overlap priorities
@@ -40,7 +40,6 @@ percVErr5 = zeros(size(maxFluGantryAngleSpacingS));
 percVErr10 = zeros(size(maxFluGantryAngleSpacingS));
 fluence = zeros(size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,1), size(recalc.apertureInfo.beam(1).shape{1}(1).shapeMap,2), numel(maxFluGantryAngleSpacingS));
 weight = zeros(size(maxFluGantryAngleSpacingS));
-obj = zeros(size(maxFluGantryAngleSpacingS));
 
 numPVHPoints = 1e3;
 
@@ -58,9 +57,9 @@ i = 1;
 for maxFluGantryAngleSpacing = maxFluGantryAngleSpacingS(1:(end-1))
     
     %first time, do interpolation and dynamic fluence calculation
-    fname = sprintf('SBRT max flu gantry angle spacing = %.4f.mat',maxFluGantryAngleSpacing);
+    fname = sprintf('convFrac max flu gantry angle spacing = %.4f.mat',maxFluGantryAngleSpacing);
     load(fname);
-    dose = recalc.resultGUI.physicalDose;
+    dose = recalc.resultGUI.dMean_MC;
     
     % percent difference stuff
     percDiff = 100*abs(dose-refDose)./max(refDose(:));
@@ -87,13 +86,11 @@ for maxFluGantryAngleSpacing = maxFluGantryAngleSpacingS(1:(end-1))
         end
     end
     
-    obj(i) = recalc.f;
-    
     i = i+1;
 end
 
 
-save('SBRT Conventional Fluence Res Results','fluence','weight','percVErr*','PVH*')
+save('convFrac Fluence Res Results','fluence','weight','percVErr*','PVH*')
 
 %%
 
@@ -111,7 +108,7 @@ figure(h)
 xlabel('Relative dose difference (\%)')
 ylabel('Volume (\%)')
 ylim([0.1 100])
-fname = 'SBRT Fluence Res Results';
+fname = 'convFrac Fluence Res Results';
 %title(fname)
 legend({'$\Delta\theta_{\mathrm{flu}} = \SI{4}{\degree}$','$\Delta\theta_{\mathrm{flu}} = \SI{2}{\degree}$','$\Delta\theta_{\mathrm{flu}} = \SI{1}{\degree}$','$\Delta\theta_{\mathrm{flu}} = \SI{0.5}{\degree}$','$\Delta\theta_{\mathrm{flu}} = \SI{0.25}{\degree}$','$\Delta\theta_{\mathrm{flu}} = \SI{0.125}{\degree}$'},'Location','Best')
 grid on

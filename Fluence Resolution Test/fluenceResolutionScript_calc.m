@@ -54,17 +54,17 @@ pln.propOpt.prop4D.singlePhaseFMO = true;
 pln = matRad_VMATGantryAngles(pln,cst,ct);
 stf = matRad_generateStf(ct,cst,pln);
 
-% dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
+dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
 
 % load results
 load('convFrac Opt.mat');
 %load('SBRT nonOpt.mat');
 
-oldDir = pwd;
-
 %%
 
-maxFluGantryAngleSpacingS = pln.propOpt.VMAToptions.fluGantryAngleSpacing./(1:round(pln.propOpt.prop4D.motionModel.deltaT_sample/0.05));
+oldDir = pwd;
+
+maxFluGantryAngleSpacingS = pln.propOpt.VMAToptions.fluGantryAngleSpacing./(1:round(pln.propOpt.prop4D.motionModel.deltaT_sample/0.04));
 
 for maxFluGantryAngleSpacing = maxFluGantryAngleSpacingS
     % calculate dose at original fluence gantry spacing, work our way down
@@ -73,13 +73,24 @@ for maxFluGantryAngleSpacing = maxFluGantryAngleSpacingS
     recalc.pln = pln;
     recalc.pln.propOpt.VMAToptions.maxFluGantryAngleSpacing = maxFluGantryAngleSpacing;
     
-    fname = sprintf('SBRT max flu gantry angle spacing = %.4f.mat',maxFluGantryAngleSpacing);
-    fprintf('%s\n',fname);
-    recalc.continuousAperture = true;
-    recalc.interpNew = true;
-    recalc.dijNew = true;
+    recalc.continuousAperture   = true;
+    recalc.interpNew            = true;
+    recalc.dijNew               = true;
+    recalc.doMCMC               = true;
+    recalc.calcDoseDirect       = false;
+    recalc.doseOrFlu            = 'flu';
     
-    recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo,false,dij,'flu');
+    fname = sprintf('convFrac max flu gantry angle spacing = %.4f.mat',maxFluGantryAngleSpacing);
+    fprintf('%s\n',fname);
+    
+    recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo,dij);
+    cd(oldDir);
+    save(fname,'resultGUI','recalc','-v7.3');
+    
+    fname = sprintf('convFrac repeat max flu gantry angle spacing = %.4f.mat',maxFluGantryAngleSpacing);
+    fprintf('%s\n',fname);
+    
+    recalc = matRad_doseRecalc(cst,pln,recalc,ct,resultGUI.apertureInfo,dij);
     cd(oldDir);
     save(fname,'resultGUI','recalc','-v7.3');
     

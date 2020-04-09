@@ -30,14 +30,23 @@ apertureInfo_hist.motionModel.indices.nSubPhases = apertureInfo_hist.numPhases;
 % determine the times for each step, which are the same for all histories
 tSimulated_hist = [0; cumsum(tTrans)];
 
+% calculate the number of steps to take (it's possible that there is really
+% one more step than necessary, but it's good to have more steps than we
+% require than not enough)
+nSteps = 1+ceil(tSimulated_hist(end)./apertureInfo.motionModel.deltaT_sample);
+
 % loop over number of histories
 for hist = 1:nHistories
     
     % MC simulation of tumour trajectory
-    lSimulated_hist= matRad_runMarkovChain_P(apertureInfo.motionModel,numel(tSimulated_hist));
+    lSimulated_deltaT_hist = matRad_runMarkovChain_P(apertureInfo.motionModel,nSteps);
+    
+    % interpolate subphase trajectory to desired temporal frequency, convert
+    % to posPhase
+    lSimulated_hist = matRad_resampleTrajAndSubPhase2PosPhase(lSimulated_deltaT_hist,tSimulated_hist,apertureInfo.motionModel);
     
     % insert trajectory in apertureInfo struct
-    apertureInfo_hist.motionModel.lSimulated = apertureInfo.motionModel.indices.subPhase2Phase(lSimulated_hist);
+    apertureInfo_hist.motionModel.lSimulated = lSimulated_hist;
     apertureInfo_hist.motionModel.tSimulated = tSimulated_hist;
     
     % get weights for this particular history

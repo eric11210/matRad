@@ -1,4 +1,7 @@
-function [pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(apertureInfo,dij,cst,pln,nHistories,p)
+function [pdvh_MC,dvh_mean_MC,dvh_std_MC,dMean_MC,dVar_MC] = matRad_dvhMC(apertureInfo,dij,cst,pln,nHistories,p)
+
+% shuffle rng
+rng('shuffle');
 
 % initialize options
 if apertureInfo.run4D
@@ -14,6 +17,10 @@ options.FMO = false;
 if nargin < 6
     p = [5 25 50 75 95];
 end
+
+% initialize sum of dose and square of dose
+dSum    = zeros(dij.numOfVoxels,1);
+d2Sum   = zeros(dij.numOfVoxels,1);
 
 % get dose for mean
 d_mean = matRad_backProjection(apertureInfo.bixelWeights,dij,options);
@@ -66,6 +73,16 @@ apertureInfo_frac.motionModel.indices.nSubPhases = apertureInfo_frac.numPhases;
 
 [apertureInfo_frac.motionModel.indices.subPhase2PosPhase_gridJ,apertureInfo_frac.motionModel.indices.subPhase2PosPhase_gridI] = meshgrid(1:apertureInfo_frac.numPhases);
 
+% determine the times for each step, which are the same for all histories
+tSimulated_hist = [0; cumsum(tTrans)];
+
+% calculate the number of steps to take (it's possible that there is really
+% one more step than necessary, but it's good to have more steps than we
+% require than not enough)
+nSteps = 1+ceil(tSimulated_hist(end)./apertureInfo.motionModel.deltaT_sample);
+
+%% do MC
+
 % loop over number of histories
 for hist = 1:nHistories
     
@@ -76,11 +93,15 @@ for hist = 1:nHistories
     for frac = 1:pln.numOfFractions
         
         % MC simulation of tumour trajectory
-        [lSimulated_frac,tSimulated_frac] = matRad_runMarkovChain_Q(apertureInfo.motionModel,tTrans);
+        lSimulated_deltaT_hist = matRad_runMarkovChain_P(apertureInfo.motionModel,nSteps);
         
-        % insert trajectory in apertureInfo_frac struct
-        apertureInfo_frac.motionModel.lSimulated = apertureInfo.motionModel.indices.subPhase2Phase(lSimulated_frac);
-        apertureInfo_frac.motionModel.tSimulated = tSimulated_frac;
+        % interpolate subphase trajectory to desired temporal frequency, convert
+        % to posPhase
+        lSimulated_hist = matRad_resampleTrajAndSubPhase2PosPhase(lSimulated_deltaT_hist,tSimulated_hist,apertureInfo.motionModel);
+        
+        % insert trajectory in apertureInfo struct
+        apertureInfo_frac.motionModel.lSimulated = lSimulated_hist;
+        apertureInfo_frac.motionModel.tSimulated = tSimulated_hist;
         
         % get weights for this particular history
         apertureInfo_frac = matRad_daoVec2ApertureInfo_bixWeightOnly(apertureInfo_frac,apertureInfo_frac.apertureVector);
@@ -91,6 +112,9 @@ for hist = 1:nHistories
         % sum fraction dose into total dose
         d_hist = d_hist+d_frac;
         
+        % update dSum and d2Sum
+        dSum    = dSum + d_frac;
+        d2Sum   = d2Sum + d_frac.^2;
     end
     
     % reshape dose
@@ -120,6 +144,12 @@ for hist = 1:nHistories
     end
     
 end
+
+% calculate mean and variance of dose
+dMean_MC   = dSum./(nHistories.*pln.numOfFractions);
+dVar_MC    = (d2Sum-nHistories.*pln.numOfFractions.*dMean_MC.^2)./(nHistories.*pln.numOfFractions-1);
+
+%% calculate mean and std DVHs, and PDVHs
 
 dvh_mean_MC = dvh_mean_unique;
 dvh_std_MC  = dvh_mean_unique;

@@ -1,4 +1,4 @@
-function recalc = matRad_doseRecalc(cst,pln,recalc,ct,apertureInfo,calcDoseDirect,dij,doseOrFlu)
+function recalc = matRad_doseRecalc(cst,pln,recalc,ct,apertureInfo,dij)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % matRad function to recalculate dose on a Dij angular resolution, or using
 % the dynamic method, whichever the user wants%
@@ -35,10 +35,6 @@ function recalc = matRad_doseRecalc(cst,pln,recalc,ct,apertureInfo,calcDoseDirec
 %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if nargin < 6
-    calcDoseDirect = true;
-end
-
 if isfield(apertureInfo,'scaleFacRx')
     %weights were scaled to acheive 95% PTV coverage
     %scale back to "optimal" weights
@@ -67,7 +63,7 @@ end
 
 cd stf
 
-switch doseOrFlu
+switch recalc.doseOrFlu
     case 'dose'
         fname = sprintf('%.3f deg.mat',recalc.pln.propOpt.VMAToptions.maxGantryAngleSpacing);
     case 'flu'
@@ -166,33 +162,22 @@ if ~recalc.interpNew || ~recalc.dijNew
     end
 end
 
-if calcDoseDirect
+if recalc.calcDoseDirect
     clear global
     recalc.resultGUI = matRad_calcDoseDirect(ct,recalc.stf,recalc.pln,cst,recalc.apertureInfo.bixelWeights);
 else
     recalc.resultGUI.w = recalc.apertureInfo.bixelWeights;
+end
+
+if recalc.doMCMC
+    % do Markov chain Monte Carlo sampling to get dose at new fluenc
+    % resolution
+    [pdvh_MC,dvh_mean_MC,dvh_std_MC,dMean_MC,dVar_MC] = matRad_dvhMC(recalc.apertureInfo,dij,cst,recalc.pln,100);
     
-    % set dose calculation options
-    options.bioOpt          = recalc.pln.propOpt.bioOptimization;
-    if recalc.pln.propOpt.run4D
-        options.numOfScenarios = dij.numPhases;
-    else
-        options.numOfScenarios  = dij.numOfScenarios;
-    end
-    dij.scaleFactor = recalc.apertureInfo.weightToMU./dij.weightToMU;
-    d = matRad_backProjection(recalc.resultGUI.w,dij,options);
-    recalc.resultGUI.physicalDose = reshape(d,dij.dimensions);
-    
-    % adjust overlap priorities
-    cst_Over = matRad_setOverlapPriorities(cst);
-    
-    % adjust objectives _and_ constraints internally for fractionation
-    for i = 1:size(cst_Over,1)
-        for j = 1:size(cst_Over{i,6},1)
-            cst_Over{i,6}(j).dose = cst_Over{i,6}(j).dose/recalc.pln.numOfFractions;
-        end
-    end
-    
-    % bixel based objective function calculation
-    recalc.f = matRad_objFuncWrapper(recalc.resultGUI.w,dij,cst_Over,options);
+    % insert into recalc.resultGUI
+    recalc.resultGUI.pdvh_MC        = pdvh_MC;
+    recalc.resultGUI.dvh_mean_MC    = dvh_mean_MC;
+    recalc.resultGUI.dvh_std_MC     = dvh_std_MC;
+    recalc.resultGUI.dMean_MC       = dMean_MC;
+    recalc.resultGUI.dVar_MC        = dVar_MC;
 end
