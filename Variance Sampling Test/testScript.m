@@ -24,6 +24,7 @@ pln.propDoseCalc.vmcOptions.dumpDose        = 1;
 pln.propDoseCalc.vmcOptions.version         = 'Carleton';
 pln.propDoseCalc.vmcOptions.nCasePerBixel   = 500;
 pln.propDoseCalc.vmcOptions.numOfParMCSim   = 16;
+pln.propDoseCalc.sampleTargetProb           = 1;
 
 % beam geometry settings
 pln.propStf.bixelWidth = 5;
