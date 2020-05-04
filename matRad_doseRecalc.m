@@ -169,6 +169,17 @@ else
     recalc.resultGUI.w = recalc.apertureInfo.bixelWeights;
 end
 
+% set dose calculation options
+options.bioOpt          = recalc.pln.propOpt.bioOptimization;
+if recalc.pln.propOpt.run4D
+    options.numOfScenarios = dij.numPhases;
+else
+    options.numOfScenarios  = dij.numOfScenarios;
+end
+dij.scaleFactor = recalc.apertureInfo.weightToMU./dij.weightToMU;
+d = matRad_backProjection(recalc.resultGUI.w,dij,options);
+recalc.resultGUI.physicalDose = reshape(d,dij.dimensions);
+
 if recalc.doMCMC
     % do Markov chain Monte Carlo sampling to get dose at new fluenc
     % resolution

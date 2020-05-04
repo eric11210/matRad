@@ -7,6 +7,7 @@ threshFac = 0.5;
 
 % set of fluence gantry angle spacings
 maxFluGantryAngleSpacingS = pln.propOpt.VMAToptions.fluGantryAngleSpacing./(1:round(pln.propOpt.prop4D.motionModel.deltaT_sample/0.04));
+maxFluGantryAngleSpacingS = [recalc.pln.propOpt.VMAToptions.gantryAngleSpacing maxFluGantryAngleSpacingS];
 
 % this is the reference plan, the most accurate way of calculating dose
 fname = sprintf('convFrac max flu gantry angle spacing = %.4f.mat',maxFluGantryAngleSpacingS(end));
@@ -59,7 +60,11 @@ for maxFluGantryAngleSpacing = maxFluGantryAngleSpacingS(1:(end-1))
     %first time, do interpolation and dynamic fluence calculation
     fname = sprintf('convFrac max flu gantry angle spacing = %.4f.mat',maxFluGantryAngleSpacing);
     load(fname);
-    dose = recalc.resultGUI.dMean_MC;
+    if maxFluGantryAngleSpacing == maxFluGantryAngleSpacingS(1)
+        dose = recalc.resultGUI.physicalDose(:);
+    else
+        dose = recalc.resultGUI.dMean_MC;
+    end
     
     % percent difference stuff
     percDiff = 100*abs(dose-refDose)./max(refDose(:));

@@ -54,7 +54,7 @@ pln.propOpt.prop4D.singlePhaseFMO = true;
 pln = matRad_VMATGantryAngles(pln,cst,ct);
 stf = matRad_generateStf(ct,cst,pln);
 
-dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
+%dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
 
 % load results
 load('convFrac Opt.mat');
@@ -65,6 +65,7 @@ load('convFrac Opt.mat');
 oldDir = pwd;
 
 maxFluGantryAngleSpacingS = pln.propOpt.VMAToptions.fluGantryAngleSpacing./(1:round(pln.propOpt.prop4D.motionModel.deltaT_sample/0.04));
+maxFluGantryAngleSpacingS = [recalc.pln.propOpt.VMAToptions.gantryAngleSpacing maxFluGantryAngleSpacingS];
 
 for maxFluGantryAngleSpacing = maxFluGantryAngleSpacingS
     % calculate dose at original fluence gantry spacing, work our way down
@@ -76,7 +77,11 @@ for maxFluGantryAngleSpacing = maxFluGantryAngleSpacingS
     recalc.continuousAperture   = true;
     recalc.interpNew            = true;
     recalc.dijNew               = true;
-    recalc.doMCMC               = true;
+    if maxFluGantryAngleSpacing == maxFluGantryAngleSpacingS(1)
+        recalc.doMCMC           = false;
+    else
+        recalc.doMCMC           = true;
+    end
     recalc.calcDoseDirect       = false;
     recalc.doseOrFlu            = 'flu';
     
