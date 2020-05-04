@@ -187,7 +187,9 @@ for i = 1:numel(apertureInfo.beam)
             
             % insert gradients (averaged over all sub-phases in a phase
             dRawGradCellTemp_sumI(:,:,phase_F) = dRawGradCellTemp_sumI(:,:,phase_F)+dRawGradCellTemp.*factor_I;
-            dRawGradCellTemp_sumF(:,:,phase_I) = dRawGradCellTemp_sumF(:,:,phase_I)+dRawGradCellTemp.*factor_F;
+            if apertureInfo.probF_KL{i}(phase_I,phase_F) ~= 0
+                dRawGradCellTemp_sumF(:,:,phase_I) = dRawGradCellTemp_sumF(:,:,phase_I)+dRawGradCellTemp.*factor_F;
+            end
             
             if ~apertureInfo.propVMAT.fixedGantrySpeed
                 % determine if we're doing time gradients
