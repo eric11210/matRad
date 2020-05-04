@@ -1,11 +1,11 @@
-function FS_sample = matRad_FSMfracTime(FS_sample,options)
+function [FS_sample,parametersNoGood] = matRad_FSMfracTime(FS_sample,options,filtFactor)
 
 %% find maximum time spent in each state
 
 % create vector containing maximum time spent in each state
 maxTime = zeros(4,1);
 
-% initialize time spent in current state
+% initialize time spent in current state (as fraction of filtFactor)
 timeInState = 1;
 
 % loop through entire trace
@@ -34,6 +34,18 @@ for i = 1:(numel(FS_sample)-1)
 end
 
 %% split states into fractional times
+
+% determine if we should continue with this parameter combination
+%if any(maxTime(1:3)./options.nTimeFracs < filtFactor)
+if all(maxTime./options.nTimeFracs < 1)
+    % if all of the bin sizes are less than 1, this is not a
+    % good set of parameters
+    % if this happens, then we will always skip over an entire timeFrac bin!
+    parametersNoGood    = true;
+    return
+else
+    parametersNoGood = false;
+end
 
 % determine bounds on regular states
 % all IRR are put into the same time fraction
@@ -98,7 +110,6 @@ end
 
 % modify FS_sample using the fractional times
 FS_sample = (FS_sample-1).*options.nTimeFracs+timeFrac_sample;
-
 
 end
 

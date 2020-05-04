@@ -2,10 +2,14 @@ function data = matRad_readMotionData(fileInfo,percExtTarg)
 
 %% tested properties
 
+% fraction number
 fTested         = [19 21];
+% marker number
 mTested         = [1 3];
+% do we need to flip the vertical axis? the positive direction is exhale
 flipTested      = [false true];
-t_startTested   = [2503 2000];
+% this should start in the middle of an inhaling (negative slope) cycle
+t_startTested   = [2503 1998.5];
 
 %% get appropriate properties
 
@@ -76,7 +80,7 @@ function xScaled = scaleData(x,percExtTarg)
 cutOff_top      = max(x);
 cutOff_bottom   = min(x);
 
-stepSize = (cutOff_top-cutOff_bottom)./1e6;
+stepSize = (cutOff_top-cutOff_bottom)./1e4;
 
 percAbove = 0;
 percBelow = 0;

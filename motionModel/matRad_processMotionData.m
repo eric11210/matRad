@@ -1,4 +1,4 @@
-function [data_train,data_test] = matRad_processMotionData(data,options)
+function [data_train,data_test,parametersNoGood] = matRad_processMotionData(data,options,fileInfo)
 
 %% get variables from inputs
 % data
@@ -28,13 +28,15 @@ t_sample = t_sample-t_sample(1);
 % decimate data to desired frequency
 % NOTE: training data should use the decimated signal, while testing data
 % should use the original signal
-filtFactor           = round(1./(deltaT_sample.*options.fResample));
-%x_sample        = lowpass(x_sample,0.8./decFactor);
-deltaT_sample_filt   = filtFactor*deltaT_sample;
-x_sample_filt        = matRad_decimate(x_sample,filtFactor,8);
-t_sample_filt        = t_sample;
-%x_sample_dec        = decimate(x_sample,decFactor,8);
-%t_sample_dec        = flipud((t_sample(end):(-deltaT_sample_dec):t_sample(1))');
+filtFactor          = round(1./(deltaT_sample.*options.fResample));
+%x_sample           = lowpass(x_sample,0.8./decFactor);
+deltaT_sample_filt  = filtFactor*deltaT_sample;
+x_sample_filt       = matRad_decimate(x_sample,filtFactor,8);
+t_sample_filt       = t_sample;
+%x_sample_dec       = decimate(x_sample,decFactor,8);
+%t_sample_dec       = flipud((t_sample(end):(-deltaT_sample_dec):t_sample(1))');
+filtFactor_4FSM     = round(1./(deltaT_sample.*2)); % filter to 2 Hz
+x_sample_filt_4FSM  = matRad_decimate(x_sample,filtFactor_4FSM,8);
 
 % determine velocity
 v_sample        = gradient(x_sample,deltaT_sample);
@@ -122,12 +124,20 @@ if options.doFSM
     % determine threshold velocity and amplitude values
     % this is 1/4 the average velocity, using a typical breathing period of
     % 4 s
-    options.FSM.cTheta           = 2*2*std(x_sample)./(4*4); % mm/s
+    options.FSM.cTheta           = 2*2*std(x_sample_filt_4FSM)./(4*4); % mm/s
     % this is 1/3 the average amplitude
-    options.FSM.cLambda          = 2*std(x_sample)/3; % mm
+    options.FSM.cLambda          = 2*std(x_sample_filt_4FSM)/3; % mm
     
-    % do the FSM on the non-decimated trace
-    FS_sample = matRad_doFSM(x_sample,deltaT_sample,options.FSM);
+    % check if we've already done the FSM for this patient
+    if exist(sprintf('FSM_f%d_m%d.mat',fileInfo.f,fileInfo.m),'file')
+        % if yes, load it
+        load(sprintf('FSM_f%d_m%d.mat',fileInfo.f,fileInfo.m),'FS_sample');
+    else
+        % do the FSM on the non-decimated trace
+        FS_sample = matRad_doFSM(x_sample_filt_4FSM,deltaT_sample,options.FSM);
+        % save it
+        save(sprintf('FSM_f%d_m%d.mat',fileInfo.f,fileInfo.m),'FS_sample');
+    end
     
     % now decimate it
     %endInd = numel(x_sample);
@@ -145,15 +155,22 @@ if options.doFSM
         = matRad_splitTrainTest(FS_sample_dec,t_sample_filt,x_sample_filt,v_sample_filt,l_sample_dec,options.trainRatio);
     
     % do time split
-    FS_sample       = matRad_FSMfracTime(FS_sample,options.FSM);
-    FS_sample_dec   = matRad_FSMfracTime(FS_sample_dec,options.FSM);
+    [FS_timeSplit_sample,parametersNoGood]  = matRad_FSMfracTime(FS_sample,options.FSM,filtFactor);
+    FS_timeSplit_sample_dec                 = matRad_FSMfracTime(FS_sample_dec,options.FSM,filtFactor);
+    
+    % return if parametersNoGood
+    if parametersNoGood
+        data_train  = NaN;
+        data_test   = NaN;
+        return
+    end
     
     % each non-IRR is split into time fractions; the IRR state is not
     nStates = 3.*options.FSM.nTimeFracs+1;
     
     % include finite states in l_sample
-    l_sample        = (FS_sample-1).*nPosSubPhases + l_sample;
-    l_sample_dec    = (FS_sample_dec-1).*nPosSubPhases + l_sample_dec;
+    l_sample        = (FS_timeSplit_sample-1).*nPosSubPhases + l_sample;
+    l_sample_dec    = (FS_timeSplit_sample_dec-1).*nPosSubPhases + l_sample_dec;
     
 else
     % only do this part if not doing FSM
@@ -317,9 +334,11 @@ subPhase2VelSubPhase(subPhaseChangeInd) = subPhase2VelSubPhase(subPhaseChangeInd
 
 % convert from pos sub phase to pos phase
 if options.doFSM
-    posSubPhase2PosPhase = [repmat(nPosPhases+1,nPosSubPhasesMaxExt,1); repelem((1:nPosPhases)',nSubPerPosPhase,1); repmat(nPosPhases+2,nPosSubPhasesMinExt,1)];
+    %posSubPhase2PosPhase = [repmat(nPosPhases+1,nPosSubPhasesMaxExt,1); repelem((1:nPosPhases)',nSubPerPosPhase,1); repmat(nPosPhases+2,nPosSubPhasesMinExt,1)];
+    posSubPhase2PosPhase = [repmat(1,nPosSubPhasesMaxExt,1); repelem((1:nPosPhases)',nSubPerPosPhase,1); repmat(nPosPhases,nPosSubPhasesMinExt,1)];
 else
-    posSubPhase2PosPhase = [repmat(nPosPhases+1,nPosSubPhasesMaxExt,1); repelem((1:nPosPhases/2)',nSubPerPosPhase,1); repmat(nPosPhases+2,nPosSubPhasesMinExt*2,1); repelem(((nPosPhases/2+1):nPosPhases)',nSubPerPosPhase,1); repmat(nPosPhases+1,nPosSubPhasesMaxExt,1)];
+    %posSubPhase2PosPhase = [repmat(nPosPhases+1,nPosSubPhasesMaxExt,1); repelem((1:nPosPhases/2)',nSubPerPosPhase,1); repmat(nPosPhases+2,nPosSubPhasesMinExt*2,1); repelem(((nPosPhases/2+1):nPosPhases)',nSubPerPosPhase,1); repmat(nPosPhases+1,nPosSubPhasesMaxExt,1)];
+    posSubPhase2PosPhase = [repmat(1,nPosSubPhasesMaxExt,1); repelem((1:nPosPhases/2)',nSubPerPosPhase,1); repmat(nPosPhases,nPosSubPhasesMinExt*2,1); repelem(((nPosPhases/2+1):nPosPhases)',nSubPerPosPhase,1); repmat(1,nPosSubPhasesMaxExt,1)];
 end
 
 % convert from vel sub phase to vel phase

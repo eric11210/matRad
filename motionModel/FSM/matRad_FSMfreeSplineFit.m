@@ -4,7 +4,7 @@ function tBreak = matRad_FSMfreeSplineFit(x,t,K,m1,m2)
 % initialize parameters
 initParam       = zeros(4,1);
 if K <= numel(t)
-    initParam(1) = t(end-K+1);
+    initParam(1) = t(K);%t(end-K+1);
 else
     initParam(1) = mean(t);
 end

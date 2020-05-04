@@ -15,8 +15,23 @@ fprintf('Done!\n')
 
 % process data, separating into training and testing data
 fprintf('matRad: Processing motion data... ');
-[data_train,data_test] = matRad_processMotionData(data,options.processing);
+[data_train,data_test,parametersNoGood] = matRad_processMotionData(data,options.processing,options.data.fileInfo);
 fprintf('Done!\n')
+
+% return if parametersNoGood
+if parametersNoGood
+    fprintf('matRad: nTimeFracs too large for the choice of Markov frequency!');
+    % insert outputs
+    if options.hist.doHist
+        model.pSum          = NaN;
+        model.p             = NaN(size(options.hist.timePoints));
+        model.chiSquares    = NaN(size(options.hist.timePoints));
+    end
+    if options.convTime.doConvTime
+        model.convergeT = NaN;
+    end
+    return
+end
 
 % generate matrices using training data
 fprintf('matRad: Generating probability matrix... ');
