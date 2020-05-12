@@ -2,8 +2,8 @@
 
 % file
 options.data.origin             = 'file';
-options.data.fileInfo.f         = 19;
-options.data.fileInfo.m         = 1;
+options.data.fileInfo.f         = 21;
+options.data.fileInfo.m         = 3;
 options.data.fileInfo.processed = true;
 options.data.fileInfo.t_tot     = 600; % seconds
 
@@ -16,7 +16,7 @@ options.processing.nVelPhases   = 1;    % is this necessary?
 options.processing.velBinning   = true; % is this necessary? just set nVelSubPhases to 1
 
 % for resampling
-options.processing.fResample = 3; % Hz
+options.processing.fResample = 6; % Hz
 
 % for FSM
 options.processing.doFSM                = true;
@@ -39,7 +39,7 @@ options.FFT.doWindowing = true;
 % histogram options
 
 options.hist.doHist     = true;
-options.hist.timePoints = 0:0.04:90; %s
+options.hist.timePoints = 0:0.04:110; %s
 
 % convergence time options
 
@@ -49,9 +49,9 @@ options.convTime.l2_targ    = 0.01;
 % get model
 
 % best fit parameters
-options.processing.nSubPerPosPhase  = 1;
-options.processing.nSubPerVelPhase  = 2;
-options.processing.FSM.nTimeFracs   = 6;
+options.processing.nSubPerPosPhase  = 10;
+options.processing.nSubPerVelPhase  = 10;
+options.processing.FSM.nTimeFracs   = 10;
 
 % extract model
 model = matRad_generateMotionModel(options);
@@ -70,7 +70,7 @@ bar([model.hist_obs(1:options.processing.nPosPhases,ind) model.hist_pred(1:optio
 xlabel('position bin')
 ylabel('frequency')
 legend({'observed' 'expected'},'Location','Best')
-fname = 'ObservedandExpectedPositionHistograms_raw';
+fname = 'ObservedandExpectedPositionHistograms_B_raw';
 grid on
 set(gca,'YMinorTick','on')
 savefig(fname)
@@ -87,7 +87,7 @@ yl = ylim;
 plot(repmat(model.chiSquares(ind),1,2),yl,'k')
 xlabel('\chi^2_{help}')
 ylabel('probability density')
-fname = 'ChiSquaredDistribution_raw';
+fname = 'ChiSquaredDistribution_B_raw';
 grid on
 set(gca,'YMinorTick','on','XMinorTick','on')
 savefig(fname)
@@ -106,7 +106,7 @@ yl = ylim;
 plot(repmat(sum(model.chiSquares),1,2),yl,'k')
 xlabel('\chi^2_{help}')
 ylabel('probability density')
-fname = 'ChiSquaredSigmaDistribution_raw';
+fname = 'ChiSquaredSigmaDistribution_B_raw';
 grid on
 set(gca,'YMinorTick','on','XMinorTick','on')
 savefig(fname)
@@ -122,7 +122,7 @@ figure
 plot(options.hist.timePoints,model.chiSquares)
 xlabel('\Delta t / s')
 ylabel('\chi^2_{help}')
-fname = 'ChiSquaredDeltaT_raw';
+fname = 'ChiSquaredDeltaT_B_raw';
 grid on
 set(gca,'YMinorTick','on','XMinorTick','on')
 savefig(fname)
@@ -134,7 +134,7 @@ figure
 plot(options.hist.timePoints,model.p)
 xlabel('\Delta t / s')
 ylabel('p_{help}')
-fname = 'PDeltaT_raw';
+fname = 'PDeltaT_B_raw';
 grid on
 set(gca,'YMinorTick','on','XMinorTick','on')
 savefig(fname)
@@ -147,7 +147,7 @@ matlab2tikz('filename',fullpath,'interpretTickLabelsAsTex',true,'parseStrings',f
 minVal = min([model.hist_obs(:); model.hist_pred(:)]);
 maxVal = max([model.hist_obs(:); model.hist_pred(:)]);
 
-maxVal = 2300;
+maxVal = 3000;
 
 % display observed
 figure
@@ -157,7 +157,7 @@ xlabel('\Delta t / s')
 ylabel('position bin $l$')
 yticks(1:options.processing.nPosPhases)
 colorbar
-fname = 'ObservedPhaseHistogramsDeltaT_raw';
+fname = 'ObservedPhaseHistogramsDeltaT_B_raw';
 set(gca,'XMinorTick','on')
 savefig(fname)
 fullpath = [figurePath fname '.tex'];
@@ -171,7 +171,7 @@ xlabel('\Delta t / s')
 ylabel('position bin $l$')
 yticks(1:options.processing.nPosPhases)
 colorbar
-fname = 'ExpectedPhaseHistogramsDeltaT_raw';
+fname = 'ExpectedPhaseHistogramsDeltaT_B_raw';
 set(gca,'XMinorTick','on')
 savefig(fname)
 fullpath = [figurePath fname '.tex'];
@@ -198,7 +198,7 @@ plot(data.t_sample-data.t_sample(1),data.x_sample,'k')
 xlim([0 20])
 xlabel('time / s')
 ylabel('principal component of motion / mm')
-fname = 'ObservedSequence_raw';
+fname = 'ObservedSequence_B_raw';
 grid on
 set(gca,'YMinorTick','on','XMinorTick','on')
 savefig(fname)
@@ -211,7 +211,7 @@ plot(t_simulated,x_simulated,'k')
 xlim([0 20])
 xlabel('time / s')
 ylabel('principal component of motion / mm')
-fname = 'SampleSequence_raw';
+fname = 'SampleSequence_B_raw';
 grid on
 set(gca,'YMinorTick','on','XMinorTick','on')
 savefig(fname)
