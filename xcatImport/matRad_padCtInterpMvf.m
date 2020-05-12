@@ -507,8 +507,14 @@ Y_masked_far = Y_masked.*10^6;
 Z_masked_far = Z_masked.*10^6;
 
 % do interpolation
-motionVecX_interp(doInterp) = griddata(X_masked,Y_masked_far,Z_masked_far,motionVecX_masked,X(doInterp),Y_far(doInterp),Z_far(doInterp));
-motionVecY_interp(doInterp) = griddata(X_masked_far,Y_masked,Z_masked_far,motionVecY_masked,X_far(doInterp),Y(doInterp),Z_far(doInterp));
-motionVecZ_interp(doInterp) = griddata(X_masked_far,Y_masked_far,Z_masked,motionVecZ_masked,X_far(doInterp),Y_far(doInterp),Z(doInterp));
+if ~all(motionVecX(:) == X(:))
+    motionVecX_interp(doInterp) = griddata(X_masked,Y_masked_far,Z_masked_far,motionVecX_masked,X(doInterp),Y_far(doInterp),Z_far(doInterp));
+end
+if ~all(motionVecY(:) == Y(:))
+    motionVecY_interp(doInterp) = griddata(X_masked_far,Y_masked,Z_masked_far,motionVecY_masked,X_far(doInterp),Y(doInterp),Z_far(doInterp));
+end
+if ~all(motionVecZ(:) == Z(:))
+    motionVecZ_interp(doInterp) = griddata(X_masked_far,Y_masked_far,Z_masked,motionVecZ_masked,X_far(doInterp),Y_far(doInterp),Z(doInterp));
+end
 
 end
