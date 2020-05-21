@@ -96,3 +96,50 @@ set(gca,'YMinorTick','on','XMinorTick','on')
 savefig(fname)
 fullpath = [figurePath fname '.tex'];
 matlab2tikz('filename',fullpath,'interpretTickLabelsAsTex',true,'parseStrings',false,'noSize',true,'extraAxisOptions','minor y tick num=3,minor x tick num=3,width=\linewidth,height=\linewidth','showInfo',false);
+
+%% perform this section to get a figure on constructing the histogram
+
+% absolute path to figure folder
+figurePath = 'C:\Users\eric\Carleton University\OneDrive - Carleton University\Carleton\PhD Project\Thesis\figures\generator\';
+
+% get indices for bin dividers
+binDividers     = 1:nSubPerPosPhase:(nPosBins+1);
+
+% get indices for t_trigger, t_stop
+t_trigger   = [2.7 6.5 11.0 13.8];
+t_stop      = t_trigger+1;
+ind_trigger = zeros(size(t_trigger));
+ind_stop    = zeros(size(t_stop));
+for i = 1:numel(ind_trigger)
+    ind_trigger(i)  = find(data_test.t_sample-data_test.t_sample(1) > t_trigger(i),1,'first');
+    ind_stop(i)     = find(data_test.t_sample-data_test.t_sample(1) > t_stop(i),1,'first');
+end
+
+t_trigger = data_test.t_sample(ind_trigger)-data_test.t_sample(1);
+x_trigger = data_test.x_sample(ind_trigger);
+
+t_stop = data_test.t_sample(ind_stop)-data_test.t_sample(1);
+x_stop = data_test.x_sample(ind_stop);
+
+% display it
+figure
+hold on
+plot(data_test.t_sample-data_test.t_sample(1),data_test.x_sample,'k')
+
+plot(t_trigger,x_trigger,'k>','MarkerSize',10,'MarkerFaceColor','green')
+plot(t_stop,x_stop,'ks','MarkerSize',10,'MarkerFaceColor','red')
+
+plot([0 20],repmat(xBounds(binDividers),2,1),'b')
+xlim([0 20])
+xlabel('time / s')
+ylabel('principal component of motion / mm')
+fname = 'ConstructPositionPhaseHistogram_raw';
+grid on
+set(gca,'YMinorTick','on','XMinorTick','on')
+savefig(fname)
+fullpath = [figurePath fname '.tex'];
+matlab2tikz('filename',fullpath,'interpretTickLabelsAsTex',true,'parseStrings',false,'noSize',true,'extraAxisOptions','minor y tick num=3,minor x tick num=3,width=\linewidth,height=\linewidth','showInfo',false);
+
+
+
+
