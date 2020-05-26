@@ -2,8 +2,8 @@
 
 % file
 options.data.origin             = 'file';
-options.data.fileInfo.f         = 19;
-options.data.fileInfo.m         = 1;
+options.data.fileInfo.f         = 21;
+options.data.fileInfo.m         = 3;
 options.data.fileInfo.processed = true;
 options.data.fileInfo.t_tot     = 600; % seconds
 
@@ -45,7 +45,7 @@ options.FFT.doWindowing = true;
 %% histogram options
 
 options.hist.doHist     = true;
-options.hist.timePoints = 0:0.04:90; %s
+options.hist.timePoints = 0:0.04:110; %s
 
 %% convergence time options
 
@@ -136,7 +136,7 @@ for fResample = fResampleVec
                 i = i+1;
                 
                 % save after every iteration
-                save('stats','*Arr','i')
+                save('stats_21','*Arr','i')
                 
             end
             

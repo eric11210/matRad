@@ -2,8 +2,8 @@
 
 % file
 options.data.origin             = 'file';
-options.data.fileInfo.f         = 19;
-options.data.fileInfo.m         = 1;
+options.data.fileInfo.f         = 21;
+options.data.fileInfo.m         = 3;
 options.data.fileInfo.processed = true;
 options.data.fileInfo.t_tot     = 600; % seconds
 
@@ -16,7 +16,7 @@ options.processing.nVelPhases   = 1;    % is this necessary?
 options.processing.velBinning   = true; % is this necessary? just set nVelSubPhases to 1
 
 % for resampling
-options.processing.fResample = 3; % Hz
+options.processing.fResample = 6; % Hz
 
 % for FSM
 options.processing.doFSM                = true;
@@ -39,7 +39,7 @@ options.FFT.doWindowing = true;
 %% histogram options
 
 options.hist.doHist     = true;
-options.hist.timePoints = 0:0.04:90; %s
+options.hist.timePoints = 0:0.04:110; %s
 
 %% convergence time options
 
@@ -49,9 +49,9 @@ options.convTime.l2_targ    = 0.005;
 %% get model
 
 % best fit parameters
-options.processing.nSubPerPosPhase  = 1;
-options.processing.nSubPerVelPhase  = 2;
-options.processing.FSM.nTimeFracs   = 6;
+options.processing.nSubPerPosPhase  = 10;
+options.processing.nSubPerVelPhase  = 10;
+options.processing.FSM.nTimeFracs   = 10;
 
 % extract model
 model = matRad_generateMotionModel(options);
