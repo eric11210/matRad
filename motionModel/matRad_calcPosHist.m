@@ -111,11 +111,12 @@ p_sample = data.indices.subPhase2PosPhase(data.l_sample);
 % calculate histograms
 hist_obs = calcHist(p_sample,triggerPhase,data.indices.nPosPhases,numStepsData_timePoints);
 
-% scale the histogram of observed (training) data to match the testing data
+% scale the histogram of predicted data to match the testing data
 % this is required due to the difference sampling intervals between the
 % training and testing data (former is decimated, latter is not)
 %hist_obs = hist_obs.*numStepsModel_simulate./numel(data.l_sample);
-hist_obs = hist_obs.*(numStepsModel_simulate-numStepsModel_timePoints)./(numel(data.l_sample)-numStepsData_timePoints);
+%hist_obs = hist_obs.*(numStepsModel_simulate-numStepsModel_timePoints)./(numel(data.l_sample)-numStepsData_timePoints);
+hist_pred = hist_pred.*(numel(data.l_sample)-numStepsData_timePoints)./(numStepsModel_simulate-numStepsModel_timePoints);
 
 % now calc chi squares
 chiSquares = calcChiSquares(hist_obs,hist_pred);
@@ -125,8 +126,12 @@ chiSquares = calcChiSquares(hist_obs,hist_pred);
 
 nHistories = 1000;
 
-% initialize chi squares
-chiSquaresMC        = zeros(nHistories,numel(numStepsData_timePoints));
+% initialize chi squares, period
+chiSquaresMC    = zeros(nHistories,numel(numStepsData_timePoints));
+periodMC        = zeros(nHistories,1);
+
+% initialize MCmean
+hist_MCMean = zeros(data.indices.nPosPhases,numel(numStepsModel_timePoints));
 
 for history = 1:nHistories
     
@@ -139,10 +144,28 @@ for history = 1:nHistories
     % calculate histograms
     hist_MCobs = calcHist(p_MCsample,triggerPhase,data.indices.nPosPhases,numStepsModel_timePoints);
     
+    % correct histograms for difference in number of points between model
+    % sampled and observed trajectory
+    hist_MCobs = hist_MCobs.*(numel(data.l_sample)-numStepsData_timePoints)./(numStepsModel_simulate-numStepsModel_timePoints);
+    
+    % accumulate MCmean
+    hist_MCMean = hist_MCMean+hist_MCobs;
+    
+    % determine overall period for sample by taking FT
+    data_MCobs                      = data;
+    data_MCobs.l_sample             = l_simulated;
+    data_MCobs.deltaT_sample        = model.deltaT_sample;
+    [fft_abs,fft_phase,fft_freq]    = matRad_FFT(data_MCobs);
+    maxAbs                          = max(fft_abs(0.2 <= fft_freq & fft_freq <= 0.5));
+    periodMC(history)               = 1./fft_freq(fft_abs == maxAbs);
+    
     % for each history, calculate chi square
     chiSquaresMC(history,:) = calcChiSquares(hist_MCobs,hist_pred);
     
 end
+
+% can check that hist_MCMean == hist_pred
+hist_MCMean = hist_MCMean./nHistories;
 
 %% calculate p values
 
@@ -167,10 +190,13 @@ pSum = nnz(sum(chiSquaresMC,2) > sum(chiSquares))./nHistories;
 
 model.hist_pred     = hist_pred;
 model.hist_obs      = hist_obs;
+model.hist_MCMean   = hist_MCMean;
+model.periodMC      = periodMC;
 model.chiSquares    = chiSquares;
 model.chiSquaresMC  = chiSquaresMC;
 model.p             = p;
 model.pSum          = pSum;
+
 
 end
 
