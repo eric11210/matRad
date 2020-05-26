@@ -15,7 +15,10 @@ if isfield(pln.propOpt.prop4D,'motionModel')
         motionModel.type   = 'Markov_P';
         
         % strip model of the "out of bounds" phases
-        motionModel = matRad_stripMarkovOOB(motionModel);
+        %motionModel = matRad_stripMarkovOOB(motionModel);
+        
+        % get gridded maps
+        [motionModel.indices.subPhase2PosPhase_gridJ, motionModel.indices.subPhase2PosPhase_gridI] = meshgrid(motionModel.indices.subPhase2PosPhase);
         
         % determine initial position phase
         posPhaseProb = accumarray(motionModel.indices.subPhase2PosPhase,motionModel.Pi_deltaTSample);
@@ -121,7 +124,10 @@ if isfield(pln.propOpt.prop4D,'motionModel')
         motionModel.type   = 'Markov_Q';
         
         % strip model of the "out of bounds" phases
-        motionModel = matRad_stripMarkovOOB(motionModel);
+        %motionModel = matRad_stripMarkovOOB(motionModel);
+        
+        % get gridded maps
+        [motionModel.indices.subPhase2PosPhase_gridJ, motionModel.indices.subPhase2PosPhase_gridI] = meshgrid(motionModel.indices.subPhase2PosPhase);
         
         % diagonalize matrix
         [motionModel.qij_V,motionModel.qij_D] = eig(motionModel.qij);
