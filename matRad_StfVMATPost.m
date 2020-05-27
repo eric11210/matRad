@@ -456,6 +456,11 @@ for i = 1:length(stf)
     stf(i).propVMAT.fracToNextDose_arcI = 1-stf(i).propVMAT.fracToLastDose_arcI;
     stf(i).propVMAT.fracToLastDose_arcF = 1-stf(i).propVMAT.fracToNextDose_arcF;
     
+    % calculate absolute fractions for dose calculation
+    stf(i).propVMAT.absFracToLastDose_arcI = stf(i).propVMAT.fracToLastDose_arcI.*stf(i).propVMAT.fluAngleBorderCentreDiff(1)./stf(stf(i).propVMAT.lastDoseIndex).propVMAT.doseAngleBordersDiff;
+    stf(i).propVMAT.absFracToLastDose_arcF = stf(i).propVMAT.fracToLastDose_arcF.*stf(i).propVMAT.fluAngleBorderCentreDiff(2)./stf(stf(i).propVMAT.lastDoseIndex).propVMAT.doseAngleBordersDiff;
+    stf(i).propVMAT.absFracToNextDose_arcI = stf(i).propVMAT.fracToNextDose_arcI.*stf(i).propVMAT.fluAngleBorderCentreDiff(1)./stf(stf(i).propVMAT.nextDoseIndex).propVMAT.doseAngleBordersDiff;
+    stf(i).propVMAT.absFracToNextDose_arcF = stf(i).propVMAT.fracToNextDose_arcF.*stf(i).propVMAT.fluAngleBorderCentreDiff(2)./stf(stf(i).propVMAT.nextDoseIndex).propVMAT.doseAngleBordersDiff;
     
     % calculate MU rate fractions
     % technically only needed for non-DAO beams

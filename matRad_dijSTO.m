@@ -1,32 +1,23 @@
-function [dij_STO,trajectory] = matRad_dijSTO(dij,pln,stf)
+function [dij_STO,trajectory] = matRad_dijSTO(dij,pln,stf,apertureInfo)
 
 %% select most probable trajectory
 
 % prepare model
-motionModel = matRad_prepModelForOpt(pln.propOpt.prop4D);
-
-% load machine properties
-fileName = pln.propOpt.VMAToptions.machineConstraintFile;
-try
-    load(fileName,'machine');
-catch
-    error(['Could not find the following machine file: ' fileName ]);
-end
+motionModel = matRad_prepModelForOpt(pln,stf,apertureInfo);
 
 % determine transition times
-tTrans = zeros(pln.propStf.numOfBeams,1);
+tTrans = [apertureInfo.beam.time]';
 
-for i = 1:pln.propStf.numOfBeams
-    
-    tTrans(i) = stf(1).propVMAT.doseAngleBordersDiff./machine.constraints.gantryRotationSpeed(2);
-end
+% determine the times for each step, which are the same for all histories
+tSimulated = [0; cumsum(tTrans)];
 
-% determine index map, set maxProb to true
-indexMap    = (1:numel(motionModel.initProb))';
-maxProb     = true;
+% calculate the number of steps to take (it's possible that there is really
+% one more step than necessary, but it's good to have more steps than we
+% require than not enough)
+nSteps = 1+ceil(tSimulated(end)./motionModel.deltaT_sample);
 
 % sample the most probable trajectory
-[lSimulated,tSimulated] = matRad_runMarkovChain_Q(motionModel,tTrans,indexMap,maxProb);
+lSimulated = matRad_runMarkovChain_P(motionModel,nSteps,true);
 
 % convert subphase to phase
 pSimulated = motionModel.indices.subPhase2PosPhase(lSimulated);
@@ -50,12 +41,29 @@ end
 dij_STO.physicalDose{1} = spalloc(dij.numOfVoxels,dij.totalNumOfBixels,1);
 dij.numOfScenarios      = 1;
 
-offset = 0;
-for i = 1:pln.propStf.numOfBeams
+
+for i = 1:numel(stf)
     
-    dij_STO.physicalDose{1}(:,offset+(1:stf(i).totalNumOfBixels)) = dij.physicalDose{pSimulated(i)}(:,offset+(1:stf(i).totalNumOfBixels));
+    % get last and next bixel index maps
+    lastBixelIndMap = apertureInfo.beam(i).lastBixelIndMap(~isnan(apertureInfo.beam(i).lastBixelIndMap));
+    nextBixelIndMap = apertureInfo.beam(i).nextBixelIndMap(~isnan(apertureInfo.beam(i).nextBixelIndMap));
     
-    offset = offset+stf(i).totalNumOfBixels;
+    % give dose to last beam
+    % initial phase
+    dij_STO.physicalDose{1}(:,lastBixelIndMap) = dij_STO.physicalDose{1}(:,lastBixelIndMap) + ...
+        stf(i).propVMAT.absFracToLastDose_arcI.*dij.physicalDose{pSimulated(i)}(:,lastBixelIndMap);
+    % final phase
+    dij_STO.physicalDose{1}(:,lastBixelIndMap) = dij_STO.physicalDose{1}(:,lastBixelIndMap) + ...
+        stf(i).propVMAT.absFracToLastDose_arcF.*dij.physicalDose{pSimulated(i+1)}(:,lastBixelIndMap);
+    
+    % give dose to next beam
+    % initial phase
+    dij_STO.physicalDose{1}(:,nextBixelIndMap) = dij_STO.physicalDose{1}(:,nextBixelIndMap) + ...
+        stf(i).propVMAT.absFracToNextDose_arcI.*dij.physicalDose{pSimulated(i)}(:,nextBixelIndMap);
+    % final phase
+    dij_STO.physicalDose{1}(:,nextBixelIndMap) = dij_STO.physicalDose{1}(:,nextBixelIndMap) + ...
+        stf(i).propVMAT.absFracToNextDose_arcF.*dij.physicalDose{pSimulated(i+1)}(:,nextBixelIndMap);
+    
 end
 
 end

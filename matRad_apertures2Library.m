@@ -1,4 +1,4 @@
-function apertureInfo = matRad_apertures2Library(apertureInfo,pln,numPhases)
+function apertureInfo = matRad_apertures2Library(apertureInfo,pln,stf,numPhases)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % convert a sequence of apertures to a full library, using the same
 % aperture for each phase
@@ -30,43 +30,54 @@ function apertureInfo = matRad_apertures2Library(apertureInfo,pln,numPhases)
 %
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-apertureInfo.numPhases = numPhases;
+apertureInfo.numPhases  = numPhases;
+pln.propOpt.run4D       = true;
 
-shapeInd = 1;
+% determine if all phases of the library already exist
+% this means that we have previously converted the apertures to a library
+allPhases = numel(apertureInfo.beam(1).shape) == apertureInfo.numPhases;
 
-for i = 1:numel(apertureInfo.beam)
+if ~allPhases
     
-    % copy shape properties, including leaf positions and weight
-    shape = apertureInfo.beam(i).shape{1};
-    apertureInfo.beam(i).shape = cell(apertureInfo.numPhases,1);
-    apertureInfo.beam(i).shape(:) = {shape};
+    shapeInd = 1;
     
-    if apertureInfo.propVMAT.beam(i).DAOBeam
-        % fix the time indices
-        apertureInfo.propVMAT.beam(i).timeInd = apertureInfo.numPhases*(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)+shapeInd;
-        shapeInd = shapeInd+1;
+    for i = 1:numel(apertureInfo.beam)
         
-        for j = 1:apertureInfo.beam(i).numOfShapes
-            for phase = 1:apertureInfo.numPhases
-                
-                % fix the vectorOffsets
-                % there are two shifts: one to make room for the weights, and
-                % another to make room for the new leaf positions at each
-                % phase
-                apertureInfo.beam(i).shape{phase}(j).vectorOffset = apertureInfo.beam(i).shape{phase}(j).vectorOffset + (apertureInfo.numPhases-1)*apertureInfo.totalNumOfShapes + (phase-1)*apertureInfo.totalNumOfLeafPairs;
-                
-                % also fix the weightOffsets
-                % there is one shift, to make room for the weights
-                apertureInfo.beam(i).shape{phase}(j).weightOffset = apertureInfo.beam(i).shape{phase}(j).weightOffset + (phase-1)*apertureInfo.totalNumOfShapes;
+        % copy shape properties, including leaf positions and weight
+        shape = apertureInfo.beam(i).shape{1};
+        apertureInfo.beam(i).shape = cell(apertureInfo.numPhases,1);
+        apertureInfo.beam(i).shape(:) = {shape};
+        
+        if apertureInfo.propVMAT.beam(i).DAOBeam
+            % fix the time indices
+            apertureInfo.propVMAT.beam(i).timeInd = apertureInfo.numPhases*(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)+shapeInd;
+            shapeInd = shapeInd+1;
+            
+            for j = 1:apertureInfo.beam(i).numOfShapes
+                for phase = 1:apertureInfo.numPhases
+                    
+                    % fix the vectorOffsets
+                    % there are two shifts: one to make room for the weights, and
+                    % another to make room for the new leaf positions at each
+                    % phase
+                    apertureInfo.beam(i).shape{phase}(j).vectorOffset = apertureInfo.beam(i).shape{phase}(j).vectorOffset + (apertureInfo.numPhases-1)*apertureInfo.totalNumOfShapes + (phase-1)*apertureInfo.totalNumOfLeafPairs;
+                    
+                    % also fix the weightOffsets
+                    % there is one shift, to make room for the weights
+                    apertureInfo.beam(i).shape{phase}(j).weightOffset = apertureInfo.beam(i).shape{phase}(j).weightOffset + (phase-1)*apertureInfo.totalNumOfShapes;
+                end
             end
         end
     end
+    
+    % refresh metadata
+    apertureInfo = matRad_apertureInfoMeta(apertureInfo,pln,stf,false);
+    
+    % update vector
+    [apertureInfo.apertureVector, apertureInfo.mappingMx, apertureInfo.limMx] = matRad_daoApertureInfo2Vec(apertureInfo);
 end
 
-% prepare motion model
-apertureInfo.motionModel = matRad_prepModelForOpt(pln.propOpt.prop4D);
-
-% update vector
-[apertureInfo.apertureVector, apertureInfo.mappingMx, apertureInfo.limMx] = matRad_daoApertureInfo2Vec(apertureInfo);
+% update  apertureInfo
+apertureInfo = matRad_daoVec2ApertureInfo(apertureInfo,apertureInfo.apertureVector);
 
 end
