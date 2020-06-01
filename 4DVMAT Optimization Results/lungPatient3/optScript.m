@@ -1,6 +1,6 @@
 %% setup
 
-load lungPatient1_3mm5p_rep
+load lungPatient3_3mm5p_rep
 
 currentDir = pwd;
 
@@ -62,7 +62,7 @@ stf = matRad_generateStf(ct,cst,pln);
 %% calculate (load) dij
 
 %dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
-dij = matRad_loadDij('lungPatient1_3mm5p_rep');
+dij = matRad_loadDij('lungPatient3_3mm5p_rep');
 dij.numOfFractions = pln.numOfFractions;
 
 %% conventional optimization

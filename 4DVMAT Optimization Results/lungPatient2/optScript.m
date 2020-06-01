@@ -27,7 +27,7 @@ pln.propDoseCalc.vmcOptions.dumpDose        = 1;
 pln.propDoseCalc.vmcOptions.version         = 'Carleton';
 pln.propDoseCalc.vmcOptions.nCasePerBixel   = 500;
 pln.propDoseCalc.vmcOptions.numOfParMCSim   = 16;
-pln.propDoseCalc.sampleTargetProb           = 0.05;
+pln.propDoseCalc.sampleTargetProb           = 1;
 
 % optimization settings
 pln.propOpt.bioOptimization = 'none';
@@ -39,13 +39,13 @@ pln.propOpt.numLevels       = 7;
 
 pln.propOpt.VMAToptions.machineConstraintFile   = [pln.radiationMode '_' pln.machine];
 pln.propOpt.VMAToptions.continuousAperture      = true;
-pln.propOpt.VMAToptions.fixedGantrySpeed        = false;
+pln.propOpt.VMAToptions.fixedGantrySpeed        = true;
 pln.propOpt.VMAToptions.deliveryTime            = 70;
 
 pln.propOpt.VMAToptions.startingAngle               = -180;
 pln.propOpt.VMAToptions.finishingAngle              = 180;
 pln.propOpt.VMAToptions.maxGantryAngleSpacing       = 4;      % Max gantry angle spacing for dose calculation
-pln.propOpt.VMAToptions.maxFluGantryAngleSpacing    = 1;    % Max gantry angle spacing for fluence calculation
+pln.propOpt.VMAToptions.maxFluGantryAngleSpacing    = 4;    % Max gantry angle spacing for fluence calculation
 pln.propOpt.VMAToptions.maxDAOGantryAngleSpacing    = 8;      % Max gantry angle spacing for DAO
 pln.propOpt.VMAToptions.maxFMOGantryAngleSpacing    = 32;      % Max gantry angle spacing for FMO
 
@@ -59,9 +59,11 @@ pln = matRad_VMATGantryAngles(pln,cst,ct);
 
 stf = matRad_generateStf(ct,cst,pln);
 
-%% calculate dij
+%% calculate (load) dij
 
-dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
+%dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
+dij = matRad_loadDij('lungPatient2_3mm5p_rep');
+dij.numOfFractions = pln.numOfFractions;
 
 %% conventional optimization
 
@@ -93,7 +95,261 @@ close all
 % save results
 save('CO','resultGUI','*dvh*');
 
+% now do dvhs for single fraction
+resultGUI.physicalDose  = resultGUI.physicalDose./pln.numOfFractions;
+numOfFractions          = pln.numOfFractions;
+pln.numOfFractions      = 1;
+
+[pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
+[dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
+
+% save results
+save('CO_oneFrac','resultGUI','*dvh*');
+
 clear resultGUI *dvh*
+
+% reset number of fractions
+pln.numOfFractions = numOfFractions;
+
+
+%% 3D optimization on CTV
+
+pln.propOpt.run4D = true;
+pln.propOpt.varOpt = false;
+
+% do FMO
+resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
+cd(currentDir);
+savefig('3DCTV_FMO')
+close all
+
+% turn off 4d
+pln.propOpt.run4D = false;
+
+% do leaf sequencing
+resultGUI = matRad_siochiLeafSequencing(resultGUI,stf,dij,pln,0);
+
+% do DAO
+resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,resultGUI,pln,stf);
+
+% save results
+cd(currentDir);
+savefig('3DCTV_DAO')
+save('3DCTV','resultGUI');
+close all
+
+% convert sequence to library
+resultGUI.apertureInfo = matRad_apertures2Library(resultGUI.apertureInfo,pln,stf,dij.numPhases);
+
+% do dvhs
+[pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
+[dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
+
+% save results
+save('3DCTV','resultGUI','*dvh*');
+
+% now do dvhs for single fraction
+resultGUI.physicalDose  = resultGUI.physicalDose./pln.numOfFractions;
+numOfFractions          = pln.numOfFractions;
+pln.numOfFractions      = 1;
+
+[pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
+[dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
+
+% save results
+save('3DCTV_oneFrac','resultGUI','*dvh*');
+
+clear resultGUI *dvh*
+
+% reset number of fractions
+pln.numOfFractions = numOfFractions;
+
+%% DAD
+
+% load up 3D-CTV
+load('3DCTV','resultGUI');
+
+% do DAD
+resultGUI.apertureInfo.numPhases    = ct.tumourMotion.numPhases;
+resultGUI.apertureInfo              = matRad_doDAD(resultGUI.apertureInfo,stf);
+resultGUI.apertureInfo.run4D        = true;
+
+% prepare motion model
+resultGUI.apertureInfo.motionModel = matRad_prepModelForOpt(pln,stf,resultGUI.apertureInfo);
+
+% update aperture vector
+[resultGUI.apertureInfo.apertureVector, resultGUI.apertureInfo.mappingMx, resultGUI.apertureInfo.limMx] = matRad_daoApertureInfo2Vec(resultGUI.apertureInfo);
+
+% update apertureInfo
+for i = 1:numel(resultGUI.apertureInfo.beam)
+    resultGUI.apertureInfo.beam(i).numUniqueVar = (resultGUI.apertureInfo.beam(i).numUniqueVar-resultGUI.apertureInfo.totalNumOfShapes).*resultGUI.apertureInfo.numPhases;
+end
+resultGUI.apertureInfo = matRad_daoVec2ApertureInfo(resultGUI.apertureInfo,resultGUI.apertureInfo.apertureVector);
+
+
+% save results
+cd(currentDir);
+save('DAD','resultGUI');
+
+% do dvhs
+[pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
+[dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
+
+% save results
+save('DAD','resultGUI','*dvh*');
+
+% now do dvhs for single fraction
+resultGUI.physicalDose  = resultGUI.physicalDose./pln.numOfFractions;
+numOfFractions          = pln.numOfFractions;
+pln.numOfFractions      = 1;
+
+[pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
+[dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
+
+% save results
+save('DAD_oneFrac','resultGUI','*dvh*');
+
+clear resultGUI *dvh*
+
+% reset number of fractions
+pln.numOfFractions = numOfFractions;
+
+%% STO
+
+% load up CO, for the apertureInfo
+load('CO','resultGUI');
+
+pln.propOpt.run4D = true;
+pln.propOpt.varOpt = false;
+
+% construct effective dij from most probable trajectory
+% NOTE that right now this trajectory doesn't go through all of the phases
+[dij_STO,trajectory] = matRad_dijSTO(dij,pln,stf,resultGUI.apertureInfo);
+
+% do FMO
+resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
+cd(currentDir);
+savefig('STO_FMO')
+close all
+
+% do leaf sequencing
+resultGUI = matRad_siochiLeafSequencing(resultGUI,stf,dij,pln,0);
+
+% turn off 4D
+pln.propOpt.run4D = false;
+
+% pick out particular trajectory from library, convert to single sequence
+resultGUI.apertureInfo = matRad_library2ST(resultGUI.apertureInfo,pln,stf,trajectory);
+
+% do DAO
+resultGUI = matRad_directApertureOptimization(dij_STO,cst,resultGUI.apertureInfo,resultGUI,pln,stf);
+
+% save results
+cd(currentDir);
+savefig('STO_DAO')
+save('STO','resultGUI');
+close all
+
+% convert sequence to library
+resultGUI.apertureInfo = matRad_apertures2Library(resultGUI.apertureInfo,pln,stf,dij.numPhases);
+
+% do dvhs
+[pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
+[dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
+
+% save results
+save('STO','resultGUI','*dvh*');
+
+% now do dvhs for single fraction
+resultGUI.physicalDose  = resultGUI.physicalDose./pln.numOfFractions;
+numOfFractions          = pln.numOfFractions;
+pln.numOfFractions      = 1;
+
+[pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
+[dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
+
+% save results
+save('STO_oneFrac','resultGUI','*dvh*');
+
+clear resultGUI *dvh*
+
+% reset number of fractions
+pln.numOfFractions = numOfFractions;
+
+%% 3D optimization on ITV
+
+pln.propOpt.run4D = true;
+pln.propOpt.varOpt = false;
+
+% change obj function goals
+cst{26,6}       = cst{25,6};
+cst{25,6}       = [];
+pln.RxStruct    = 26;
+
+% construct dij for ITV by doing a time-average of the dij across each
+% phase
+dij_ITV                 = dij;
+dij_ITV.numPhases       = 1;
+dij_ITV.numFrames       = 1;
+dij_ITV.physicalDose    = cell(1);
+dij_ITV.physicalDose{1} = spalloc(dij_ITV.numOfVoxels,dij_ITV.totalNumOfBixels,nnz(dij.physicalDose{1}));
+phaseProb               = accumarray(pln.propOpt.prop4D.motionModel.indices.subPhase2PosPhase,pln.propOpt.prop4D.motionModel.Pi_deltaTSample);
+
+for phase = 1:dij.numPhases
+    dij_ITV.physicalDose{1} = dij_ITV.physicalDose{1} + phaseProb(phase).*dij.physicalDose{phase};
+end
+
+% turn off 4d
+pln.propOpt.run4D = false;
+
+% do FMO
+resultGUI = matRad_fluenceOptimization(dij_ITV,cst,pln,stf);
+cd(currentDir);
+savefig('3DITV_FMO')
+close all
+
+% do leaf sequencing
+resultGUI = matRad_siochiLeafSequencing(resultGUI,stf,dij_ITV,pln,0);
+
+% do DAO
+resultGUI = matRad_directApertureOptimization(dij_ITV,cst,resultGUI.apertureInfo,resultGUI,pln,stf);
+
+% save results
+cd(currentDir);
+savefig('3DITV_DAO')
+save('3DITV','resultGUI');
+close all
+
+% convert sequence to library
+resultGUI.apertureInfo = matRad_apertures2Library(resultGUI.apertureInfo,pln,stf,dij.numPhases);
+
+% do dvhs
+[pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
+[dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
+
+% save results
+save('3DITV','resultGUI','*dvh*');
+
+% now do dvhs for single fraction
+resultGUI.physicalDose  = resultGUI.physicalDose./pln.numOfFractions;
+numOfFractions          = pln.numOfFractions;
+pln.numOfFractions      = 1;
+
+[pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
+[dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
+
+% save results
+save('3DITV_oneFrac','resultGUI','*dvh*');
+
+clear resultGUI *dvh*
+
+% reset number of fractions
+pln.numOfFractions = numOfFractions;
+
+% change obj function goals
+cst{25,6}       = cst{26,6};
+cst{26,6}       = [];
+pln.RxStruct    = 25;
 
 %% probabilistic optimization
 
@@ -127,186 +383,46 @@ save('PO','resultGUI','*dvh*');
 
 clear resultGUI *dvh*
 
-
-%% 3D optimization on CTV
-
 pln.propOpt.run4D = true;
-pln.propOpt.varOpt = false;
+pln.propOpt.varOpt = true;
 
-% do FMO
+% now redo optimization, dvhs for single fraction
+for i = 1:size(cst,1)
+    if ~isempty(cst{i,6})
+        cst{i,6}.dose = cst{i,6}.dose./pln.numOfFractions;
+    end
+end
+
+pln.DRx             = pln.DRx./pln.numOfFractions;
+numOfFractions      = pln.numOfFractions;
+pln.numOfFractions  = 1;
+
+% redo FMO
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
 cd(currentDir);
-savefig('3DCTV_FMO')
+savefig('PO_oneFrac_FMO')
 close all
 
-% turn off 4d
-pln.propOpt.run4D = false;
-
-% do leaf sequencing
+% redo leaf sequencing
 resultGUI = matRad_siochiLeafSequencing(resultGUI,stf,dij,pln,0);
 
-% do DAO
+% redo DAO
 resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,resultGUI,pln,stf);
 
 % save results
 cd(currentDir);
-savefig('3DCTV_DAO')
-save('3DCTV','resultGUI');
+savefig('PO_oneFrac_DAO')
+save('PO_oneFrac','resultGUI');
 close all
 
-% convert sequence to library
-resultGUI.apertureInfo = matRad_apertures2Library(resultGUI.apertureInfo,pln,dij.numPhases);
-
-% do dvhs
+% redo dvhs
 [pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('3DCTV','resultGUI','*dvh*');
-
-
-clear resultGUI *dvh*
-
-%% DAD
-
-% load up 3D-CTV
-load('3DCTV','resultGUI');
-
-% do DAD
-resultGUI.apertureInfo.numPhases    = ct.tumourMotion.numPhases;
-resultGUI.apertureInfo              = matRad_doDAD(resultGUI.apertureInfo,stf);
-resultGUI.apertureInfo.run4D        = true;
-
-% prepare motion model
-resultGUI.apertureInfo.motionModel = matRad_prepModelForOpt(pln.propOpt.prop4D);
-
-% update aperture vector
-[resultGUI.apertureInfo.apertureVector, resultGUI.apertureInfo.mappingMx, resultGUI.apertureInfo.limMx] = matRad_daoApertureInfo2Vec(resultGUI.apertureInfo);
-
-% update apertureInfo
-for i = 1:numel(resultGUI.apertureInfo.beam)
-    resultGUI.apertureInfo.beam(i).numUniqueVar = (resultGUI.apertureInfo.beam(i).numUniqueVar-resultGUI.apertureInfo.totalNumOfShapes).*resultGUI.apertureInfo.numPhases;
-end
-resultGUI.apertureInfo = matRad_daoVec2ApertureInfo(resultGUI.apertureInfo,resultGUI.apertureInfo.apertureVector);
-
-
-% save results
-cd(currentDir);
-save('DAD','resultGUI');
-
-% do dvhs
-[pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
-[dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
-
-% save results
-save('DAD','resultGUI','*dvh*');
-
+save('PO_oneFrac','resultGUI','*dvh*');
 
 clear resultGUI *dvh*
 
-%% STO
-
-pln.propOpt.run4D = true;
-pln.propOpt.varOpt = false;
-
-pln.propOpt.VMAToptions.machineConstraintFile = [pln.radiationMode '_' pln.machine '_STO'];
-
-% construct effective dij from most probable trajectory
-% NOTE that right now this trajectory doesn't go through all of the phases
-[dij_STO,trajectory] = matRad_dijSTO(dij,pln,stf);
-
-% do FMO
-resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
-cd(currentDir);
-savefig('STO_FMO')
-close all
-
-% do leaf sequencing
-resultGUI = matRad_siochiLeafSequencing(resultGUI,stf,dij,pln,0);
-
-% turn off 4D
-pln.propOpt.run4D = false;
-
-% pick out particular trajectory from library, convert to single sequence
-resultGUI.apertureInfo = matRad_library2ST(resultGUI.apertureInfo,pln,stf,trajectory);
-
-% do DAO
-resultGUI = matRad_directApertureOptimization(dij_STO,cst,resultGUI.apertureInfo,resultGUI,pln,stf);
-
-% save results
-cd(currentDir);
-savefig('STO_DAO')
-save('STO','resultGUI');
-close all
-
-% convert sequence to library
-resultGUI.apertureInfo = matRad_apertures2Library(resultGUI.apertureInfo,pln,dij.numPhases);
-
-% do dvhs
-[pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
-[dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
-
-% save results
-save('STO','resultGUI','*dvh*');
-
-
-clear resultGUI *dvh*
-
-pln.propOpt.VMAToptions.machineConstraintFile = [pln.radiationMode '_' pln.machine];
-
-%% 3D optimization on ITV
-
-pln.propOpt.run4D = true;
-pln.propOpt.varOpt = false;
-
-% change obj function goals
-cst{26,6}       = cst{25,6};
-cst{25,6}       = [];
-pln.RxStruct    = 26;
-
-% change phase information in ct.tumourMotion struct
-ct.tumourMotion.numPhases       = 1;
-ct.tumourMotion.frames2Phases   = repelem(1,ct.tumourMotion.numFrames,1);
-ct.tumourMotion.nFramesPerPhase = 1./pln.propOpt.prop4D.motionModel.probPhase;
-
-% recalculate dij 
-dij_ITV = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
-
-% turn off 4d
-pln.propOpt.run4D = false;
-
-% do FMO
-resultGUI = matRad_fluenceOptimization(dij_ITV,cst,pln,stf);
-cd(currentDir);
-savefig('3DITV_FMO')
-close all
-
-% do leaf sequencing
-resultGUI = matRad_siochiLeafSequencing(resultGUI,stf,dij_ITV,pln,0);
-
-% do DAO
-resultGUI = matRad_directApertureOptimization(dij_ITV,cst,resultGUI.apertureInfo,resultGUI,pln,stf);
-
-% save results
-cd(currentDir);
-savefig('3DITV_DAO')
-save('3DITV','resultGUI');
-close all
-
-% convert sequence to library
-resultGUI.apertureInfo = matRad_apertures2Library(resultGUI.apertureInfo,pln,dij.numPhases);
-
-% do dvhs
-[pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
-[dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
-
-% save results
-save('3DITV','resultGUI','*dvh*');
-
-
-clear resultGUI *dvh*
-
-% change obj function goals
-cst{25,6}       = cst{26,6};
-cst{26,6}       = [];
-pln.RxStruct    = 25;
+% reset number of fractions
+pln.numOfFractions = numOfFractions;

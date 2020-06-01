@@ -1,6 +1,6 @@
 %% setup
 
-load lungPatient1_3mm5p_rep
+load lungPatient3_SBRT_3mm5p_rep
 
 currentDir = pwd;
 
@@ -40,7 +40,7 @@ pln.propOpt.numLevels       = 7;
 pln.propOpt.VMAToptions.machineConstraintFile   = [pln.radiationMode '_' pln.machine];
 pln.propOpt.VMAToptions.continuousAperture      = true;
 pln.propOpt.VMAToptions.fixedGantrySpeed        = true;
-pln.propOpt.VMAToptions.deliveryTime            = 70;
+pln.propOpt.VMAToptions.deliveryTime            = 360;
 
 pln.propOpt.VMAToptions.startingAngle               = -180;
 pln.propOpt.VMAToptions.finishingAngle              = 180;
@@ -62,7 +62,7 @@ stf = matRad_generateStf(ct,cst,pln);
 %% calculate (load) dij
 
 %dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
-dij = matRad_loadDij('lungPatient1_3mm5p_rep');
+dij = matRad_loadDij('lungPatient3_3mm5p_rep');
 dij.numOfFractions = pln.numOfFractions;
 
 %% conventional optimization
@@ -73,7 +73,7 @@ pln.propOpt.varOpt = false;
 % do FMO
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
 cd(currentDir);
-savefig('CO_FMO')
+savefig('SBRT_CO_FMO')
 close all
 
 % do leaf sequencing
@@ -84,8 +84,8 @@ resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,res
 
 % save results
 cd(currentDir);
-savefig('CO_DAO')
-save('CO','resultGUI');
+savefig('SBRT_CO_DAO')
+save('SBRT_CO','resultGUI');
 close all
 
 % do dvhs
@@ -93,7 +93,7 @@ close all
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('CO','resultGUI','*dvh*');
+save('SBRT_CO','resultGUI','*dvh*');
 
 % now do dvhs for single fraction
 resultGUI.physicalDose  = resultGUI.physicalDose./pln.numOfFractions;
@@ -104,7 +104,7 @@ pln.numOfFractions      = 1;
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('CO_oneFrac','resultGUI','*dvh*');
+save('SBRT_CO_oneFrac','resultGUI','*dvh*');
 
 clear resultGUI *dvh*
 
@@ -120,7 +120,7 @@ pln.propOpt.varOpt = false;
 % do FMO
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
 cd(currentDir);
-savefig('3DCTV_FMO')
+savefig('SBRT_3DCTV_FMO')
 close all
 
 % turn off 4d
@@ -134,8 +134,8 @@ resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,res
 
 % save results
 cd(currentDir);
-savefig('3DCTV_DAO')
-save('3DCTV','resultGUI');
+savefig('SBRT_3DCTV_DAO')
+save('SBRT_3DCTV','resultGUI');
 close all
 
 % convert sequence to library
@@ -146,7 +146,7 @@ resultGUI.apertureInfo = matRad_apertures2Library(resultGUI.apertureInfo,pln,stf
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('3DCTV','resultGUI','*dvh*');
+save('SBRT_3DCTV','resultGUI','*dvh*');
 
 % now do dvhs for single fraction
 resultGUI.physicalDose  = resultGUI.physicalDose./pln.numOfFractions;
@@ -157,7 +157,7 @@ pln.numOfFractions      = 1;
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('3DCTV_oneFrac','resultGUI','*dvh*');
+save('SBRT_3DCTV_oneFrac','resultGUI','*dvh*');
 
 clear resultGUI *dvh*
 
@@ -167,7 +167,7 @@ pln.numOfFractions = numOfFractions;
 %% DAD
 
 % load up 3D-CTV
-load('3DCTV','resultGUI');
+load('SBRT_3DCTV','resultGUI');
 
 % do DAD
 resultGUI.apertureInfo.numPhases    = ct.tumourMotion.numPhases;
@@ -189,14 +189,14 @@ resultGUI.apertureInfo = matRad_daoVec2ApertureInfo(resultGUI.apertureInfo,resul
 
 % save results
 cd(currentDir);
-save('DAD','resultGUI');
+save('SBRT_DAD','resultGUI');
 
 % do dvhs
 [pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('DAD','resultGUI','*dvh*');
+save('SBRT_DAD','resultGUI','*dvh*');
 
 % now do dvhs for single fraction
 resultGUI.physicalDose  = resultGUI.physicalDose./pln.numOfFractions;
@@ -207,7 +207,7 @@ pln.numOfFractions      = 1;
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('DAD_oneFrac','resultGUI','*dvh*');
+save('SBRT_DAD_oneFrac','resultGUI','*dvh*');
 
 clear resultGUI *dvh*
 
@@ -217,7 +217,7 @@ pln.numOfFractions = numOfFractions;
 %% STO
 
 % load up CO, for the apertureInfo
-load('CO','resultGUI');
+load('SBRT_CO','resultGUI');
 
 pln.propOpt.run4D = true;
 pln.propOpt.varOpt = false;
@@ -229,7 +229,7 @@ pln.propOpt.varOpt = false;
 % do FMO
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
 cd(currentDir);
-savefig('STO_FMO')
+savefig('SBRT_STO_FMO')
 close all
 
 % do leaf sequencing
@@ -246,8 +246,8 @@ resultGUI = matRad_directApertureOptimization(dij_STO,cst,resultGUI.apertureInfo
 
 % save results
 cd(currentDir);
-savefig('STO_DAO')
-save('STO','resultGUI');
+savefig('SBRT_STO_DAO')
+save('SBRT_STO','resultGUI');
 close all
 
 % convert sequence to library
@@ -258,7 +258,7 @@ resultGUI.apertureInfo = matRad_apertures2Library(resultGUI.apertureInfo,pln,stf
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('STO','resultGUI','*dvh*');
+save('SBRT_STO','resultGUI','*dvh*');
 
 % now do dvhs for single fraction
 resultGUI.physicalDose  = resultGUI.physicalDose./pln.numOfFractions;
@@ -269,7 +269,7 @@ pln.numOfFractions      = 1;
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('STO_oneFrac','resultGUI','*dvh*');
+save('SBRT_STO_oneFrac','resultGUI','*dvh*');
 
 clear resultGUI *dvh*
 
@@ -305,7 +305,7 @@ pln.propOpt.run4D = false;
 % do FMO
 resultGUI = matRad_fluenceOptimization(dij_ITV,cst,pln,stf);
 cd(currentDir);
-savefig('3DITV_FMO')
+savefig('SBRT_3DITV_FMO')
 close all
 
 % do leaf sequencing
@@ -316,8 +316,8 @@ resultGUI = matRad_directApertureOptimization(dij_ITV,cst,resultGUI.apertureInfo
 
 % save results
 cd(currentDir);
-savefig('3DITV_DAO')
-save('3DITV','resultGUI');
+savefig('SBRT_3DITV_DAO')
+save('SBRT_3DITV','resultGUI');
 close all
 
 % convert sequence to library
@@ -328,7 +328,7 @@ resultGUI.apertureInfo = matRad_apertures2Library(resultGUI.apertureInfo,pln,stf
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('3DITV','resultGUI','*dvh*');
+save('SBRT_3DITV','resultGUI','*dvh*');
 
 % now do dvhs for single fraction
 resultGUI.physicalDose  = resultGUI.physicalDose./pln.numOfFractions;
@@ -339,7 +339,7 @@ pln.numOfFractions      = 1;
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('3DITV_oneFrac','resultGUI','*dvh*');
+save('SBRT_3DITV_oneFrac','resultGUI','*dvh*');
 
 clear resultGUI *dvh*
 
@@ -359,7 +359,7 @@ pln.propOpt.varOpt = true;
 % do FMO
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
 cd(currentDir);
-savefig('PO_FMO')
+savefig('SBRT_PO_FMO')
 close all
 
 % do leaf sequencing
@@ -370,8 +370,8 @@ resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,res
 
 % save results
 cd(currentDir);
-savefig('PO_DAO')
-save('PO','resultGUI');
+savefig('SBRT_PO_DAO')
+save('SBRT_PO','resultGUI');
 close all
 
 % do dvhs
@@ -379,7 +379,7 @@ close all
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('PO','resultGUI','*dvh*');
+save('SBRT_PO','resultGUI','*dvh*');
 
 clear resultGUI *dvh*
 
@@ -396,11 +396,12 @@ end
 pln.DRx             = pln.DRx./pln.numOfFractions;
 numOfFractions      = pln.numOfFractions;
 pln.numOfFractions  = 1;
+dij.numOfFractions  = 1;
 
 % redo FMO
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
 cd(currentDir);
-savefig('PO_oneFrac_FMO')
+savefig('SBRT_PO_oneFrac_FMO')
 close all
 
 % redo leaf sequencing
@@ -411,8 +412,8 @@ resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,res
 
 % save results
 cd(currentDir);
-savefig('PO_oneFrac_DAO')
-save('PO_oneFrac','resultGUI');
+savefig('SBRT_PO_oneFrac_DAO')
+save('SBRT_PO_oneFrac','resultGUI');
 close all
 
 % redo dvhs
@@ -420,9 +421,10 @@ close all
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('PO_oneFrac','resultGUI','*dvh*');
+save('SBRT_PO_oneFrac','resultGUI','*dvh*');
 
 clear resultGUI *dvh*
 
 % reset number of fractions
 pln.numOfFractions = numOfFractions;
+dij.numOfFractions = numOfFractions;
