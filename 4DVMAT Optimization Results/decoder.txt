@@ -1,4 +1,4 @@
-lungPatient0: 40 mm diameter tumour located near the right diaphragm.
-lungPatient1: 20 mm diameter tumour located in the right lung, near the heart.
-lungPatient2: 20 mm diameter tumour located near the right diaphragm.
-lungPatient3: 20 mm diameter tumour located in the left lung, near the spinal cord and heart.
+(1) lungPatient0: 40 mm diameter tumour located near the right diaphragm. Amplitude: 11.50 mm.
+(3) lungPatient1: 20 mm diameter tumour located in the right lung, near the heart. Amplitude: 8.51 mm.
+(2) lungPatient2: 20 mm diameter tumour located near the right diaphragm. Amplitude: 10.42 mm.
+(4) lungPatient3: 20 mm diameter tumour located in the left lung, near the spinal cord and heart. 3.25 mm.
