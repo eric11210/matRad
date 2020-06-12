@@ -20,3 +20,4 @@ Fluence Resolution Test/stf/*
 Fluence Resolution Test/convFrac Opt.mat
 Fluence Resolution Test/convFrac *max flu gantry angle spacing = *.mat
 Variance Sampling Test/varPrePostOpt*.mat
+4DVMAT Optimization Results/lungPatient0/SBRT_*.mat
