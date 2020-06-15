@@ -3,7 +3,7 @@
 load lungPatient0_5mm_rep
 
 % threshold factor
-threshFac = 0.25;
+threshFac = 0.5;
 
 %this is the reference plan, the most accurate way of calculating dose
 fname = sprintf('0.5 degrees, dyn + interp.mat');
@@ -394,16 +394,16 @@ grid
 savefig(fname)
 %}
 h_YY = figure;
-hold on
 h_NY = figure;
-hold on
 
 for i = 1:numel(angularResS)
     figure(h_YY)
     semilogy(PVHPoints_YY(i,:),PVH_YY(i,:))
+    hold on
     
     figure(h_NY)
     semilogy(PVHPoints_NY(i,:),PVH_NY(i,:))
+    hold on
 end
 
 path = 'C:\Users\eric\Carleton University\OneDrive - Carleton University\Carleton\PhD Project\Papers\Dynamic Fluence Calculation\Figures\';
