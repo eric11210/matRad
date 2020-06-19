@@ -23,4 +23,5 @@ Variance Sampling Test/varPrePostOpt*.mat
 4DVMAT Optimization Results/lungPatient0/SBRT_*.mat
 4DVMAT Optimization Results/lungPatient1/SBRT_*.mat
 4DVMAT Optimization Results/lungPatient2/SBRT_*.mat
+4DVMAT Optimization Results/lungPatient3/SBRT_*.mat
 motionModel/stats*.mat
