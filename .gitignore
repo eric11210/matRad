@@ -25,3 +25,4 @@ Variance Sampling Test/varPrePostOpt*.mat
 4DVMAT Optimization Results/lungPatient2/SBRT_*.mat
 4DVMAT Optimization Results/lungPatient3/SBRT_*.mat
 motionModel/stats*.mat
+Fluence Resolution Test/Fluence Res Results.mat

@@ -1,4 +1,4 @@
-load lungPatient2_3mm5p_rep
+load lungPatient0_5mm5p_rep
 
 % meta information for treatment plan
 
@@ -55,17 +55,19 @@ pln = matRad_VMATGantryAngles(pln,cst,ct);
 stf = matRad_generateStf(ct,cst,pln);
 
 %dij = matRad_calcPhotonDoseVmc(ct,stf,pln,cst);
+dij = matRad_loadDij('lungPatient0_5mm5p_rep');
+
+% only do 1 fraction
+pln.numOfFractions = 1;
 
 % load results
-load('convFrac Opt.mat');
-%load('SBRT nonOpt.mat');
+load('postSequencing.mat')
 
 %%
 
 oldDir = pwd;
 
-maxFluGantryAngleSpacingS = pln.propOpt.VMAToptions.fluGantryAngleSpacing./(1:round(pln.propOpt.prop4D.motionModel.deltaT_sample/0.04));
-maxFluGantryAngleSpacingS = [recalc.pln.propOpt.VMAToptions.gantryAngleSpacing maxFluGantryAngleSpacingS];
+maxFluGantryAngleSpacingS = pln.propOpt.VMAToptions.fluGantryAngleSpacing./[1 round(pln.propOpt.prop4D.motionModel.deltaT_sample/0.04)];
 
 for maxFluGantryAngleSpacing = maxFluGantryAngleSpacingS
     % calculate dose at original fluence gantry spacing, work our way down

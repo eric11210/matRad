@@ -1,12 +1,12 @@
 %% load in CT and setup
 
-%load lungPatient2_3mm5p_rep
+%load lungPatient0_5mm5p_rep
 
 % threshold factor
-threshFac = 0.25;
+threshFac = 0.5;
 
 % set of fluence gantry angle spacings
-maxFluGantryAngleSpacingS = pln.propOpt.VMAToptions.fluGantryAngleSpacing./(1:round(pln.propOpt.prop4D.motionModel.deltaT_sample/0.04));
+maxFluGantryAngleSpacingS = pln.propOpt.VMAToptions.fluGantryAngleSpacing./[1 round(pln.propOpt.prop4D.motionModel.deltaT_sample/0.04)];
 
 % this is the reference plan, the most accurate way of calculating dose
 fname = sprintf('convFrac max flu gantry angle spacing = %.4f.mat',maxFluGantryAngleSpacingS(end));
@@ -70,13 +70,24 @@ for maxFluGantryAngleSpacing = maxFluGantryAngleSpacingS
     % load two calcs of same plan
     fname = sprintf('convFrac max flu gantry angle spacing = %.4f.mat',maxFluGantryAngleSpacing);
     load(fname)
-    dose1 = recalc.resultGUI.dMean_MC;
-    doseError1 = sqrt(recalc.resultGUI.dVar_MC);
+    if isfield(recalc.resultGUI,'dMean_MC')
+        dose1 = recalc.resultGUI.dMean_MC;
+        doseError1 = sqrt(recalc.resultGUI.dVar_MC);
+    else
+        dose1 = recalc.resultGUI.physicalDose(:);
+        doseError1 = zeros(size(dose1));
+    end
     
     fname = sprintf('convFrac repeat max flu gantry angle spacing = %.4f.mat',maxFluGantryAngleSpacing);
     load(fname)
-    dose2 = recalc.resultGUI.dMean_MC;
-    doseError2 = sqrt(recalc.resultGUI.dVar_MC);
+    if isfield(recalc.resultGUI,'dMean_MC')
+        dose2 = recalc.resultGUI.dMean_MC;
+        doseError2 = sqrt(recalc.resultGUI.dVar_MC);
+    else
+        dose2 = recalc.resultGUI.physicalDose(:);
+        doseError2 = zeros(size(dose2));
+    end
+    
     
     % calculate deltas
     doseDiff = dose1-dose2;
@@ -130,14 +141,19 @@ b   = 1;
 refDoseError = sigma(end).*refDoseError;
 
 i = 1;
-for maxFluGantryAngleSpacing = maxFluGantryAngleSpacingS
+for maxFluGantryAngleSpacing = maxFluGantryAngleSpacingS(1:end-1)
     
     %first time, do interpolation and dynamic fluence calculation
     fname = sprintf('convFrac max flu gantry angle spacing = %.4f.mat',maxFluGantryAngleSpacing);
     load(fname);
+    if isfield(recalc.resultGUI,'dMean_MC')
     dose = recalc.resultGUI.dMean_MC;
     % scale the dose error by sigma(i) to account for correlations
     doseError = sigma(i).*sqrt(recalc.resultGUI.dVar_MC);
+    else
+        dose = recalc.resultGUI.physicalDose(:);
+        doseError = zeros(size(dose1));
+    end
     
     doseDiff = dose-refDose;
     doseDiffError = sqrt(doseError.^2+refDoseError.^2);
