@@ -183,7 +183,7 @@ recalc.resultGUI.physicalDose = reshape(d,dij.dimensions);
 if recalc.doMCMC
     % do Markov chain Monte Carlo sampling to get dose at new fluenc
     % resolution
-    [pdvh_MC,dvh_mean_MC,dvh_std_MC,dMean_MC,dVar_MC] = matRad_dvhMC(recalc.apertureInfo,dij,cst,recalc.pln,100);
+    [pdvh_MC,dvh_mean_MC,dvh_std_MC,dMean_MC,dVar_MC] = matRad_dvhMC(recalc.apertureInfo,dij,cst,recalc.pln,50000);
     
     % insert into recalc.resultGUI
     recalc.resultGUI.pdvh_MC        = pdvh_MC;
