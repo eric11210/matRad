@@ -207,6 +207,10 @@ if pln.propOpt.runVMAT
     if ~pln.propOpt.run4D
         resultGUI.apertureInfo  = matRad_optDelivery(resultGUI.apertureInfo,1);
         resultGUI.w             = resultGUI.apertureInfo.bixelWeights;
+        
+        % recalc dose and reshape from 1D vector to 3D array
+        d = matRad_backProjection(resultGUI.w,dij,options);
+        resultGUI.physicalDose = reshape(d,dij.dimensions);
     end
     resultGUI = matRad_calcDeliveryMetrics(resultGUI,pln,stf);
 end
