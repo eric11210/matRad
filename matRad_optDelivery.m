@@ -60,7 +60,7 @@ for i = 1:size(apertureInfo.beam,2)
         %if one of them is less than 1, then a constraint is violated
         factorMURate = inf;
         for phase = 1:apertureInfo.numPhases
-            factorMURate = min([machine.constraints.monitorUnitRate(2)/apertureInfo.beam(i).shape{phase}.MURate factorMURate]);
+            factorMURate = min([machine.constraints.monitorUnitRateReal(2)/apertureInfo.beam(i).shape{phase}.MURate factorMURate]);
         end
         factorLeafSpeed = machine.constraints.leafSpeed(2)/apertureInfo.beam(i).maxLeafSpeed;
         factorGantryRot = machine.constraints.gantryRotationSpeed(2)/apertureInfo.beam(i).gantryRot;
@@ -86,7 +86,7 @@ for i = 1:size(apertureInfo.beam,2)
     end
     
     for phase = 1:apertureInfo.numPhases
-        factorsMURate = machine.constraints.monitorUnitRate/apertureInfo.beam(i).shape{phase}.MURate;
+        factorsMURate = machine.constraints.monitorUnitRateReal/apertureInfo.beam(i).shape{phase}.MURate;
         
         if factorsMURate(1) > 1
             apertureInfo.beam(i).shape{phase}.MURate = factorsMURate(1)*apertureInfo.beam(i).shape{phase}.MURate;
