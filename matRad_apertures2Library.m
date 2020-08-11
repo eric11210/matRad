@@ -32,6 +32,7 @@ function apertureInfo = matRad_apertures2Library(apertureInfo,pln,stf,numPhases)
 
 apertureInfo.numPhases  = numPhases;
 pln.propOpt.run4D       = true;
+apertureInfo.run4D      = true;
 
 % determine if all phases of the library already exist
 % this means that we have previously converted the apertures to a library
