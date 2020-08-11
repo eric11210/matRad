@@ -73,7 +73,7 @@ pln.propOpt.varOpt = false;
 % do FMO
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
 cd(currentDir);
-savefig('SBRT_CO_FMO')
+savefig('SBRTagain_CO_FMO')
 close all
 
 % do leaf sequencing
@@ -84,8 +84,8 @@ resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,res
 
 % save results
 cd(currentDir);
-savefig('SBRT_CO_DAO')
-save('SBRT_CO','resultGUI');
+savefig('SBRTagain_CO_DAO')
+save('SBRTagain_CO','resultGUI');
 close all
 
 % do dvhs
@@ -93,7 +93,7 @@ close all
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('SBRT_CO','resultGUI','*dvh*');
+save('SBRTagain_CO','resultGUI','*dvh*');
 
 % now do dvhs for single fraction
 resultGUI.physicalDose  = resultGUI.physicalDose./pln.numOfFractions;
@@ -104,7 +104,7 @@ pln.numOfFractions      = 1;
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('SBRT_CO_oneFrac','resultGUI','*dvh*');
+save('SBRTagain_CO_oneFrac','resultGUI','*dvh*');
 
 clear resultGUI *dvh*
 
@@ -120,7 +120,7 @@ pln.propOpt.varOpt = false;
 % do FMO
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
 cd(currentDir);
-savefig('SBRT_3DCTV_FMO')
+savefig('SBRTagain_3DCTV_FMO')
 close all
 
 % turn off 4d
@@ -134,19 +134,22 @@ resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,res
 
 % save results
 cd(currentDir);
-savefig('SBRT_3DCTV_DAO')
-save('SBRT_3DCTV','resultGUI');
+savefig('SBRTagain_3DCTV_DAO')
+save('SBRTagain_3DCTV','resultGUI');
 close all
 
 % convert sequence to library
 resultGUI.apertureInfo = matRad_apertures2Library(resultGUI.apertureInfo,pln,stf,dij.numPhases);
+
+% change initProb
+resultGUI.apertureInfo.motionModel.initProb = resultGUI.apertureInfo.motionModel.Pi_deltaTSample';
 
 % do dvhs
 [pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('SBRT_3DCTV','resultGUI','*dvh*');
+save('SBRTagain_3DCTV','resultGUI','*dvh*');
 
 % now do dvhs for single fraction
 resultGUI.physicalDose  = resultGUI.physicalDose./pln.numOfFractions;
@@ -157,7 +160,7 @@ pln.numOfFractions      = 1;
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('SBRT_3DCTV_oneFrac','resultGUI','*dvh*');
+save('SBRTagain_3DCTV_oneFrac','resultGUI','*dvh*');
 
 clear resultGUI *dvh*
 
@@ -167,7 +170,7 @@ pln.numOfFractions = numOfFractions;
 %% DAD
 
 % load up 3D-CTV
-load('SBRT_3DCTV','resultGUI');
+load('SBRTagain_3DCTV','resultGUI');
 
 % do DAD
 resultGUI.apertureInfo.numPhases    = ct.tumourMotion.numPhases;
@@ -189,14 +192,14 @@ resultGUI.apertureInfo = matRad_daoVec2ApertureInfo(resultGUI.apertureInfo,resul
 
 % save results
 cd(currentDir);
-save('SBRT_DAD','resultGUI');
+save('SBRTagain_DAD','resultGUI');
 
 % do dvhs
 [pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('SBRT_DAD','resultGUI','*dvh*');
+save('SBRTagain_DAD','resultGUI','*dvh*');
 
 % now do dvhs for single fraction
 resultGUI.physicalDose  = resultGUI.physicalDose./pln.numOfFractions;
@@ -207,7 +210,7 @@ pln.numOfFractions      = 1;
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('SBRT_DAD_oneFrac','resultGUI','*dvh*');
+save('SBRTagain_DAD_oneFrac','resultGUI','*dvh*');
 
 clear resultGUI *dvh*
 
@@ -217,7 +220,7 @@ pln.numOfFractions = numOfFractions;
 %% STO
 
 % load up CO, for the apertureInfo
-load('SBRT_CO','resultGUI');
+load('SBRTagain_CO','resultGUI');
 
 pln.propOpt.run4D = true;
 pln.propOpt.varOpt = false;
@@ -229,7 +232,7 @@ pln.propOpt.varOpt = false;
 % do FMO
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
 cd(currentDir);
-savefig('SBRT_STO_FMO')
+savefig('SBRTagain_STO_FMO')
 close all
 
 % do leaf sequencing
@@ -246,8 +249,8 @@ resultGUI = matRad_directApertureOptimization(dij_STO,cst,resultGUI.apertureInfo
 
 % save results
 cd(currentDir);
-savefig('SBRT_STO_DAO')
-save('SBRT_STO','resultGUI');
+savefig('SBRTagain_STO_DAO')
+save('SBRTagain_STO','resultGUI');
 close all
 
 % convert sequence to library
@@ -258,7 +261,7 @@ resultGUI.apertureInfo = matRad_apertures2Library(resultGUI.apertureInfo,pln,stf
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('SBRT_STO','resultGUI','*dvh*');
+save('SBRTagain_STO','resultGUI','*dvh*');
 
 % now do dvhs for single fraction
 resultGUI.physicalDose  = resultGUI.physicalDose./pln.numOfFractions;
@@ -269,7 +272,7 @@ pln.numOfFractions      = 1;
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('SBRT_STO_oneFrac','resultGUI','*dvh*');
+save('SBRTagain_STO_oneFrac','resultGUI','*dvh*');
 
 clear resultGUI *dvh*
 
@@ -280,11 +283,6 @@ pln.numOfFractions = numOfFractions;
 
 pln.propOpt.run4D = true;
 pln.propOpt.varOpt = false;
-
-% change obj function goals
-cst{26,6}       = cst{25,6};
-cst{25,6}       = [];
-pln.RxStruct    = 26;
 
 % construct dij for ITV by doing a time-average of the dij across each
 % phase
@@ -305,7 +303,7 @@ pln.propOpt.run4D = false;
 % do FMO
 resultGUI = matRad_fluenceOptimization(dij_ITV,cst,pln,stf);
 cd(currentDir);
-savefig('SBRT_3DITV_FMO')
+savefig('SBRTagain_3DITV_FMO')
 close all
 
 % do leaf sequencing
@@ -316,19 +314,22 @@ resultGUI = matRad_directApertureOptimization(dij_ITV,cst,resultGUI.apertureInfo
 
 % save results
 cd(currentDir);
-savefig('SBRT_3DITV_DAO')
-save('SBRT_3DITV','resultGUI');
+savefig('SBRTagain_3DITV_DAO')
+save('SBRTagain_3DITV','resultGUI');
 close all
 
 % convert sequence to library
 resultGUI.apertureInfo = matRad_apertures2Library(resultGUI.apertureInfo,pln,stf,dij.numPhases);
+
+% change initProb
+resultGUI.apertureInfo.motionModel.initProb = resultGUI.apertureInfo.motionModel.Pi_deltaTSample';
 
 % do dvhs
 [pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('SBRT_3DITV','resultGUI','*dvh*');
+save('SBRTagain_3DITV','resultGUI','*dvh*');
 
 % now do dvhs for single fraction
 resultGUI.physicalDose  = resultGUI.physicalDose./pln.numOfFractions;
@@ -339,17 +340,12 @@ pln.numOfFractions      = 1;
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('SBRT_3DITV_oneFrac','resultGUI','*dvh*');
+save('SBRTagain_3DITV_oneFrac','resultGUI','*dvh*');
 
 clear resultGUI *dvh*
 
 % reset number of fractions
 pln.numOfFractions = numOfFractions;
-
-% change obj function goals
-cst{25,6}       = cst{26,6};
-cst{26,6}       = [];
-pln.RxStruct    = 25;
 
 %% probabilistic optimization
 
@@ -359,7 +355,7 @@ pln.propOpt.varOpt = true;
 % do FMO
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
 cd(currentDir);
-savefig('SBRT_PO_FMO')
+savefig('SBRTagain_PO_FMO')
 close all
 
 % do leaf sequencing
@@ -370,8 +366,8 @@ resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,res
 
 % save results
 cd(currentDir);
-savefig('SBRT_PO_DAO')
-save('SBRT_PO','resultGUI');
+savefig('SBRTagain_PO_DAO')
+save('SBRTagain_PO','resultGUI');
 close all
 
 % do dvhs
@@ -379,7 +375,7 @@ close all
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('SBRT_PO','resultGUI','*dvh*');
+save('SBRTagain_PO','resultGUI','*dvh*');
 
 clear resultGUI *dvh*
 
@@ -401,7 +397,7 @@ dij.numOfFractions  = 1;
 % redo FMO
 resultGUI = matRad_fluenceOptimization(dij,cst,pln,stf);
 cd(currentDir);
-savefig('SBRT_PO_oneFrac_FMO')
+savefig('SBRTagain_PO_oneFrac_FMO')
 close all
 
 % redo leaf sequencing
@@ -412,8 +408,8 @@ resultGUI = matRad_directApertureOptimization(dij,cst,resultGUI.apertureInfo,res
 
 % save results
 cd(currentDir);
-savefig('SBRT_PO_oneFrac_DAO')
-save('SBRT_PO_oneFrac','resultGUI');
+savefig('SBRTagain_PO_oneFrac_DAO')
+save('SBRTagain_PO_oneFrac','resultGUI');
 close all
 
 % redo dvhs
@@ -421,7 +417,7 @@ close all
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
 
 % save results
-save('SBRT_PO_oneFrac','resultGUI','*dvh*');
+save('SBRTagain_PO_oneFrac','resultGUI','*dvh*');
 
 clear resultGUI *dvh*
 

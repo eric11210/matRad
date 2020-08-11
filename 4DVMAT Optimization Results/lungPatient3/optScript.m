@@ -141,6 +141,9 @@ close all
 % convert sequence to library
 resultGUI.apertureInfo = matRad_apertures2Library(resultGUI.apertureInfo,pln,stf,dij.numPhases);
 
+% change initProb
+resultGUI.apertureInfo.motionModel.initProb = resultGUI.apertureInfo.motionModel.Pi_deltaTSample';
+
 % do dvhs
 [pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
@@ -281,11 +284,6 @@ pln.numOfFractions = numOfFractions;
 pln.propOpt.run4D = true;
 pln.propOpt.varOpt = false;
 
-% change obj function goals
-cst{26,6}       = cst{25,6};
-cst{25,6}       = [];
-pln.RxStruct    = 26;
-
 % construct dij for ITV by doing a time-average of the dij across each
 % phase
 dij_ITV                 = dij;
@@ -323,6 +321,9 @@ close all
 % convert sequence to library
 resultGUI.apertureInfo = matRad_apertures2Library(resultGUI.apertureInfo,pln,stf,dij.numPhases);
 
+% change initProb
+resultGUI.apertureInfo.motionModel.initProb = resultGUI.apertureInfo.motionModel.Pi_deltaTSample';
+
 % do dvhs
 [pdvh_MC,dvh_mean_MC,dvh_std_MC] = matRad_dvhMC(resultGUI.apertureInfo,dij,cst,pln,100);
 [dvh,~] = matRad_indicatorWrapper(cst,pln,resultGUI);
@@ -345,11 +346,6 @@ clear resultGUI *dvh*
 
 % reset number of fractions
 pln.numOfFractions = numOfFractions;
-
-% change obj function goals
-cst{25,6}       = cst{26,6};
-cst{26,6}       = [];
-pln.RxStruct    = 25;
 
 %% probabilistic optimization
 
