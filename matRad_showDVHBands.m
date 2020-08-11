@@ -55,32 +55,56 @@ maxDVHvol  = 0;
 maxDVHdose = 0;
 
 for i = 1:numOfVois
-    if cst{i,5}.Visible
+    if ~isempty(cst{i,6})
         % cut off at the first zero value where there is no more signal
         % behind
         ix      = max([1 find(dvh(i).volumePoints>0,1,'last')]);
         dvhOfMean = [dvh(i).doseGrid(1:ix).*pln.numOfFractions; dvh(i).volumePoints(1:ix)];
         
-        plot(dvhOfMean(1,:),dvhOfMean(2,:),'LineWidth',4,'Color',colorMx(i,:), ...
+        dvh_x = linspace(min(dvhOfMean(1,:)),max(dvhOfMean(1,:)),100);
+        dvh_y = interp1(dvhOfMean(1,:),dvhOfMean(2,:),dvh_x);
+        
+        plot(dvh_x,dvh_y,'LineWidth',4,'Color',colorMx(i,:), ...
             'LineStyle',lineStyles{lineStyleIndicator},'DisplayName',cst{i,2})
+        
+        %plot(dvhOfMean(1,:),dvhOfMean(2,:),'LineWidth',4,'Color',colorMx(i,:), ...
+        %    'LineStyle',lineStyles{lineStyleIndicator},'DisplayName',cst{i,2})
         
         ix = pdvh(i).volumePoints(percentileIndices(1),:) > 0;
         lowerDVH = [pdvh(i).doseGrid(ix); pdvh(i).volumePoints(percentileIndices(1),ix)];
         
+        dvh_x = linspace(min(lowerDVH(1,:)),max(lowerDVH(1,:)),100);
+        dvh_y = interp1(lowerDVH(1,:),lowerDVH(2,:),dvh_x);
+        
+        plot(dvh_x,dvh_y,'LineWidth',4,'Color',colorMx(i,:), ...
+            'LineStyle',lineStyles{lineStyleIndicator+1},'DisplayName',cst{i,2},'HandleVisibility','off')
+        
+        %plot(lowerDVH(1,:),lowerDVH(2,:),'LineWidth',4,'Color',colorMx(i,:), ...
+        %    'LineStyle',lineStyles{lineStyleIndicator+1},'DisplayName',cst{i,2},'HandleVisibility','off')
+        
         ix = pdvh(i).volumePoints(percentileIndices(2),:) > 0;
         medianDVH = [pdvh(i).doseGrid(ix); pdvh(i).volumePoints(percentileIndices(2),ix)];
+        
+        dvh_x = linspace(min(medianDVH(1,:)),max(medianDVH(1,:)),100);
+        dvh_y = interp1(medianDVH(1,:),medianDVH(2,:),dvh_x);
+        
+        plot(dvh_x,dvh_y,'LineWidth',4,'Color',colorMx(i,:), ...
+            'LineStyle',lineStyles{lineStyleIndicator+2},'DisplayName',cst{i,2},'HandleVisibility','off')
+        
+        %plot(medianDVH(1,:),medianDVH(2,:),'LineWidth',4,'Color',colorMx(i,:), ...
+        %    'LineStyle',lineStyles{lineStyleIndicator+2},'DisplayName',cst{i,2},'HandleVisibility','off')
         
         ix = pdvh(i).volumePoints(percentileIndices(3),:) > 0;
         upperDVH = [pdvh(i).doseGrid(ix); pdvh(i).volumePoints(percentileIndices(3),ix)];
         
-        plot(lowerDVH(1,:),lowerDVH(2,:),'LineWidth',4,'Color',colorMx(i,:), ...
+        dvh_x = linspace(min(upperDVH(1,:)),max(upperDVH(1,:)),100);
+        dvh_y = interp1(upperDVH(1,:),upperDVH(2,:),dvh_x);
+        
+        plot(dvh_x,dvh_y,'LineWidth',4,'Color',colorMx(i,:), ...
             'LineStyle',lineStyles{lineStyleIndicator+1},'DisplayName',cst{i,2},'HandleVisibility','off')
         
-        plot(medianDVH(1,:),medianDVH(2,:),'LineWidth',4,'Color',colorMx(i,:), ...
-            'LineStyle',lineStyles{lineStyleIndicator+2},'DisplayName',cst{i,2},'HandleVisibility','off')
-        
-        plot(upperDVH(1,:),upperDVH(2,:),'LineWidth',4,'Color',colorMx(i,:), ...
-            'LineStyle',lineStyles{lineStyleIndicator+1},'DisplayName',cst{i,2},'HandleVisibility','off')
+        %plot(upperDVH(1,:),upperDVH(2,:),'LineWidth',4,'Color',colorMx(i,:), ...
+        %    'LineStyle',lineStyles{lineStyleIndicator+1},'DisplayName',cst{i,2},'HandleVisibility','off')
         
         maxDVHvol  = max([maxDVHvol max(upperDVH(2,:)) max(dvhOfMean(2,:))]);
         maxDVHdose = max([maxDVHdose max(upperDVH(1,:)) max(dvhOfMean(1,:))]);
@@ -95,8 +119,8 @@ legend boxoff
 %ylim([0 1.1*maxDVHvol]);
 %xlim([0 1.1*maxDVHdose]);
 
-ylim([0 104]);
-xlim([0 80]);
+%ylim([0 104]);
+%xlim([0 80]);
 
 grid on,grid minor
 box(gca,'on');
