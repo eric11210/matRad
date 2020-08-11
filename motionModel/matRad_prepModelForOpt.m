@@ -30,7 +30,10 @@ if isfield(pln.propOpt.prop4D,'motionModel')
         initSubPhases   = motionModel.indices.subPhase2PosPhase == initPosPhase & motionModel.indices.subPhase2FS == 3;
         % let all subphases corresponding to the initial position phase
         % and FS (EOE) have the same probability
+        
         motionModel.initProb(initSubPhases) = 1;
+        %motionModel.initProb(initSubPhases) = motionModel.Pi_deltaTSample(initSubPhases);
+        
         % let all other subphases have the same (much smaller, but
         % nonzero) probability
         motionModel.initProb(~initSubPhases) = 1e-8;
