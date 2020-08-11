@@ -51,6 +51,16 @@ for i = 1:numel(apertureInfo.beam)
     lastFixelIx = apertureInfo.beam(i).lastFixelIndMap(~isnan(apertureInfo.beam(i).lastFixelIndMap));
     nextFixelIx = apertureInfo.beam(i).nextFixelIndMap(~isnan(apertureInfo.beam(i).nextFixelIndMap));
     
+    % check if kept variable fields exist
+    % if not, keep all variables
+    if ~isfield(apertureInfo.beam(i),'d2KeepVar')
+        apertureInfo.beam(i).d2KeepVar = true(size(apertureInfo.beam(i).local2GlobalVar));
+    end
+    
+    if ~isfield(apertureInfo.beam(i),'numKeepVar')
+        apertureInfo.beam(i).numKeepVar = nnz(apertureInfo.beam(i).d2KeepVar);
+    end
+    
     % find kept variables
     d2KeepVar = apertureInfo.beam(i).d2KeepVar;
     
