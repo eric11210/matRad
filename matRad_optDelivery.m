@@ -8,7 +8,7 @@ function apertureInfo = matRad_optDelivery(apertureInfo,fast)
 % input
 %   result:             result struct from fluence optimization/sequencing
 %   fast:               1 => fastest possible delivery
-%                       0 => mutliply delivery time by 10%
+%                       0 => multiply delivery time by 10%
 %
 % output
 %   apertureInfo:       aperture shape info struct

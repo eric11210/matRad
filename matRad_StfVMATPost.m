@@ -3,11 +3,15 @@ function stf = matRad_StfVMATPost(stf,pln,masterRayPosBEV,masterTargetPointBEV,S
 % matRad steering information post-processing for VMAT
 %
 % call
-%   stf = matRad_StfVMATPost(stf,pln)
+%   stf = matRad_StfVMATPost(stf,pln,masterRayPosBEV,masterTargetPointBEV,SAD,machine)
 %
 % input
-%   stf:        matRad steering information struct
-%   pln:        matRad plan meta information struct
+%   stf:                    matRad steering information struct
+%   pln:                    matRad plan meta information struct
+%   masterRayPosBEV:        beam's eye view ray position for all rays
+%   masterTargetPointBEV:   beam's eye view target position for all rays
+%   SAD:                    source to axis distance
+%   machine:                structure containing machine information
 %
 % output
 %   stf:        matRad steering information struct
@@ -40,10 +44,10 @@ function stf = matRad_StfVMATPost(stf,pln,masterRayPosBEV,masterTargetPointBEV,S
 
 fprintf('matRad: VMAT post-processing (1/2)... ');
 
+% initialize tracking variables
 numDAO = 1;
 DAOAngleBorders = zeros(2*numel(pln.propStf.DAOGantryAngles),1);
 offset = 1;
-timeFacIndOffset = 1;
 firstDAO = true;
 firstFMO = true;
 
@@ -68,6 +72,7 @@ for i = 1:length(stf)
     stf(i).propVMAT.doseBeam    = any(abs(pln.propStf.gantryAngles - pln.propStf.fluGantryAngles(i)) < 1e-6);
     
     if stf(i).propVMAT.DAOBeam
+        % determine whether or not this is the first DAO beam
         if firstDAO
             stf(i).propVMAT.firstDAO = true;
             firstDAO = false;
@@ -80,6 +85,7 @@ for i = 1:length(stf)
     end
     
     if stf(i).propVMAT.FMOBeam
+        % determine whether or not this is the first FMO beam
         if firstFMO
             stf(i).propVMAT.firstFMO = true;
             firstFMO = false;
@@ -99,7 +105,14 @@ for i = 1:length(stf)
     
     %% Determine different angle borders
     
-    % fluAngleBorders are the angular borders over which fluence is deposited
+    % the same nomenclature is used for FMO, DAO, dose, and flu:
+    % -Borders contains the actual angular borders
+    % -BorderCentreDiff contains the difference from each border to the
+    % centre of the arc
+    % -BordersDiff contains the full angular arc length
+    
+    % fluAngleBorders are the angular borders over which fluence is
+    % deposited
     if i == 1
         
         stf(i).propVMAT.fluAngleBorders = [pln.propOpt.VMAToptions.startingAngle (pln.propStf.fluGantryAngles(i+1)+pln.propStf.fluGantryAngles(i))/2];
@@ -224,31 +237,7 @@ for i = 1:length(stf)
         %sector
         stf(i).propVMAT.timeFacCurr =  stf(i).propVMAT.fluAngleBordersDiff./stf(i).propVMAT.DAOAngleBordersDiff;
         
-        if pln.propOpt.VMAToptions.continuousAperture
-            %These are the factors that relate the total time in the
-            %optimized arc sector to the total time in the previous and
-            %next dose sectors
-            stf(i).propVMAT.timeFac1 = zeros(1,3);
-            
-            stf(i).propVMAT.timeFac1(1) = (stf(i).propVMAT.DAOAngleBorderCentreDiff(1)-stf(i).propVMAT.fluAngleBorderCentreDiff(1))/stf(i).propVMAT.DAOAngleBordersDiff;
-            stf(i).propVMAT.timeFac1(2) = stf(i).propVMAT.timeFacCurr;
-            stf(i).propVMAT.timeFac1(3) = (stf(i).propVMAT.DAOAngleBorderCentreDiff(2)-stf(i).propVMAT.fluAngleBorderCentreDiff(2))/stf(i).propVMAT.DAOAngleBordersDiff;
-            
-            % keep entries with a non-0 timeFac
-            delInd     = stf(i).propVMAT.timeFac1 == 0;
-            
-            % write timeFacInd
-            stf(i).propVMAT.timeFacInd1          = [timeFacIndOffset-1 timeFacIndOffset timeFacIndOffset+1];
-            stf(i).propVMAT.timeFacInd1(delInd)  = 0;
-            
-            % update offset
-            if delInd(3)
-                timeFacIndOffset = timeFacIndOffset+1;
-            else
-                timeFacIndOffset = timeFacIndOffset+2;
-            end
-            
-        else
+        if ~pln.propOpt.VMAToptions.continuousAperture
             %These are the factors that relate the total time in the
             %optimized arc sector to the total time in the previous and
             %next dose sectors
@@ -279,8 +268,6 @@ for i = 1:length(stf)
         
         % dummy variables for timeFac
         stf(i).propVMAT.timeFacCurr = [];
-        stf(i).propVMAT.timeFac1    = [];
-        stf(i).propVMAT.timeFacInd1 = [];
     end
     
     % store last/next DAO/dose indices
@@ -297,7 +284,6 @@ for i = 1:length(stf)
         stf(i).numOfRays = size(masterRayPosBEV,1);
         stf(i).numOfBixelsPerRay = ones(1,stf(i).numOfRays);
         stf(i).totalNumOfBixels = sum(stf(i).numOfBixelsPerRay);
-        
         
         % source position in bev
         stf(i).sourcePoint_bev = [0 -SAD 0];
@@ -422,22 +408,6 @@ for i = 1:length(stf)
         nextDoseIndex       = find(abs(pln.propStf.fluGantryAngles - pln.propStf.gantryAngles(nextDoseIndex_dose)) < 1e-8);
     end
     stf(i).propVMAT.nextDoseIndex = nextDoseIndex;
-    
-    %{
-    % determine the current DAO index
-    if stf(stf(i).propVMAT.lastDAOIndex).propVMAT.DAOAngleBorders(1) <= stf(i).gantryAngle && stf(i).gantryAngle <= stf(stf(i).propVMAT.lastDAOIndex).propVMAT.DAOAngleBorders(2)
-        stf(i).propVMAT.currDAOIndex = stf(i).propVMAT.lastDAOIndex;
-    elseif stf(stf(i).propVMAT.nextDAOIndex).propVMAT.DAOAngleBorders(1) <= stf(i).gantryAngle && stf(i).gantryAngle <= stf(stf(i).propVMAT.nextDAOIndex).propVMAT.DAOAngleBorders(2)
-        stf(i).propVMAT.currDAOIndex = stf(i).propVMAT.nextDAOIndex;
-    end
-    
-    % determine the current dose index
-    if stf(stf(i).propVMAT.lastDoseIndex).propVMAT.doseAngleBorders(1) <= stf(i).gantryAngle && stf(i).gantryAngle <= stf(stf(i).propVMAT.lastDoseIndex).propVMAT.doseAngleBorders(2)
-        stf(i).propVMAT.currDoseIndex = stf(i).propVMAT.lastDoseIndex;
-    elseif stf(stf(i).propVMAT.nextDoseIndex).propVMAT.doseAngleBorders(1) <= stf(i).gantryAngle && stf(i).gantryAngle <= stf(stf(i).propVMAT.nextDoseIndex).propVMAT.doseAngleBorders(2)
-        stf(i).propVMAT.currDoseIndex = stf(i).propVMAT.nextDoseIndex;
-    end
-    %}
     
     % calculate fractions for leaf position interpolation
     % formerly known as fracFromLastDAO_I, fracFromLastDAO_F

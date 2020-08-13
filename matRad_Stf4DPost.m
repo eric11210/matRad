@@ -7,8 +7,10 @@ function stf = matRad_Stf4DPost(stf,masterRayPosBEV,masterRayPosBEV_phase1)
 %   stf = matRad_Stf4DPost(stf,coordsX_vox,coordsY_vox,coordsZ_vox,masterRayPosBEV,numVox)
 %
 % input
-%   stf:        matRad steering information struct
-%   pln:        matRad plan meta information struct
+%   stf:                    matRad steering information struct
+%   masterRayPosBEV:        beam's eye view ray position for all rays
+%   masterRayPosBEV_phase1: beam's eye view ray position for all rays for
+%                           phase 1 only
 %
 % output
 %   stf:        matRad steering information struct
@@ -149,7 +151,8 @@ for i = 1:numel(stf)
     matRad_progress(i,numel(stf));
 end
 
-% now do angular interpolation for non-dose calculation gantry angles
+% now do angular interpolation for non-dose calculation gantry angles, for
+% which no DAD is defined
 for i = 1:numel(stf)
     
     if ~stf(i).propVMAT.doseBeam

@@ -7,8 +7,9 @@ function apertureInfo = matRad_sequencing2ApertureInfo(sequencing,stf,pln)
 %   apertureInfo = matRad_sequencing2ApertureInfo(Sequencing,stf)
 %
 % input
-%   Sequencing: matRad sequencing result struct
+%   sequencing: matRad sequencing result struct
 %   stf:        matRad steering information struct
+%   pln:        matRad pln struct
 %
 % output
 %   apertureInfo: matRad aperture weight and shape info struct

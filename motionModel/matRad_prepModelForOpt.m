@@ -1,4 +1,36 @@
 function motionModel = matRad_prepModelForOpt(pln,stf,apertureInfo)
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% prepare the motion model for use in 4D-VMAT optimization
+%
+% call
+%   motionModel = matRad_prepModelForOpt(pln,stf,apertureInfo)
+%
+% input
+%   pln:            matRad pln struct
+%   stf:            matRad steering information struct
+%   apertureInfo:   matRad aperture information struct
+%
+% output
+%   motionModel:    matRad motion model struct
+%
+% References
+%   [1] https://doi.org/10.1118/1.2374675
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Copyright 2015 the matRad development team.
+%
+% This file is part of the matRad project. It is subject to the license
+% terms in the LICENSE file found in the top-level directory of this
+% distribution and at https://github.com/e0404/matRad/LICENSES.txt. No part
+% of the matRad project, including this file, may be copied, modified,
+% propagated, or distributed except according to the terms contained in the
+% LICENSE file.
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 % check if motion model already exists
 if isfield(pln.propOpt.prop4D,'motionModel')
@@ -13,9 +45,6 @@ if isfield(pln.propOpt.prop4D,'motionModel')
         % use model if it exists (and we're not doing a fixed gantry speed)
         motionModel        = pln.propOpt.prop4D.motionModel;
         motionModel.type   = 'Markov_P';
-        
-        % strip model of the "out of bounds" phases
-        %motionModel = matRad_stripMarkovOOB(motionModel);
         
         % get gridded maps
         [motionModel.indices.subPhase2PosPhase_gridJ, motionModel.indices.subPhase2PosPhase_gridI] = meshgrid(motionModel.indices.subPhase2PosPhase);
@@ -40,10 +69,8 @@ if isfield(pln.propOpt.prop4D,'motionModel')
         % normalize
         motionModel.initProb = motionModel.initProb./sum(motionModel.initProb);
         
-        
         % calculate the fixed gantry speed
         % this should be equal to the speed calculated in matRad_arcSequencing
-        %gantryRot = (pln.propOpt.VMAToptions.finishingAngle-pln.propOpt.VMAToptions.startingAngle)./pln.propOpt.VMAToptions.deliveryTime;
         gantryRot = apertureInfo.beam(1).gantryRot;
         
         % loop through the stf structure to find all possible transition and
@@ -61,7 +88,7 @@ if isfield(pln.propOpt.prop4D,'motionModel')
             % calculate arrival time for i1
             arrivalT(i1) = (stf(i1).propVMAT.fluAngleBorders(1)-pln.propOpt.VMAToptions.startingAngle)./gantryRot;
             
-            % calculate transitiion time for i1
+            % calculate transition time for i1
             transT_i1(i1) = stf(i1).propVMAT.fluAngleBordersDiff./gantryRot;
             
             if stf(i1).propVMAT.DAOBeam
@@ -119,15 +146,16 @@ if isfield(pln.propOpt.prop4D,'motionModel')
         motionModel.type = 'precalculated';
         
     else
+        
+        % this is deprecated
+        error('Variable gantry speed not supported for 4D-VMAT optimization');
+        
         % variable gantry speed, use transition rate matrix q
         % not currently supported
         
         % use model if it exists (and we're not doing a fixed gantry speed)
         motionModel        = pln.propOpt.prop4D.motionModel;
         motionModel.type   = 'Markov_Q';
-        
-        % strip model of the "out of bounds" phases
-        %motionModel = matRad_stripMarkovOOB(motionModel);
         
         % get gridded maps
         [motionModel.indices.subPhase2PosPhase_gridJ, motionModel.indices.subPhase2PosPhase_gridI] = meshgrid(motionModel.indices.subPhase2PosPhase);

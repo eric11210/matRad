@@ -241,9 +241,6 @@ for phase_I = 1:apertureInfo.numPhases
             continue
         end
         
-        
-        
-        
         % loop over all shapes
         for j = 1:numOfShapes
             %% determine variable quantities
@@ -331,7 +328,6 @@ for phase_I = 1:apertureInfo.numPhases
                 weightOffset = 2.*apertureInfo.numPhases;
             end
             
-            %if apertureInfo.propVMAT.continuousAperture
             variable.vectorIx_L_lastDAOI = weightOffset+4.*numRow.*(phase_I-1)+0.*numRow+(1:numRow);%apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_I}(1).vectorOffset(1) + ((1:numRow)-1);
             variable.vectorIx_L_lastDAOF = weightOffset+4.*numRow.*(phase_I-1)+1.*numRow+(1:numRow);%apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_I}(j).vectorOffset(2) + ((1:numRow)-1);
             variable.vectorIx_L_nextDAOI = weightOffset+4.*numRow.*(phase_F-1)+2.*numRow+(1:numRow);%apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_F}(1).vectorOffset(1) + ((1:numRow)-1);
@@ -341,12 +337,6 @@ for phase_I = 1:apertureInfo.numPhases
             variable.vectorIx_R_lastDAOF = variable.vectorIx_L_lastDAOF+4.*numRow.*apertureInfo.numPhases;%vectorIx_L_lastDAOF+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
             variable.vectorIx_R_nextDAOI = variable.vectorIx_L_nextDAOI+4.*numRow.*apertureInfo.numPhases;%vectorIx_L_nextDAOI+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
             variable.vectorIx_R_nextDAOF = variable.vectorIx_L_nextDAOF+4.*numRow.*apertureInfo.numPhases;%vectorIx_L_nextDAOF+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
-            %else
-            %    vectorIx_LF_last  = apertureInfo.beam(apertureInfo.propVMAT.beam(i).lastDAOIndex).shape{phase_I}(j).vectorOffset + ((1:numRow)-1);
-            %    vectorIx_LI_next  = apertureInfo.beam(apertureInfo.propVMAT.beam(i).nextDAOIndex).shape{phase_F}(j).vectorOffset + ((1:numRow)-1);
-            %    vectorIx_RF_last  = vectorIx_LF_last+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
-            %    vectorIx_RI_next  = vectorIx_LI_next+apertureInfo.totalNumOfLeafPairs*apertureInfo.numPhases;
-            %end
             
             % switch the arcI and arcF leaf factors where the initial and
             % final leaf positions have been switched
@@ -400,7 +390,6 @@ for phase_I = 1:apertureInfo.numPhases
             
             %% determine probabilities and derivatives
             
-            %probability         = Pi_T(phase_I).*Pij_transT(phase_I,phase_F);
             variable.probability = pMat(phase_I,phase_F);
             
             if apertureInfo.propVMAT.fixedGantrySpeed
@@ -412,7 +401,6 @@ for phase_I = 1:apertureInfo.numPhases
             else
                 % we only need derivatives for variable gantry speed
                 
-                %probability_dTVec   = sum(apertureInfo.propVMAT.jacobT(:,1:(i-1)),2).*Pi_T_dot(phase_I).*Pij_transT(phase_I,phase_F) + apertureInfo.propVMAT.jacobT(:,i).*Pi_T(phase_I).*Pij_transT_dot(phase_I,phase_F);
                 probability_dTVec   = squeeze(pGradMat(phase_I,phase_F,:));
                 
                 % delete any derivatives with value less than eps
@@ -427,6 +415,7 @@ for phase_I = 1:apertureInfo.numPhases
                 
                 variable.probability_dTVec  = probability_dTVec;
             end
+            
             %% first do phase_I
             
             variable.arcF = false;
@@ -473,8 +462,6 @@ for phase_I = 1:apertureInfo.numPhases
             
             % calculate bixel weight and gradient
             tempResults = matRad_bixWeightAndGrad(static,variable);
-            %[running.arcI,arcI_bixelJApVec_vec,arcI_bixelJApVec_i,arcI_bixelJApVec_j,arcI_bixelJApVec_offset,arcI_w] ...
-            %    = matRad_bixWeightAndGradNEW(static,variable,running.arcI,arcI_bixelJApVec_vec,arcI_bixelJApVec_i,arcI_bixelJApVec_j,arcI_bixelJApVec_offset,arcI_w);
             
             % put tempResults into results
             % first do last dose beam

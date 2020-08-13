@@ -54,22 +54,20 @@ else
     
     optInd = find([apertureInfo.propVMAT.beam.DAOBeam]);
     
-    
+    % leaf speed min/max constraints (mm/s)
     if apertureInfo.propVMAT.continuousAperture
-        
-        cl_lfspd = machine.constraints.leafSpeed(1)*ones(2*apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs,1); %Minimum leaf travel speed (mm/s)
-        cu_lfspd = machine.constraints.leafSpeed(2)*ones(2*apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs,1); %Maximum leaf travel speed (mm/s)
+        cl_lfspd = machine.constraints.leafSpeed(1)*ones(2*apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs,1);
+        cu_lfspd = machine.constraints.leafSpeed(2)*ones(2*apertureInfo.propVMAT.numLeafSpeedConstraint*apertureInfo.beam(1).numOfActiveLeafPairs,1);
         %apertureInfo.beam(i).numOfActiveLeafPairs should be independent of i, due to using the union of all ray positions in the stf
-        %Convert from cm/deg when checking constraints; cannot do it at this stage since gantry rotation speed is not hard-coded
     else
-        
-        cl_lfspd = machine.constraints.leafSpeed(1)*ones(2*(numel(optInd)-1)*apertureInfo.beam(1).numOfActiveLeafPairs,1); %Minimum leaf travel speed (mm/s)
-        cu_lfspd = machine.constraints.leafSpeed(2)*ones(2*(numel(optInd)-1)*apertureInfo.beam(1).numOfActiveLeafPairs,1); %Maximum leaf travel speed (mm/s)
+        cl_lfspd = machine.constraints.leafSpeed(1)*ones(2*(numel(optInd)-1)*apertureInfo.beam(1).numOfActiveLeafPairs,1);
+        cu_lfspd = machine.constraints.leafSpeed(2)*ones(2*(numel(optInd)-1)*apertureInfo.beam(1).numOfActiveLeafPairs,1);
         %apertureInfo.beam(i).numOfActiveLeafPairs should be independent of i, due to using the union of all ray positions in the stf
-        %Convert from cm/deg when checking constraints; cannot do it at this stage since gantry rotation speed is not hard-coded
     end
-    cl_dosrt = machine.constraints.monitorUnitRate(1)*ones(numel(optInd)*apertureInfo.numPhases,1); %Minimum MU/sec
-    cu_dosrt = machine.constraints.monitorUnitRate(2)*ones(numel(optInd)*apertureInfo.numPhases,1); %Maximum MU/sec
+    
+    % dose rate min/max constraints (MU/sec)
+    cl_dosrt = machine.constraints.monitorUnitRate(1)*ones(numel(optInd)*apertureInfo.numPhases,1);
+    cu_dosrt = machine.constraints.monitorUnitRate(2)*ones(numel(optInd)*apertureInfo.numPhases,1);
     
     % concatenate
     cl = [cl_dao; cl_lfspd; cl_dosrt; cl_dos];

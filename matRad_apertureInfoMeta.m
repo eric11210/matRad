@@ -1,9 +1,43 @@
 function apertureInfo = matRad_apertureInfoMeta(apertureInfo,pln,stf,doLeafStuff)
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% matRad function to generate/add meta information to the apertureInfo
+% structure
+%
+% call
+%   apertureInfo = matRad_apertureInfoMeta(Sequencing,stf)
+%
+% input
+%   apertureInfo:   matRad aperture weight and shape info struct
+%   pln:            matRad pln struct
+%   stf:            matRad steering information struct
+%   doLeafStuff:    boolean, indicates whether or not to fix leaf
+%                   touching/do DAD
+%
+% output
+%   apertureInfo:   matRad aperture weight and shape info struct
+%
+% References
+%
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Copyright 2015 the matRad development team.
+%
+% This file is part of the matRad project. It is subject to the license
+% terms in the LICENSE file found in the top-level directory of this
+% distribution and at https://github.com/e0404/matRad/LICENSES.txt. No part
+% of the matRad project, including this file, may be copied, modified,
+% propagated, or distributed except according to the terms contained in the
+% LICENSE file.
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% default is to do the leaf stuff
 if nargin < 4
     doLeafStuff = true;
 end
-
 
 % Jacobian matrix to be used in the DAO gradient function
 % this tells us the gradient of a particular bixel with respect to an
@@ -22,8 +56,9 @@ end
 % For interpolated beams: 12 = (2 from weights last/next) + (4 from left
 % leaf positions) + (4 from right leaf positions) + (2 from times 
 % last/next)
+% For a fixed gantry speed, last two are not required
 
-% initialize number of fixels
+% initialize number of fixels (fluence angle bixels)
 lastFixelIndOffset = 0;
 nextFixelIndOffset = 0;
 
@@ -70,7 +105,7 @@ if pln.propOpt.runVMAT
             apertureInfo.beam(i).effNumBixels_nextDose      = max(apertureInfo.beam(i).effNumBixels_nextDose_arcI,apertureInfo.beam(i).effNumBixels_nextDose_arcF);
             
             if apertureInfo.propVMAT.beam(i).DAOBeam
-                
+                % determine time variable index
                 apertureInfo.propVMAT.beam(i).timeInd = apertureInfo.numPhases*(apertureInfo.totalNumOfShapes+apertureInfo.totalNumOfLeafPairs*2)+shapeInd;
                 
                 shapeInd = shapeInd+1;
@@ -93,6 +128,7 @@ if pln.propOpt.runVMAT
     if pln.propOpt.run4D
         
         if doLeafStuff
+            % do DAD
             apertureInfo = matRad_doDAD(apertureInfo,stf);
         end
         
@@ -127,7 +163,6 @@ if pln.propOpt.runVMAT
     if apertureInfo.propVMAT.fixedGantrySpeed
         % this should correspond to the speed calculated in
         % matRad_arcSequencing
-        %minGantryRot = (pln.propOpt.VMAToptions.finishingAngle-pln.propOpt.VMAToptions.startingAngle)./pln.propOpt.VMAToptions.deliveryTime;
         minGantryRot = apertureInfo.beam(1).gantryRot;
     else
         % just use the machine speed
@@ -246,7 +281,6 @@ if pln.propOpt.runVMAT
     end
     
     if apertureInfo.propVMAT.continuousAperture
-        
         % count number of transitions
         apertureInfo.propVMAT.numLeafSpeedConstraint      = nnz([apertureInfo.propVMAT.beam.transMask]);
         apertureInfo.propVMAT.numLeafSpeedConstraintDAO   = nnz([apertureInfo.propVMAT.beam([apertureInfo.propVMAT.beam.DAOBeam]).transMask]);

@@ -267,12 +267,6 @@ if pln.propOpt.preconditioner
     resultGUI.apertureInfo = matRad_preconditionFactors(resultGUI.apertureInfo);
 end
 
-if pln.propOpt.varOpt
-    % get dose variance; make this be variance instead of sum of variance?
-    %[dVarSum,~] = matRad_doseVarianceSum(resultGUI.apertureInfo,dij);
-    %resultGUI.physicalDoseVarSum    = dVarSum;
-end
-
 resultGUI.w          = sequencing.w;
 resultGUI.wSequenced = sequencing.w;
 

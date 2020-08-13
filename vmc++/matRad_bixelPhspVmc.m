@@ -1,5 +1,41 @@
 function stf = matRad_bixelPhspVmc(stf,masterRayPosBEV,vmcOptions,SAD,bixelWidth)
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% generate bixel-based phase space file from a master phase space file
+%
+% call
+%   stf = matRad_bixelPhspVmc(stf,masterRayPosBEV,vmcOptions,SAD,bixelWidth)
+%
+% input
+%   stf:                matRad steering information struct
+%   masterRayPosBEV:    beam's eye view ray position for all rays
+%   vmcOptions:         structure containing options for VMC++
+%   SAD:                source to axis distance
+%   bixelWidth:         width of bixels
+%
+% output
+%   stf:        matRad steering information struct
+%
+% References
+%   -
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Copyright 2015 the matRad development team.
+%
+% This file is part of the matRad project. It is subject to the license
+% terms in the LICENSE file found in the top-level directory of this
+% distribution and at https://github.com/e0404/matRad/LICENSES.txt. No part
+% of the matRad project, including this file, may be copied, modified,
+% propagated, or distributed except according to the terms contained in the
+% LICENSE file.
+%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% preliminary stuff: determine file names for bixel phase space files, determine if they are required to be generated
+
+% determine if VMC++ version is dkfz's or Carleton's
 switch vmcOptions.version
     case 'Carleton'
         phspPath = fullfile(fileparts(mfilename('fullpath')), 'run', 'phsp');
@@ -7,13 +43,15 @@ switch vmcOptions.version
         phspPath = fullfile(fileparts(mfilename('fullpath')), 'runs', 'phsp');
 end
 
+% open full phase space file
 fname_full  = fullfile(phspPath,sprintf('%s.egsphsp1',vmcOptions.phspBaseName));
 fid_full    = fopen(fname_full,'r');
 
 % SAD tp SCD conversion factor
 SAD2SCD = vmcOptions.SCD./SAD;
 
-% in cm
+% convert bixel width, ray positions to collimator plan, rather than axis
+% plane (all lengths in cm)
 bixelWidth  = bixelWidth.*SAD2SCD/10;
 X           = masterRayPosBEV(:,1).*SAD2SCD/10;
 Y           = -masterRayPosBEV(:,3).*SAD2SCD/10; % minus sign necessary since to get from BEAM coord. to DICOM, we do a rotation, NOT reflection
@@ -29,7 +67,7 @@ X_fField                = X_fField(:);
 Y_fField                = Y_fField(:);
 numBixels_fField        = numel(Y_fField);
 
-% determine file names, check for existence
+% determine file names for bixel phase space files, check for existence
 numBixels       = size(masterRayPosBEV,1);
 fname_bixels    = cell(numBixels,1);
 writeFiles      = false;
@@ -44,7 +82,8 @@ for i = 1:numBixels
     end
 end
 
-% give file name to ray
+% give file name to ray, store in stf
+% we will need this later when calculating dose with VMC++
 for i = 1:numel(stf)
     
     for j = 1:stf(i).numOfRays
@@ -56,11 +95,9 @@ for i = 1:numel(stf)
     end
 end
 
+%% write the files if necessary
+
 if writeFiles
-    % only do read/write files if they don't already exist
-    if bixelWidth == 0.25
-        error('ABOUT TO REWRITE PHSP FILES');
-    end
     
     %% extract information from full phsp file, write to bixel files
     
@@ -157,7 +194,7 @@ if writeFiles
                 % these particles should already have positive energy
                 if record.E < 0
                     % SHOULDN'T HAPPEN
-                    warning('NEGATIVE ENERGY')
+                    error('Negative energy in phsp file for non-initial particles.')
                 end
             end
             
@@ -214,9 +251,10 @@ end
 end
 
 
-% read/write functions
+%% read/write functions
 
 function [fid, header] = getHeader(fid)
+% get the header of the phase space file
 
 header.MODE_RW      = fread(fid,5,'uint8');
 header.NPPHSP       = fread(fid,1,'int32');
@@ -229,6 +267,7 @@ header.garbage      = fread(fid,3,'int8');
 end
 
 function [fid, record] = getRecord(fid,mode)
+% get the next record in the phase space file
 
 record.LATCH    = fread(fid,1,'uint32');
 record.E        = fread(fid,1,'float32');
@@ -245,6 +284,7 @@ end
 end
 
 function writeHeader(fname,header,rewrite)
+% write the header of the phase space file
 
 if rewrite
     fid = fopen(fname,'r+');
@@ -267,6 +307,7 @@ fclose(fid);
 end
 
 function writeRecord(fid,record,mode)
+% write the next record in the phase space file
 
 fwrite(fid,record.LATCH,'uint32');
 fwrite(fid,record.E,'float32');
@@ -283,6 +324,7 @@ end
 end
 
 function writeBuffer(fname,buffer,mode)
+% write a buffer of records in the phase space file
 
 fid = fopen(fname,'r+');
 fseek(fid,0,'eof');

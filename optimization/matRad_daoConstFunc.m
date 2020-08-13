@@ -66,9 +66,9 @@ if ~apertureInfo.runVMAT
 else
     
     if apertureInfo.propVMAT.continuousAperture
-        % Using the dynamic fluence calculation, we have the leaf positions in
-        % the vector be the leaf positions at the borders of the DAO arcs
-        % (for optimized angles only).
+        % Using the continuous aperture fluence calculation, we have the
+        % leaf positions in the vector be the leaf positions at the borders
+        % of the DAO arcs (for optimized angles only).
         % Therefore we must also use the times between the borders of the Dij
         % arc (for optimized angles only).
         

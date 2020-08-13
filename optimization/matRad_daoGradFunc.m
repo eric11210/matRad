@@ -71,7 +71,7 @@ for i = 1:numel(apertureInfo.beam)
         if apertureInfo.runVMAT
             
             % use the Jacobian calculated in daoVec2ApertureInfo.
-            % should also do this for non-VMAT
+            % could also do this for non-VMAT, to unify both
             g(currVarIx) = g(currVarIx)+apertureInfo.bixelJApVec{(i-1).*apertureInfo.numPhases+phase} * bixelG{phase}(fullBixelIx);
             %g = g+accumarray(currVarIx,apertureInfo.bixelJApVec{(i-1).*apertureInfo.numPhases+phase} * bixelG{phase}(fullBixelIx),size(apertureInfoVec));
         else
