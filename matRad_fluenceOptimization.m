@@ -241,10 +241,57 @@ elseif (strcmp(pln.propOpt.bioOptimization,'LEMIV_effect') || strcmp(pln.propOpt
     end
     
 else
-    dOnes = matRad_backProjection(wOnes,dij,options);
-    bixelWeight = (doseTarget)/mean(dOnes(V));
-    wInit = cell(options.numOfScenarios,1);
-    wInit(:) = {wOnesArray * bixelWeight};
+    
+    if pln.propOpt.run4D
+        % if we're doing 4D optimization, only include bixels in the FMO
+        % which have a mean dose to target greater than 1% of the max
+        % this is because the full set of bixels is really larger than just
+        % those which intersect with the targetin phase 1; we want to
+        % exclude those that don't, to prevent them from also being
+        % included in the phase 1 apertures
+        
+        % initialize wInit, the initial bixel weights
+        wInit           = cell(options.numOfScenarios,1);
+        wInit(:)        = {wOnesArray};
+        
+        % loop through all scenarios
+        for i = 1:options.numOfScenarios
+            
+            % find the mean dose per bixel for this scenario
+            bixelMeanDose = mean(dij.physicalDose{i}(V,:),1);
+            
+            % let all bixels with dose less than 1% of max have initial weight
+            % of 0
+            wInit{i}(bixelMeanDose < 0.01*max(bixelMeanDose)) = 0;
+            
+            % the upper bound of these bixels (with < 1% of max dose) should
+            % also be 0
+            options.ub{i}(wInit{i} == 0) = 0;
+            
+            % calculate weight of remaining bixels
+            bixelWeight = (doseTarget)/sum(bixelMeanDose(logical(wInit{i})));
+            
+            % set initial bixels to this weight
+            wInit{i} = wInit{i} * bixelWeight;
+        end
+        
+    else
+        % if not doing 4D, optimize all bixels, because they all interesect
+        % with the target
+        
+        % calculate the dose if all bixels have a weight of 1
+        dOnes = matRad_backProjection(wOnes,dij,options);
+        
+        % calculate initial bixel weight from the objective target dose
+        bixelWeight = (doseTarget)/mean(dOnes(V));
+        
+        % initialize wInit, the initial bixel weights
+        wInit = cell(options.numOfScenarios,1);
+        
+        % set initial bixels to the calculated weight
+        wInit(:) = {wOnesArray * bixelWeight};
+    end
+    
     pln.propOpt.bioOptimization = 'none';
 end
 
